@@ -10,15 +10,14 @@ interface ImageViewerWindowProps {
   onClose: () => void;
   isActive: boolean;
   onClick: () => void;
+  zIndex: number;
 }
 
-export default function ImageViewerWindow({ title, imageSrc, onClose, isActive, onClick }: ImageViewerWindowProps) {
-  const getRandomPosition = () => ({
+export default function ImageViewerWindow({ title, imageSrc, onClose, isActive, onClick, zIndex }: ImageViewerWindowProps) {
+  const [position, setPosition] = useState(() => ({
     x: Math.floor(Math.random() * (window.innerWidth - 900)) + 50,
     y: Math.floor(Math.random() * (window.innerHeight - 700)) + 50,
-  });
-
-  const [position, setPosition] = useState(getRandomPosition());
+  }));
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const windowRef = useRef<HTMLDivElement>(null);
@@ -67,9 +66,9 @@ export default function ImageViewerWindow({ title, imageSrc, onClose, isActive, 
     <div
       ref={windowRef}
       className={`absolute bg-white rounded-2xl shadow-2xl overflow-hidden transition-shadow ${
-        isActive ? 'z-50 shadow-2xl' : 'z-40 opacity-95'
+        isActive ? 'shadow-2xl' : 'opacity-95'
       }`}
-      style={{ top: position.y, left: position.x, width: '900px', height: '700px' }}
+      style={{ top: position.y, left: position.x, width: '900px', height: '700px', zIndex }}
       onClick={onClick}
     >
 

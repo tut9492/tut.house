@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Folder from './Folder';
 import FolderWindow from './windows/FolderWindow';
 import CollectionWindow from './windows/CollectionWindow';
+import CollectorsHubWindow from './windows/CollectorsHubWindow';
 import ImageViewerWindow from './windows/ImageViewerWindow';
 import TextViewerWindow from './windows/TextViewerWindow';
 import AboutWindow from './windows/AboutWindow';
@@ -23,23 +24,81 @@ interface OpenText {
   title: string;
 }
 
+interface PrefetchedArtwork {
+  id: string;
+  title: string;
+  src: string;
+  collection?: string;
+  chain?: string;
+  technique?: string;
+  permalink?: string;
+}
+
 export default function Desktop() {
   const [openFolders, setOpenFolders] = useState<Set<string>>(new Set());
   const [openImages, setOpenImages] = useState<OpenImage[]>([]);
   const [openTexts, setOpenTexts] = useState<OpenText[]>([]);
   const [activeWindow, setActiveWindow] = useState<string | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [windowStack, setWindowStack] = useState<string[]>([]);
+  const [prefetchedBySlug, setPrefetchedBySlug] = useState<Record<string, PrefetchedArtwork[]>>({});
 
   const folders = [
     { id: 'physical-art', name: 'Physical Art', contentType: 'folders' as const },
     { id: 'digital-art', name: 'Digital Art', contentType: 'folders' as const },
     { id: 'buy-art', name: 'Buy Art', contentType: 'folders' as const },
-    { id: 'collectors-hub', name: 'Collectors Hub', contentType: 'folders' as const },
+    { id: 'collectors-hub', name: 'Collectors Hub', contentType: 'collectors-hub' as const },
     { id: 'about', name: 'About', contentType: 'about' as const },
-    { id: 'collection-01', name: 'Collection_01', contentType: 'images' as const },
-    { id: 'collection-02', name: 'Collection_02', contentType: 'images' as const },
-    { id: 'collection-03', name: 'Collection_03', contentType: 'images' as const },
+    { id: 'collection-01', name: 'Collection_01', contentType: 'images' as const, openseaSlug: 'obsessive-cycles-of-fiber' },
+    { id: 'collection-02', name: 'Collection_02', contentType: 'images' as const, openseaSlug: 'tut-1-1' },
+    { id: 'collection-03', name: 'Collection_03', contentType: 'images' as const, openseaSlug: 'kingtut-genesis' },
   ];
+
+  useEffect(() => {
+    let cancelled = false;
+    const slugs = ['obsessive-cycles-of-fiber', 'tut-1-1', 'kingtut-genesis'];
+
+    const run = async () => {
+      await Promise.all(
+        slugs.map(async (slug) => {
+          try {
+            const res = await fetch(`/api/opensea/collection?slug=${slug}`);
+            if (!res.ok) return;
+            const data = await res.json();
+            const artworks = (data?.artworks ?? []) as PrefetchedArtwork[];
+            if (!artworks.length || cancelled) return;
+
+            setPrefetchedBySlug(prev => (prev[slug] ? prev : { ...prev, [slug]: artworks }));
+
+            if (typeof window !== 'undefined') {
+              artworks.slice(0, 8).forEach((a) => {
+                const img = new window.Image();
+                img.decoding = 'async';
+                img.src = a.src;
+              });
+            }
+          } catch {}
+        })
+      );
+    };
+
+    const ric = (window as Window & { requestIdleCallback?: (cb: IdleRequestCallback) => number })
+      .requestIdleCallback;
+
+    if (typeof window !== 'undefined' && ric) {
+      ric(() => run());
+    } else {
+      const t = setTimeout(() => run(), 600);
+      return () => {
+        cancelled = true;
+        clearTimeout(t);
+      };
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleFolderClick = (folderId: string) => {
     const newOpenFolders = new Set(openFolders);
@@ -48,6 +107,7 @@ export default function Desktop() {
       setOpenFolders(newOpenFolders);
     }
     setActiveWindow(folderId);
+    setWindowStack(prev => [...prev.filter(id => id !== folderId), folderId]);
   };
 
   const handleCloseWindow = (folderId: string) => {
@@ -57,10 +117,12 @@ export default function Desktop() {
     if (activeWindow === folderId) {
       setActiveWindow(null);
     }
+    setWindowStack(prev => prev.filter(id => id !== folderId));
   };
 
   const handleWindowClick = (folderId: string) => {
     setActiveWindow(folderId);
+    setWindowStack(prev => [...prev.filter(id => id !== folderId), folderId]);
   };
 
   const handleMenuToggle = () => {
@@ -77,6 +139,7 @@ export default function Desktop() {
       setOpenImages([...openImages, { id: imageId, src: imageSrc, title: imageTitle }]);
     }
     setActiveWindow(imageId);
+    setWindowStack(prev => [...prev.filter(id => id !== imageId), imageId]);
   };
 
   const handleCloseImage = (imageId: string) => {
@@ -84,6 +147,7 @@ export default function Desktop() {
     if (activeWindow === imageId) {
       setActiveWindow(null);
     }
+    setWindowStack(prev => prev.filter(id => id !== imageId));
   };
 
   const handleTextClick = (textId: string, textContent: string, textTitle: string) => {
@@ -92,6 +156,7 @@ export default function Desktop() {
       setOpenTexts([...openTexts, { id: textId, content: textContent, title: textTitle }]);
     }
     setActiveWindow(textId);
+    setWindowStack(prev => [...prev.filter(id => id !== textId), textId]);
   };
 
   const handleCloseText = (textId: string) => {
@@ -99,6 +164,12 @@ export default function Desktop() {
     if (activeWindow === textId) {
       setActiveWindow(null);
     }
+    setWindowStack(prev => prev.filter(id => id !== textId));
+  };
+
+  const getZIndex = (windowId: string) => {
+    const index = windowStack.indexOf(windowId);
+    return index === -1 ? 40 : 40 + index;
   };
 
   return (
@@ -148,6 +219,7 @@ export default function Desktop() {
               onClick={() => handleWindowClick(folder.id)}
               onImageClick={handleImageClick}
               onTextClick={handleTextClick}
+              zIndex={getZIndex(folder.id)}
             />
           );
         }
@@ -161,7 +233,23 @@ export default function Desktop() {
               onClose={() => handleCloseWindow(folder.id)}
               isActive={activeWindow === folder.id}
               onClick={() => handleWindowClick(folder.id)}
-              onImageClick={handleImageClick}
+              zIndex={getZIndex(folder.id)}
+              openseaSlug={folder.openseaSlug}
+              prefetchedArtworks={folder.openseaSlug ? prefetchedBySlug[folder.openseaSlug] : undefined}
+            />
+          );
+        }
+
+        if (folder.contentType === 'collectors-hub') {
+          return (
+            <CollectorsHubWindow
+              key={folder.id}
+              id={folder.id}
+              title={folder.name}
+              onClose={() => handleCloseWindow(folder.id)}
+              isActive={activeWindow === folder.id}
+              onClick={() => handleWindowClick(folder.id)}
+              zIndex={getZIndex(folder.id)}
             />
           );
         }
@@ -175,6 +263,7 @@ export default function Desktop() {
             isActive={activeWindow === folder.id}
             onClick={() => handleWindowClick(folder.id)}
             onSubfolderClick={handleFolderClick}
+            zIndex={getZIndex(folder.id)}
           />
         );
       })}
@@ -187,7 +276,8 @@ export default function Desktop() {
           imageSrc={image.src}
           onClose={() => handleCloseImage(image.id)}
           isActive={activeWindow === image.id}
-          onClick={() => setActiveWindow(image.id)}
+          onClick={() => handleWindowClick(image.id)}
+          zIndex={getZIndex(image.id)}
         />
       ))}
       
@@ -199,7 +289,8 @@ export default function Desktop() {
           content={text.content}
           onClose={() => handleCloseText(text.id)}
           isActive={activeWindow === text.id}
-          onClick={() => setActiveWindow(text.id)}
+          onClick={() => handleWindowClick(text.id)}
+          zIndex={getZIndex(text.id)}
         />
       ))}
 

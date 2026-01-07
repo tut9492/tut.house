@@ -10,19 +10,17 @@ interface FolderWindowProps {
   isActive: boolean;
   onClick: () => void;
   onSubfolderClick?: (subfolderId: string) => void;
+  zIndex: number;
 }
 
-export default function FolderWindow({ title, onClose, isActive, onClick, onSubfolderClick }: FolderWindowProps) {
-  const getRandomPosition = () => ({
+export default function FolderWindow({ title, onClose, isActive, onClick, onSubfolderClick, zIndex }: FolderWindowProps) {
+  const [position, setPosition] = useState(() => ({
     x: Math.floor(Math.random() * (window.innerWidth - 1000)) + 50,
     y: Math.floor(Math.random() * (window.innerHeight - 650)) + 50,
-  });
-
-  const [position, setPosition] = useState(getRandomPosition());
+  }));
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const [isMaximized, setIsMaximized] = useState(false);
-  const [prevPosition, setPrevPosition] = useState({ x: 200, y: 150 });
+  const isMaximized = false;
   const windowRef = useRef<HTMLDivElement>(null);
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -41,7 +39,7 @@ export default function FolderWindow({ title, onClose, isActive, onClick, onSubf
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      if (isDragging && !isMaximized) {
+      if (isDragging) {
         setPosition({
           x: e.clientX - dragOffset.x,
           y: e.clientY - dragOffset.y,
@@ -62,7 +60,7 @@ export default function FolderWindow({ title, onClose, isActive, onClick, onSubf
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDragging, dragOffset, isMaximized]);
+  }, [isDragging, dragOffset]);
 
   const windowStyle = isMaximized
     ? { top: 0, left: 0, width: '100%', height: 'calc(100% - 48px)' }
@@ -72,9 +70,9 @@ export default function FolderWindow({ title, onClose, isActive, onClick, onSubf
     <div
       ref={windowRef}
       className={`absolute bg-white rounded-2xl shadow-2xl overflow-hidden transition-shadow ${
-        isActive ? 'z-50 shadow-2xl' : 'z-40 opacity-95'
+        isActive ? 'shadow-2xl' : 'opacity-95'
       }`}
-      style={windowStyle}
+      style={{ ...windowStyle, zIndex }}
       onClick={onClick}
     >
 
@@ -95,7 +93,7 @@ export default function FolderWindow({ title, onClose, isActive, onClick, onSubf
         <div className="flex gap-40 mt-8 ml-8">
           <div
             className="flex flex-col items-center cursor-pointer group"
-            onClick={() => onSubfolderClick?.('collection-01')}
+            onClick={(e) => { e.stopPropagation(); onSubfolderClick?.('collection-01'); }}
           >
             <Image
               src="/assets/images/folderTut.png"
@@ -108,7 +106,7 @@ export default function FolderWindow({ title, onClose, isActive, onClick, onSubf
           </div>
           <div
             className="flex flex-col items-center cursor-pointer group"
-            onClick={() => onSubfolderClick?.('collection-02')}
+            onClick={(e) => { e.stopPropagation(); onSubfolderClick?.('collection-02'); }}
           >
             <Image
               src="/assets/images/folderTut.png"
@@ -121,7 +119,7 @@ export default function FolderWindow({ title, onClose, isActive, onClick, onSubf
           </div>
           <div
             className="flex flex-col items-center cursor-pointer group"
-            onClick={() => onSubfolderClick?.('collection-03')}
+            onClick={(e) => { e.stopPropagation(); onSubfolderClick?.('collection-03'); }}
           >
             <Image
               src="/assets/images/folderTut.png"

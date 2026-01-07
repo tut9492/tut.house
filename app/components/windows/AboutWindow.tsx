@@ -11,19 +11,17 @@ interface AboutWindowProps {
   onClick: () => void;
   onImageClick?: (imageId: string, imageSrc: string, imageTitle: string) => void;
   onTextClick?: (textId: string, textContent: string, textTitle: string) => void;
+  zIndex: number;
 }
 
-export default function AboutWindow({ title, onClose, isActive, onClick, onImageClick, onTextClick }: AboutWindowProps) {
-  const getRandomPosition = () => ({
+export default function AboutWindow({ title, onClose, isActive, onClick, onImageClick, onTextClick, zIndex }: AboutWindowProps) {
+  const [position, setPosition] = useState(() => ({
     x: Math.floor(Math.random() * (window.innerWidth - 1000)) + 50,
     y: Math.floor(Math.random() * (window.innerHeight - 650)) + 50,
-  });
-
-  const [position, setPosition] = useState(getRandomPosition());
+  }));
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const [isMaximized, setIsMaximized] = useState(false);
-  const [prevPosition, setPrevPosition] = useState({ x: 200, y: 150 });
+  const isMaximized = false;
   const windowRef = useRef<HTMLDivElement>(null);
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -42,7 +40,7 @@ export default function AboutWindow({ title, onClose, isActive, onClick, onImage
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      if (isDragging && !isMaximized) {
+      if (isDragging) {
         setPosition({
           x: e.clientX - dragOffset.x,
           y: e.clientY - dragOffset.y,
@@ -63,7 +61,7 @@ export default function AboutWindow({ title, onClose, isActive, onClick, onImage
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDragging, dragOffset, isMaximized]);
+  }, [isDragging, dragOffset]);
 
   const windowStyle = isMaximized
     ? { top: 0, left: 0, width: '100%', height: 'calc(100% - 48px)' }
@@ -73,9 +71,9 @@ export default function AboutWindow({ title, onClose, isActive, onClick, onImage
     <div
       ref={windowRef}
       className={`absolute bg-white rounded-2xl shadow-2xl overflow-hidden transition-shadow ${
-        isActive ? 'z-50 shadow-2xl' : 'z-40 opacity-95'
+        isActive ? 'shadow-2xl' : 'opacity-95'
       }`}
-      style={windowStyle}
+      style={{ ...windowStyle, zIndex }}
       onClick={onClick}
     >
 
@@ -97,7 +95,7 @@ export default function AboutWindow({ title, onClose, isActive, onClick, onImage
 
           <div
             className="flex flex-col items-center cursor-pointer group"
-            onClick={() => onImageClick?.('about-profile', '/assets/images/aboutProfilePicture.png', 'profile.jpg')}
+            onClick={(e) => { e.stopPropagation(); onImageClick?.('about-profile', '/assets/images/aboutProfilePicture.png', 'profile.jpg'); }}
           >
             <div className="w-32 h-32 mb-2 overflow-hidden rounded-lg">
               <Image
@@ -113,27 +111,49 @@ export default function AboutWindow({ title, onClose, isActive, onClick, onImage
           
           <div
             className="flex flex-col items-center cursor-pointer group"
-            onClick={() => {
-              const bioContent = `Artist Biography
+            onClick={(e) => {
+              e.stopPropagation();
+              const bioContent = `EARLY DAYS
 
-Hello! I'm a contemporary artist working across physical and digital mediums.
+Since childhood, I’ve been captivated by the act of creation, from making music 
+to crafting imaginative worlds with Lego. As a teenager, I transformed 
+this passion into a new medium, building skateboard ramps and learning design. 
+As I grew older, my focus shifted towards functional art, primarily 
+woodworking projects and furniture.
 
-My work explores the intersection of traditional techniques and modern technology, creating pieces that challenge conventional boundaries between the tangible and the virtual.
+HOME DESIGN
 
-Education:
-- MFA in Fine Arts, 2018
-- BFA in Digital Media, 2015
+Over time, my professional career led me towards architecture and home design, 
+where I honed my design skills and eventually began designing and building homes.
 
-Selected Exhibitions:
-- "Digital Dreams" - Contemporary Art Museum, 2023
-- "Physical Meets Digital" - Gallery Modern, 2022
-- "New Perspectives" - Art Space Gallery, 2021
+PHOTOGRAPHY
 
-My art is available for collection through various platforms including SuperRare, Foundation, and ExchangeArt. I'm always excited to connect with collectors and fellow artists.
+In 2013 I discovered a new passion for photography, particularly shooting 
+film. As I delved deeper into the craft, I began to take it more seriously, 
+entering competitions and learning new techniques using software like Photoshop and Lightroom.
+I started getting some local recognition after placing in some gallery contests.
 
-For commissions and inquiries, please reach out through my website or social media channels.
+WEB 3
 
-Thank you for visiting my portfolio!`;
+In 2019, I embarked on my web 3 journey, exploring the potential impact 
+that this space could have on art. After a year of studying the space, I 
+decided to mint my own genesis collection: Tut Genesis
+
+My goal is to create art that sparks the imagination and evokes powerful emotions.
+
+MY ART NOW
+
+Currently, I’m experimenting with a process that involves creating AI images 
+from my photos and then layering digital art elements to produce a new, 
+cohesive artwork. This body of work centers around a central figure in a 
+brutalist landscape, prompting viewers to explore their own existence. 
+Through my art, I’ve come to realize that we often fail to truly explore 
+ourselves until we’re alone with our thoughts and feelings.
+
+This is an evolving document that will showcase my work as I experience my time as an artist.
+
+I hope you have enjoyed learning a bit more about me and how I became an artist.
+`;
               onTextClick?.('about-bio', bioContent, 'bio.txt');
             }}
           >

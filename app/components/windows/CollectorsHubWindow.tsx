@@ -1,21 +1,21 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import Image from 'next/image';
 
-interface TextViewerWindowProps {
+interface CollectorsHubWindowProps {
   id: string;
   title: string;
-  content: string;
   onClose: () => void;
   isActive: boolean;
   onClick: () => void;
   zIndex: number;
 }
 
-export default function TextViewerWindow({ title, content, onClose, isActive, onClick, zIndex }: TextViewerWindowProps) {
+export default function CollectorsHubWindow({ title, onClose, isActive, onClick, zIndex }: CollectorsHubWindowProps) {
   const [position, setPosition] = useState(() => ({
-    x: Math.floor(Math.random() * (window.innerWidth - 800)) + 50,
-    y: Math.floor(Math.random() * (window.innerHeight - 600)) + 50,
+    x: Math.floor(Math.random() * (window.innerWidth - 1000)) + 50,
+    y: Math.floor(Math.random() * (window.innerHeight - 650)) + 50,
   }));
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -66,7 +66,7 @@ export default function TextViewerWindow({ title, content, onClose, isActive, on
       className={`absolute bg-white rounded-2xl shadow-2xl overflow-hidden transition-shadow ${
         isActive ? 'shadow-2xl' : 'opacity-95'
       }`}
-      style={{ top: position.y, left: position.x, width: '800px', height: '600px', zIndex }}
+      style={{ top: position.y, left: position.x, width: '1000px', height: '650px', zIndex }}
       onClick={onClick}
     >
       <button
@@ -81,10 +81,19 @@ export default function TextViewerWindow({ title, content, onClose, isActive, on
       >
         <span className="text-gray-600 text-sm font-normal">{title}</span>
       </div>
-      
-      <div className="px-8 py-6 h-full bg-white overflow-auto" style={{ maxHeight: 'calc(100% - 60px)' }}>
-        <div className="text-gray-800 leading-relaxed whitespace-pre-wrap">
-          {content}
+
+      <div className="px-6 pb-6 h-full bg-white overflow-auto">
+        <div className="flex gap-40 mt-8 ml-8">
+          <div className="flex flex-col items-center cursor-default select-none opacity-60">
+            <Image
+              src="/assets/images/lockIcon.png"
+              alt="Coming Soon"
+              width={64}
+              height={64}
+              className="mb-2"
+            />
+            <span className="text-gray-400 text-xs">Coming Soon</span>
+          </div>
         </div>
       </div>
     </div>
