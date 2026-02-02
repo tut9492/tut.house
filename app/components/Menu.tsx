@@ -30,7 +30,7 @@ export default function Menu({ isOpen, onClose, onFolderClick }: MenuProps) {
         className="fixed inset-0 z-40" 
         onClick={onClose}
       />
-      <div className="absolute bottom-14 left-4 w-96 bg-white rounded-2xl shadow-2xl z-50 overflow-hidden">
+      <div className="fixed bottom-[60px] left-3 w-[min(24rem,calc(100vw-1.5rem))] bg-white rounded-2xl shadow-2xl z-50 overflow-hidden lg:absolute lg:bottom-14 lg:left-4 lg:w-96">
         <div className="p-6">
           <div className="flex items-center gap-4 mb-6 pb-6 border-b border-gray-200">
             <Image

@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 interface AboutWindowProps {
   id: string;
@@ -15,6 +16,7 @@ interface AboutWindowProps {
 }
 
 export default function AboutWindow({ title, onClose, isActive, onClick, onImageClick, onTextClick, zIndex }: AboutWindowProps) {
+  const isCompact = useIsMobile(1024);
   const [position, setPosition] = useState(() => ({
     x: Math.floor(Math.random() * (window.innerWidth - 1000)) + 50,
     y: Math.floor(Math.random() * (window.innerHeight - 650)) + 50,
@@ -26,6 +28,7 @@ export default function AboutWindow({ title, onClose, isActive, onClick, onImage
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('.window-controls')) return;
+    if (isCompact) return;
 
     onClick();
     setIsDragging(true);
@@ -39,6 +42,7 @@ export default function AboutWindow({ title, onClose, isActive, onClick, onImage
   };
 
   useEffect(() => {
+    if (isCompact) return;
     const handleMouseMove = (e: MouseEvent) => {
       if (isDragging) {
         setPosition({
@@ -61,16 +65,23 @@ export default function AboutWindow({ title, onClose, isActive, onClick, onImage
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDragging, dragOffset]);
+  }, [isDragging, dragOffset, isCompact]);
 
   const windowStyle = isMaximized
     ? { top: 0, left: 0, width: '100%', height: 'calc(100% - 48px)' }
-    : { top: position.y, left: position.x, width: '1000px', height: '650px' };
+    : isCompact
+      ? {
+          top: '12px',
+          left: '12px',
+          right: '12px',
+          bottom: '60px',
+        }
+      : { top: position.y, left: position.x, width: '1000px', height: '650px' };
 
   return (
     <div
       ref={windowRef}
-      className={`absolute bg-white rounded-2xl shadow-2xl overflow-hidden transition-shadow ${
+      className={`${isCompact ? 'fixed' : 'absolute'} bg-white rounded-2xl shadow-2xl overflow-hidden transition-shadow ${
         isActive ? 'shadow-2xl' : 'opacity-95'
       }`}
       style={{ ...windowStyle, zIndex }}
@@ -83,7 +94,7 @@ export default function AboutWindow({ title, onClose, isActive, onClick, onImage
       />
 
       <div
-        className="px-6 py-4 cursor-move select-none"
+        className={`px-6 py-4 select-none ${isCompact ? '' : 'cursor-move'}`}
         onMouseDown={handleMouseDown}
         style={{ borderBottom: '1px solid #F3F4F6' }}
       >
@@ -91,13 +102,13 @@ export default function AboutWindow({ title, onClose, isActive, onClick, onImage
       </div>
 
       <div className="px-6 pb-6 h-full bg-white overflow-auto">
-        <div className="flex gap-16 mt-8 ml-8">
+        <div className="grid grid-cols-2 gap-x-16 gap-y-12 place-items-center mt-10 lg:flex lg:gap-16 lg:mt-8 lg:ml-8">
 
           <div
             className="flex flex-col items-center cursor-pointer group"
             onClick={(e) => { e.stopPropagation(); onImageClick?.('about-profile', '/assets/images/aboutProfilePicture.png', 'profile.jpg'); }}
           >
-            <div className="w-32 h-32 mb-2 overflow-hidden rounded-lg">
+            <div className="w-28 h-28 lg:w-32 lg:h-32 mb-2 overflow-hidden rounded-lg">
               <Image
                 src="/assets/images/aboutProfilePicture.png"
                 alt="profile.jpg"
@@ -157,7 +168,7 @@ I hope you have enjoyed learning a bit more about me and how I became an artist.
               onTextClick?.('about-bio', bioContent, 'bio.txt');
             }}
           >
-            <div className="w-32 h-32 mb-2 flex items-center justify-center">
+            <div className="w-28 h-28 lg:w-32 lg:h-32 mb-2 flex items-center justify-center">
               <Image
                 src="/assets/images/fileIcon.png"
                 alt="bio.txt"

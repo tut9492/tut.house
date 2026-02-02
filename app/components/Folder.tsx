@@ -16,7 +16,7 @@ export default function Folder({ name, onClick }: FolderProps) {
       onDoubleClick={onClick}
     >
       
-      <div className="relative w-20 h-20 mb-2">
+      <div className="relative w-16 h-16 lg:w-20 lg:h-20 mb-2">
         <Image
           src="/assets/images/folderTut.png"
           alt={`${name} folder`}
@@ -26,7 +26,7 @@ export default function Folder({ name, onClick }: FolderProps) {
         />
       </div>
 
-      <span className="text-white text-sm font-medium px-2 py-1 text-center max-w-[120px] break-words">
+      <span className="text-white text-xs lg:text-sm font-medium px-2 py-1 text-center max-w-[140px] break-words">
         {name}
       </span>
     </div>

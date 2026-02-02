@@ -35,7 +35,7 @@ export default function Taskbar({ openFolders, activeWindow, onFolderClick, onMe
     <div className="absolute bottom-0 left-0 right-0 h-12 bg-white z-50 flex items-center justify-between px-4">
       <button
         onClick={onMenuClick}
-        className="flex items-center gap-3 px-6 py-2 bg-white hover:bg-gray-50 text-gray-900 transition-all border border-[#E5E7EB]"
+        className="flex items-center gap-3 px-4 sm:px-6 py-2 bg-white hover:bg-gray-50 text-gray-900 transition-all border border-[#E5E7EB]"
         style={{ borderRadius: '10px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2)' }}
       >
         <div className="flex items-center justify-center">
@@ -49,7 +49,7 @@ export default function Taskbar({ openFolders, activeWindow, onFolderClick, onMe
         <span className="text-base font-normal">Menu</span>
       </button>
 
-      <div className="flex-1 flex items-center gap-2 px-4">
+      <div className="flex-1 hidden lg:flex items-center gap-2 px-4">
         {openFolders.map((folder) => (
           <button
             key={folder.id}

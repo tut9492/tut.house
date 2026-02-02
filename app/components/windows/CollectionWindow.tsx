@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import Image from 'next/image';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 interface ArtworkItem {
   id: string;
@@ -33,6 +34,7 @@ export default function CollectionWindow({
   openseaSlug,
   prefetchedArtworks
 }: CollectionWindowProps) {
+  const isCompact = useIsMobile(1024);
   const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -54,6 +56,7 @@ export default function CollectionWindow({
   }, [prefetchedArtworks]);
 
   useLayoutEffect(() => {
+    if (isCompact) return;
     const WINDOW_W = 1000;
     const WINDOW_H = 700;
     const margin = 50;
@@ -68,7 +71,7 @@ export default function CollectionWindow({
 
     setPosition(nextPos);
     setPrevPosition(nextPos);
-  }, []);
+  }, [isCompact]);
 
   useEffect(() => {
     const fetchArtworks = async () => {
@@ -107,6 +110,7 @@ export default function CollectionWindow({
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('.window-controls')) return;
+    if (isCompact) return;
 
     onClick();
     setIsDragging(true);
@@ -120,6 +124,7 @@ export default function CollectionWindow({
   };
 
   useEffect(() => {
+    if (isCompact) return;
     const handleMouseMove = (e: MouseEvent) => {
       if (isDragging && !isMaximized) {
         setPosition({
@@ -142,7 +147,7 @@ export default function CollectionWindow({
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDragging, dragOffset, isMaximized]);
+  }, [isDragging, dragOffset, isMaximized, isCompact]);
 
   const handleMaximize = () => {
     if (isMaximized) {
@@ -155,7 +160,14 @@ export default function CollectionWindow({
 
   const windowStyle = isMaximized
     ? { top: 0, left: 0, width: '100%', height: 'calc(100% - 48px)' }
-    : position
+    : isCompact
+      ? {
+          top: '12px',
+          left: '12px',
+          right: '12px',
+          bottom: '60px',
+        }
+      : position
       ? { top: position.y, left: position.x, width: '1000px', height: '700px' }
       : { top: 0, left: 0, width: '1000px', height: '700px', visibility: 'hidden' as const };
 
@@ -168,7 +180,7 @@ export default function CollectionWindow({
   return (
     <div
       ref={windowRef}
-      className={`absolute bg-white rounded-2xl shadow-2xl overflow-hidden transition-shadow ${
+      className={`${isCompact ? 'fixed' : 'absolute'} bg-white rounded-2xl shadow-2xl overflow-hidden transition-shadow ${
         isActive ? 'shadow-2xl' : 'opacity-95'
       }`}
       style={{ ...windowStyle, zIndex }}
@@ -251,28 +263,46 @@ export default function CollectionWindow({
                 </div>
               </div>
 
-              <div className="grid grid-cols-4 gap-4 text-center mb-4 py-3 border-t border-gray-100">
-                <div>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-4 lg:gap-8 text-center mb-4 py-3 border-t border-gray-100">
+                <div className="min-w-0">
                   <p className="text-gray-400 text-xs uppercase tracking-wide mb-1">Title</p>
-                  <p className="text-gray-700 text-sm font-medium truncate px-2" title={selectedArtwork.title}>
+                  <p
+                    className="text-gray-700 text-xs lg:text-sm font-medium px-2 leading-snug"
+                    title={selectedArtwork.title}
+                    style={{
+                      display: '-webkit-box',
+                      WebkitBoxOrient: 'vertical',
+                      WebkitLineClamp: 2,
+                      overflow: 'hidden',
+                    }}
+                  >
                     {selectedArtwork.title}
                   </p>
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="text-gray-400 text-xs uppercase tracking-wide mb-1">Collection</p>
-                  <p className="text-gray-700 text-sm font-medium truncate px-2" title={selectedArtwork.collection}>
+                  <p
+                    className="text-gray-700 text-xs lg:text-sm font-medium px-2 leading-snug"
+                    title={selectedArtwork.collection}
+                    style={{
+                      display: '-webkit-box',
+                      WebkitBoxOrient: 'vertical',
+                      WebkitLineClamp: 2,
+                      overflow: 'hidden',
+                    }}
+                  >
                     {selectedArtwork.collection || '-'}
                   </p>
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="text-gray-400 text-xs uppercase tracking-wide mb-1">Chain</p>
-                  <p className="text-gray-700 text-sm font-medium">
+                  <p className="text-gray-700 text-xs lg:text-sm font-medium px-2 break-words leading-snug">
                     {selectedArtwork.chain || '-'}
                   </p>
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="text-gray-400 text-xs uppercase tracking-wide mb-1">Technique</p>
-                  <p className="text-gray-700 text-sm font-medium">
+                  <p className="text-gray-700 text-xs lg:text-sm font-medium px-2 break-words leading-snug">
                     {selectedArtwork.technique || '-'}
                   </p>
                 </div>

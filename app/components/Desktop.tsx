@@ -173,7 +173,7 @@ export default function Desktop() {
   };
 
   return (
-    <div className="relative w-full h-screen overflow-hidden bg-black">
+    <div className="relative w-full h-[100svh] overflow-hidden bg-black">
       <Image
         src="/assets/images/tutWebsiteWallpaper.png"
         alt="Desktop Background"
@@ -182,26 +182,31 @@ export default function Desktop() {
         priority
       />
 
-      <div className="absolute top-8 left-1/2 -translate-x-1/2 z-10">
+      <div className="absolute top-6 lg:top-8 left-1/2 -translate-x-1/2 z-10">
         <Image
           src="/assets/images/tutLogo.png"
           alt="tut Logo"
           width={400}
           height={150}
+          className="w-[240px] lg:w-[400px] h-auto"
           priority
         />
       </div>
 
       <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
-        <div className="flex items-center justify-center gap-50">
-          {folders.filter(f => ['physical-art', 'digital-art', 'buy-art', 'collectors-hub', 'about'].includes(f.id)).map((folder) => (
-            <Folder
-              key={folder.id}
-              id={folder.id}
-              name={folder.name}
-              onClick={() => handleFolderClick(folder.id)}
-            />
-          ))}
+        <div className="w-[calc(100vw-2rem)] lg:w-auto">
+          <div className="grid grid-cols-2 gap-x-16 gap-y-12 place-items-center lg:flex lg:flex-nowrap lg:items-center lg:justify-center lg:gap-[200px]">
+            {folders
+              .filter(f => ['physical-art', 'digital-art', 'buy-art', 'collectors-hub', 'about'].includes(f.id))
+              .map((folder) => (
+                <Folder
+                  key={folder.id}
+                  id={folder.id}
+                  name={folder.name}
+                  onClick={() => handleFolderClick(folder.id)}
+                />
+              ))}
+          </div>
         </div>
       </div>
 

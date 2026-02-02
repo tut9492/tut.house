@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 interface TextViewerWindowProps {
   id: string;
@@ -13,6 +14,7 @@ interface TextViewerWindowProps {
 }
 
 export default function TextViewerWindow({ title, content, onClose, isActive, onClick, zIndex }: TextViewerWindowProps) {
+  const isCompact = useIsMobile(1024);
   const [position, setPosition] = useState(() => ({
     x: Math.floor(Math.random() * (window.innerWidth - 800)) + 50,
     y: Math.floor(Math.random() * (window.innerHeight - 600)) + 50,
@@ -23,6 +25,7 @@ export default function TextViewerWindow({ title, content, onClose, isActive, on
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('.window-controls')) return;
+    if (isCompact) return;
 
     onClick();
     setIsDragging(true);
@@ -36,6 +39,7 @@ export default function TextViewerWindow({ title, content, onClose, isActive, on
   };
 
   useEffect(() => {
+    if (isCompact) return;
     const handleMouseMove = (e: MouseEvent) => {
       if (isDragging) {
         setPosition({
@@ -58,15 +62,25 @@ export default function TextViewerWindow({ title, content, onClose, isActive, on
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDragging, dragOffset]);
+  }, [isDragging, dragOffset, isCompact]);
 
   return (
     <div
       ref={windowRef}
-      className={`absolute bg-white rounded-2xl shadow-2xl overflow-hidden transition-shadow ${
+      className={`${isCompact ? 'fixed' : 'absolute'} bg-white rounded-2xl shadow-2xl overflow-hidden transition-shadow ${
         isActive ? 'shadow-2xl' : 'opacity-95'
       }`}
-      style={{ top: position.y, left: position.x, width: '800px', height: '600px', zIndex }}
+      style={
+        isCompact
+          ? {
+              top: '12px',
+              left: '12px',
+              right: '12px',
+              bottom: '60px',
+              zIndex,
+            }
+          : { top: position.y, left: position.x, width: '800px', height: '600px', zIndex }
+      }
       onClick={onClick}
     >
       <button

@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 interface FolderWindowProps {
   id: string;
@@ -14,6 +15,7 @@ interface FolderWindowProps {
 }
 
 export default function FolderWindow({ title, onClose, isActive, onClick, onSubfolderClick, zIndex }: FolderWindowProps) {
+  const isCompact = useIsMobile(1024);
   const [position, setPosition] = useState(() => ({
     x: Math.floor(Math.random() * (window.innerWidth - 1000)) + 50,
     y: Math.floor(Math.random() * (window.innerHeight - 650)) + 50,
@@ -25,6 +27,7 @@ export default function FolderWindow({ title, onClose, isActive, onClick, onSubf
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('.window-controls')) return;
+    if (isCompact) return;
 
     onClick();
     setIsDragging(true);
@@ -38,6 +41,7 @@ export default function FolderWindow({ title, onClose, isActive, onClick, onSubf
   };
 
   useEffect(() => {
+    if (isCompact) return;
     const handleMouseMove = (e: MouseEvent) => {
       if (isDragging) {
         setPosition({
@@ -60,16 +64,23 @@ export default function FolderWindow({ title, onClose, isActive, onClick, onSubf
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDragging, dragOffset]);
+  }, [isDragging, dragOffset, isCompact]);
 
   const windowStyle = isMaximized
     ? { top: 0, left: 0, width: '100%', height: 'calc(100% - 48px)' }
-    : { top: position.y, left: position.x, width: '1000px', height: '650px' };
+    : isCompact
+      ? {
+          top: '12px',
+          left: '12px',
+          right: '12px',
+          bottom: '60px',
+        }
+      : { top: position.y, left: position.x, width: '1000px', height: '650px' };
 
   return (
     <div
       ref={windowRef}
-      className={`absolute bg-white rounded-2xl shadow-2xl overflow-hidden transition-shadow ${
+      className={`${isCompact ? 'fixed' : 'absolute'} bg-white rounded-2xl shadow-2xl overflow-hidden transition-shadow ${
         isActive ? 'shadow-2xl' : 'opacity-95'
       }`}
       style={{ ...windowStyle, zIndex }}
@@ -90,7 +101,7 @@ export default function FolderWindow({ title, onClose, isActive, onClick, onSubf
       </div>
       
       <div className="px-6 pb-6 h-full bg-white overflow-auto">
-        <div className="flex gap-40 mt-8 ml-8">
+        <div className="grid grid-cols-2 gap-x-16 gap-y-12 place-items-center mt-10 lg:flex lg:gap-40 lg:mt-8 lg:ml-8">
           <div
             className="flex flex-col items-center cursor-pointer group"
             onClick={(e) => { e.stopPropagation(); onSubfolderClick?.('collection-01'); }}
