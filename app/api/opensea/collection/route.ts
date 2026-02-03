@@ -20,6 +20,24 @@ function normalizeIpfsUrl(url: string): string {
   return url;
 }
 
+const RATE_LIMIT_RETRIES = 2;
+const RATE_LIMIT_DELAY_MS = 2000;
+
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit & { retries?: number } = {}
+): Promise<Response> {
+  const { retries = RATE_LIMIT_RETRIES, ...fetchOptions } = options;
+  let res = await fetch(url, fetchOptions);
+  let attempt = 0;
+  while (res.status === 429 && attempt < retries) {
+    await new Promise((r) => setTimeout(r, RATE_LIMIT_DELAY_MS * (attempt + 1)));
+    res = await fetch(url, fetchOptions);
+    attempt++;
+  }
+  return res;
+}
+
 async function fetchJsonWithTimeout(url: string, timeoutMs = 8000): Promise<unknown> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
@@ -38,6 +56,8 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const collectionSlug = searchParams.get('slug');
+    const limitParam = searchParams.get('limit');
+    const limit = limitParam ? Math.min(100, Math.max(1, parseInt(limitParam, 10) || 50)) : 50;
 
     if (!collectionSlug) {
       return NextResponse.json(
@@ -45,6 +65,8 @@ export async function GET(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    const cacheKey = `${collectionSlug}-${limit}`;
 
     const apiKey = process.env.OPENSEA_API_KEY;
     if (!apiKey) {
@@ -54,7 +76,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const cached = cache.get(collectionSlug);
+    const cached = cache.get(cacheKey);
     if (cached && Date.now() - cached.ts < CACHE_TTL_MS) {
       return NextResponse.json(cached.body, {
         headers: {
@@ -63,10 +85,8 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    console.log('Fetching collection:', collectionSlug);
-
     const collectionUrl = `https://api.opensea.io/api/v2/collections/${collectionSlug}`;
-    const collectionRes = await fetch(collectionUrl, {
+    const collectionRes = await fetchWithRetry(collectionUrl, {
       headers: {
         'Accept': 'application/json',
         'X-API-KEY': apiKey,
@@ -83,10 +103,9 @@ export async function GET(request: NextRequest) {
     }
 
     const collection = await collectionRes.json();
-    console.log('Collection fetched:', collection.name);
 
-    const nftsUrl = `https://api.opensea.io/api/v2/collection/${collectionSlug}/nfts?limit=50`;
-    const nftsRes = await fetch(nftsUrl, {
+    const nftsUrl = `https://api.opensea.io/api/v2/collection/${collectionSlug}/nfts?limit=${limit}`;
+    const nftsRes = await fetchWithRetry(nftsUrl, {
       headers: {
         'Accept': 'application/json',
         'X-API-KEY': apiKey,
@@ -103,7 +122,6 @@ export async function GET(request: NextRequest) {
     }
 
     const nftsData = await nftsRes.json();
-    console.log('NFTs fetched:', nftsData.nfts?.length || 0);
 
     const chain = collection.contracts?.[0]?.chain || 'ethereum';
 
@@ -112,25 +130,30 @@ export async function GET(request: NextRequest) {
       contract?: string;
       name?: string;
       opensea_url?: string;
+      image_url?: string;
+      display_image_url?: string;
+      original_image_url?: string;
     }) => {
       let imageUrl = '';
 
       if (nft.contract && nft.identifier) {
         try {
           const nftMetadataUrl = `https://api.opensea.io/api/v2/chain/${chain}/contract/${nft.contract}/nfts/${nft.identifier}`;
-          const metadataRes = await fetch(nftMetadataUrl, {
+          const metadataRes = await fetchWithRetry(nftMetadataUrl, {
             headers: {
               'Accept': 'application/json',
               'X-API-KEY': apiKey,
             },
+            retries: 1,
           });
 
           if (metadataRes.ok) {
             const metadata = await metadataRes.json();
-            imageUrl =
+            const raw =
               metadata?.nft?.original_image_url ||
               metadata?.nft?.image_original_url ||
               '';
+            imageUrl = raw ? normalizeIpfsUrl(raw) : '';
 
             if (!imageUrl) {
               const metadataUrlRaw: string | undefined = metadata?.nft?.metadata_url;
@@ -153,6 +176,13 @@ export async function GET(request: NextRequest) {
         }
       }
 
+      if (!imageUrl) {
+        imageUrl = nft.original_image_url ? normalizeIpfsUrl(nft.original_image_url) : '';
+        if (!imageUrl) {
+          imageUrl = (nft.display_image_url || nft.image_url || '').trim();
+        }
+      }
+
       let openseaUrl = '';
       if (nft.opensea_url) {
         openseaUrl = nft.opensea_url;
@@ -172,10 +202,9 @@ export async function GET(request: NextRequest) {
     });
 
     const artworks = await Promise.all(artworksPromises);
-    console.log('Artworks processed:', artworks.length);
 
-    const body = { artworks };
-    cache.set(collectionSlug, { ts: Date.now(), body });
+    const body = { artworks, collectionName: collection.name || null };
+    cache.set(cacheKey, { ts: Date.now(), body });
 
     return NextResponse.json(body, {
       headers: {

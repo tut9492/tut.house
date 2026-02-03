@@ -179,6 +179,25 @@ I hope you have enjoyed learning a bit more about me and how I became an artist.
             </div>
             <span className="text-gray-600 text-xs">bio.txt</span>
           </div>
+
+          <div
+            className="flex flex-col items-center cursor-pointer group"
+            onClick={(e) => {
+              e.stopPropagation();
+              window.open('https://x.com/Tuteth_', '_blank', 'noopener,noreferrer');
+            }}
+          >
+            <div className="w-28 h-28 lg:w-32 lg:h-32 mb-2 flex items-center justify-center">
+              <Image
+                src="/assets/images/x.png"
+                alt="x.link"
+                width={80}
+                height={80}
+                className="object-contain"
+              />
+            </div>
+            <span className="text-gray-600 text-xs">x.link</span>
+          </div>
         </div>
       </div>
     </div>

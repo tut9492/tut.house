@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useRef, useEffect, useLayoutEffect } from 'react';
-import Image from 'next/image';
 import { useIsMobile } from '../hooks/useIsMobile';
 
 interface ArtworkItem {
@@ -22,20 +21,25 @@ interface CollectionWindowProps {
   onClick: () => void;
   zIndex: number;
   openseaSlug?: string;
+  limit?: number;
   prefetchedArtworks?: ArtworkItem[];
+  onArtworksLoaded?: (slug: string, artworks: ArtworkItem[]) => void;
 }
 
 export default function CollectionWindow({ 
+  id,
   title, 
   onClose, 
   isActive, 
   onClick, 
   zIndex,
   openseaSlug,
-  prefetchedArtworks
+  limit,
+  prefetchedArtworks,
+  onArtworksLoaded
 }: CollectionWindowProps) {
   const isCompact = useIsMobile(1024);
-  const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
+  const [position, setPosition] = useState<{ x: number; y: number } | null>(() => ({ x: 200, y: 150 }));
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [isMaximized, setIsMaximized] = useState(false);
@@ -79,23 +83,29 @@ export default function CollectionWindow({
         setIsLoading(false);
         return;
       }
-
+      const skipFetch = prefetchedArtworks && prefetchedArtworks.length > 0
+        && openseaSlug !== 'abstractions'
+        && openseaSlug !== 'tut-loudio';
+      if (skipFetch) {
+        setIsLoading(false);
+        return;
+      }
       try {
-        const hasPrefetched = !!(prefetchedArtworks && prefetchedArtworks.length > 0);
-        setIsLoading(!hasPrefetched);
+        setIsLoading(true);
         setError(null);
         
-        const response = await fetch(`/api/opensea/collection?slug=${openseaSlug}`);
+        const url = `/api/opensea/collection?slug=${openseaSlug}${limit != null ? `&limit=${limit}` : ''}`;
+        const response = await fetch(url);
         
         if (!response.ok) {
           throw new Error('Failed to fetch collection');
         }
-        
+
         const data = await response.json();
-        
         if (data.artworks && data.artworks.length > 0) {
           setArtworks(data.artworks);
           setSelectedArtwork(data.artworks[0]);
+          if (openseaSlug) onArtworksLoaded?.(openseaSlug, data.artworks);
         }
       } catch (err) {
         console.error('Error fetching artworks:', err);
@@ -106,7 +116,10 @@ export default function CollectionWindow({
     };
 
     fetchArtworks();
-  }, [openseaSlug, prefetchedArtworks]);
+    // Intentionally omit prefetchedArtworks so we only fetch once per slug/limit.
+    // Re-running when prefetchedArtworks changed caused a second request that could fail (e.g. rate limit)
+    // and was making NFTs disappear for Abstractions and Tut Loudio.
+  }, [openseaSlug, limit]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('.window-controls')) return;
@@ -226,19 +239,16 @@ export default function CollectionWindow({
                     setSelectedArtwork(artwork);
                   }}
                 >
-                  <div className="relative aspect-square w-full">
-                    <Image
+                  <div className="relative aspect-square w-full bg-gray-50">
+                    <img
                       src={artwork.src}
                       alt={artwork.title}
-                      fill
-                      className="object-contain"
-                      sizes="176px"
-                      unoptimized
+                      className="w-full h-full object-contain"
                     />
                   </div>
                   <div className="p-2 bg-white">
-                    <p className="text-xs text-gray-600 truncate text-center">
-                      artwork_{String(index + 1).padStart(2, '0')}.jpg
+                    <p className="text-xs text-gray-600 truncate text-center" title={artwork.title}>
+                      {artwork.title || `artwork_${String(index + 1).padStart(2, '0')}.jpg`}
                     </p>
                   </div>
                 </div>
@@ -247,20 +257,17 @@ export default function CollectionWindow({
           )}
         </div>
 
-        <div className="flex-1 flex flex-col p-6 overflow-hidden">
+        <div className="flex-1 flex flex-col p-6 overflow-hidden min-h-0">
           {selectedArtwork ? (
             <>
-              <div className="flex-1 flex items-center justify-center mb-6 min-h-0">
-                <div className="relative h-full max-h-[420px] aspect-[2/3]">
-                  <Image
-                    src={selectedArtwork.src}
-                    alt={selectedArtwork.title}
-                    fill
-                    className="object-contain"
-                    sizes="(max-width: 768px) 100vw, 440px"
-                    unoptimized
-                  />
-                </div>
+              <div className="flex-1 min-h-0 overflow-auto mb-6 flex justify-center min-w-0">
+                <img
+                  key={selectedArtwork.src}
+                  src={selectedArtwork.src}
+                  alt={selectedArtwork.title}
+                  className="block max-w-full w-auto h-auto object-contain min-w-0"
+                  loading="eager"
+                />
               </div>
 
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-4 lg:gap-8 text-center mb-4 py-3 border-t border-gray-100">

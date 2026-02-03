@@ -4,6 +4,13 @@ import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { useIsMobile } from '../hooks/useIsMobile';
 
+interface SubfolderItem {
+  id: string;
+  name: string;
+  /** When set, clicking opens this URL in a new tab instead of calling onSubfolderClick */
+  href?: string;
+}
+
 interface FolderWindowProps {
   id: string;
   title: string;
@@ -12,9 +19,17 @@ interface FolderWindowProps {
   onClick: () => void;
   onSubfolderClick?: (subfolderId: string) => void;
   zIndex: number;
+  subfolders?: SubfolderItem[];
 }
 
-export default function FolderWindow({ title, onClose, isActive, onClick, onSubfolderClick, zIndex }: FolderWindowProps) {
+const DEFAULT_SUBFOLDERS: SubfolderItem[] = [
+  { id: 'collection-01', name: 'Collection_01' },
+  { id: 'collection-02', name: 'Collection_02' },
+  { id: 'collection-03', name: 'Collection_03' },
+];
+
+export default function FolderWindow({ title, onClose, isActive, onClick, onSubfolderClick, zIndex, subfolders }: FolderWindowProps) {
+  const items = subfolders?.length ? subfolders : DEFAULT_SUBFOLDERS;
   const isCompact = useIsMobile(1024);
   const [position, setPosition] = useState(() => ({
     x: Math.floor(Math.random() * (window.innerWidth - 1000)) + 50,
@@ -101,46 +116,35 @@ export default function FolderWindow({ title, onClose, isActive, onClick, onSubf
       </div>
       
       <div className="px-6 pb-6 h-full bg-white overflow-auto">
-        <div className="grid grid-cols-2 gap-x-16 gap-y-12 place-items-center mt-10 lg:flex lg:gap-40 lg:mt-8 lg:ml-8">
-          <div
-            className="flex flex-col items-center cursor-pointer group"
-            onClick={(e) => { e.stopPropagation(); onSubfolderClick?.('collection-01'); }}
-          >
-            <Image
-              src="/assets/images/folderTut.png"
-              alt="Collection_01"
-              width={64}
-              height={64}
-              className="mb-2"
-            />
-            <span className="text-gray-600 text-xs">Collection_01</span>
-          </div>
-          <div
-            className="flex flex-col items-center cursor-pointer group"
-            onClick={(e) => { e.stopPropagation(); onSubfolderClick?.('collection-02'); }}
-          >
-            <Image
-              src="/assets/images/folderTut.png"
-              alt="Collection_02"
-              width={64}
-              height={64}
-              className="mb-2"
-            />
-            <span className="text-gray-600 text-xs">Collection_02</span>
-          </div>
-          <div
-            className="flex flex-col items-center cursor-pointer group"
-            onClick={(e) => { e.stopPropagation(); onSubfolderClick?.('collection-03'); }}
-          >
-            <Image
-              src="/assets/images/folderTut.png"
-              alt="Collection_03"
-              width={64}
-              height={64}
-              className="mb-2"
-            />
-            <span className="text-gray-600 text-xs">Collection_03</span>
-          </div>
+        <div
+          className="grid grid-rows-2 place-items-center gap-10 mt-10 lg:mt-8"
+          style={{
+            gridTemplateColumns: `repeat(${Math.ceil(items.length / 2)}, 1fr)`,
+          }}
+        >
+          {items.map((sub) => (
+            <div
+              key={sub.id}
+              className="flex flex-col items-center cursor-pointer group"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (sub.href) {
+                  window.open(sub.href, '_blank', 'noopener,noreferrer');
+                } else {
+                  onSubfolderClick?.(sub.id);
+                }
+              }}
+            >
+              <Image
+                src="/assets/images/folderTut.png"
+                alt={sub.name}
+                width={64}
+                height={64}
+                className="mb-2"
+              />
+              <span className="text-gray-600 text-xs text-center">{sub.name}</span>
+            </div>
+          ))}
         </div>
       </div>
     </div>

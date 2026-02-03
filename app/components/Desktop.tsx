@@ -6,6 +6,7 @@ import Folder from './Folder';
 import FolderWindow from './windows/FolderWindow';
 import CollectionWindow from './windows/CollectionWindow';
 import CollectorsHubWindow from './windows/CollectorsHubWindow';
+import PhysicalArtWindow from './windows/PhysicalArtWindow';
 import ImageViewerWindow from './windows/ImageViewerWindow';
 import TextViewerWindow from './windows/TextViewerWindow';
 import AboutWindow from './windows/AboutWindow';
@@ -42,9 +43,10 @@ export default function Desktop() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [windowStack, setWindowStack] = useState<string[]>([]);
   const [prefetchedBySlug, setPrefetchedBySlug] = useState<Record<string, PrefetchedArtwork[]>>({});
+  const [collectionNamesBySlug, setCollectionNamesBySlug] = useState<Record<string, string>>({});
 
   const folders = [
-    { id: 'physical-art', name: 'Physical Art', contentType: 'folders' as const },
+    { id: 'physical-art', name: 'Physical Art', contentType: 'physical-art' as const },
     { id: 'digital-art', name: 'Digital Art', contentType: 'folders' as const },
     { id: 'buy-art', name: 'Buy Art', contentType: 'folders' as const },
     { id: 'collectors-hub', name: 'Collectors Hub', contentType: 'collectors-hub' as const },
@@ -52,34 +54,42 @@ export default function Desktop() {
     { id: 'collection-01', name: 'Collection_01', contentType: 'images' as const, openseaSlug: 'obsessive-cycles-of-fiber' },
     { id: 'collection-02', name: 'Collection_02', contentType: 'images' as const, openseaSlug: 'tut-1-1' },
     { id: 'collection-03', name: 'Collection_03', contentType: 'images' as const, openseaSlug: 'kingtut-genesis' },
+    { id: 'abstractions', name: 'Abstractions', contentType: 'images' as const, openseaSlug: 'abstractions', limit: 20 },
+    { id: 'tut-editions', name: 'TUT EDITIONS', contentType: 'images' as const, openseaSlug: 'tut-editions', limit: 2 },
+    { id: 'tut-loudio', name: 'Tut Loudio', contentType: 'images' as const, openseaSlug: 'tut-loudio', limit: 20 },
   ];
 
   useEffect(() => {
     let cancelled = false;
-    const slugs = ['obsessive-cycles-of-fiber', 'tut-1-1', 'kingtut-genesis'];
 
     const run = async () => {
-      await Promise.all(
-        slugs.map(async (slug) => {
-          try {
-            const res = await fetch(`/api/opensea/collection?slug=${slug}`);
-            if (!res.ok) return;
-            const data = await res.json();
-            const artworks = (data?.artworks ?? []) as PrefetchedArtwork[];
-            if (!artworks.length || cancelled) return;
+      try {
+        const res = await fetch('/api/opensea/prefetch');
+        if (!res.ok || cancelled) return;
+        const data = (await res.json()) as {
+          collections?: Record<string, { artworks?: PrefetchedArtwork[]; collectionName?: string | null }>;
+        };
+        const collections = data?.collections ?? {};
+        if (cancelled) return;
 
-            setPrefetchedBySlug(prev => (prev[slug] ? prev : { ...prev, [slug]: artworks }));
+        const nextBySlug: Record<string, PrefetchedArtwork[]> = {};
+        const nextNames: Record<string, string> = {};
+        for (const [slug, entry] of Object.entries(collections)) {
+          const artworks = (entry?.artworks ?? []) as PrefetchedArtwork[];
+          if (artworks.length) nextBySlug[slug] = artworks;
+          if (entry?.collectionName) nextNames[slug] = entry.collectionName;
+        }
+        setPrefetchedBySlug(prev => ({ ...prev, ...nextBySlug }));
+        setCollectionNamesBySlug(prev => ({ ...prev, ...nextNames }));
 
-            if (typeof window !== 'undefined') {
-              artworks.slice(0, 8).forEach((a) => {
-                const img = new window.Image();
-                img.decoding = 'async';
-                img.src = a.src;
-              });
-            }
-          } catch {}
-        })
-      );
+        if (typeof window !== 'undefined') {
+          Object.values(nextBySlug).flat().slice(0, 24).forEach((a) => {
+            const img = new window.Image();
+            img.decoding = 'async';
+            img.src = a.src;
+          });
+        }
+      } catch {}
     };
 
     const ric = (window as Window & { requestIdleCallback?: (cb: IdleRequestCallback) => number })
@@ -230,17 +240,25 @@ export default function Desktop() {
         }
 
         if (folder.contentType === 'images') {
+          const slugFolder = folder as typeof folder & { openseaSlug?: string; limit?: number };
+          const collectionTitle = slugFolder.openseaSlug
+            ? (collectionNamesBySlug[slugFolder.openseaSlug] || folder.name)
+            : folder.name;
           return (
             <CollectionWindow
               key={folder.id}
               id={folder.id}
-              title={folder.name}
+              title={collectionTitle}
               onClose={() => handleCloseWindow(folder.id)}
               isActive={activeWindow === folder.id}
               onClick={() => handleWindowClick(folder.id)}
               zIndex={getZIndex(folder.id)}
-              openseaSlug={folder.openseaSlug}
-              prefetchedArtworks={folder.openseaSlug ? prefetchedBySlug[folder.openseaSlug] : undefined}
+              openseaSlug={slugFolder.openseaSlug}
+              limit={slugFolder.limit}
+              prefetchedArtworks={slugFolder.openseaSlug ? prefetchedBySlug[slugFolder.openseaSlug] : undefined}
+              onArtworksLoaded={(slug, artworks) => {
+                setPrefetchedBySlug(prev => (prev[slug] ? prev : { ...prev, [slug]: artworks }));
+              }}
             />
           );
         }
@@ -259,6 +277,40 @@ export default function Desktop() {
           );
         }
 
+        if (folder.contentType === 'physical-art') {
+          return (
+            <PhysicalArtWindow
+              key={folder.id}
+              id={folder.id}
+              title={folder.name}
+              onClose={() => handleCloseWindow(folder.id)}
+              isActive={activeWindow === folder.id}
+              onClick={() => handleWindowClick(folder.id)}
+              zIndex={getZIndex(folder.id)}
+            />
+          );
+        }
+
+        const digitalArtSubfolders =
+          folder.id === 'digital-art'
+            ? folders
+                .filter((f): f is typeof f & { openseaSlug: string } => f.contentType === 'images' && !!f.openseaSlug)
+                .map((f) => ({ id: f.id, name: collectionNamesBySlug[f.openseaSlug] || f.name }))
+            : undefined;
+
+        const buyArtPlatformSubfolders =
+          folder.id === 'buy-art'
+            ? [
+                { id: 'foundation', name: 'Foundation', href: 'https://foundation.app/@tutart' },
+                { id: 'exchange-art', name: 'Exchange Art', href: 'https://exchange.art/tut/on-sale' },
+                { id: 'opensea', name: 'OpenSea', href: 'https://opensea.io/_tut' },
+                { id: 'gamma', name: 'Gamma', href: 'https://gamma.io/tut/created' },
+                { id: 'blastr', name: 'Blastr', href: 'https://blastr.xyz/tut-along-ride' },
+              ]
+            : undefined;
+
+        const subfolders = digitalArtSubfolders ?? buyArtPlatformSubfolders;
+
         return (
           <FolderWindow
             key={folder.id}
@@ -269,6 +321,7 @@ export default function Desktop() {
             onClick={() => handleWindowClick(folder.id)}
             onSubfolderClick={handleFolderClick}
             zIndex={getZIndex(folder.id)}
+            subfolders={subfolders}
           />
         );
       })}
@@ -303,7 +356,11 @@ export default function Desktop() {
         openFolders={[
           ...Array.from(openFolders).map(id => {
             const folder = folders.find(f => f.id === id);
-            return { id, name: folder?.name || '' };
+            const slugFolder = folder as typeof folder & { openseaSlug?: string } | undefined;
+            const name = folder && slugFolder?.openseaSlug
+              ? (collectionNamesBySlug[slugFolder.openseaSlug] || folder.name)
+              : (folder?.name || '');
+            return { id, name };
           }),
           ...openImages.map(img => ({ id: img.id, name: img.title })),
           ...openTexts.map(txt => ({ id: txt.id, name: txt.title }))
