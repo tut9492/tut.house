@@ -213,51 +213,9 @@ export default function CollectionWindow({
         <span className="text-gray-600 text-sm font-normal">{title}</span>
       </div>
 
-      <div className="flex h-[calc(100%-57px)]">
-        <div 
-          className="w-44 border-r border-gray-100 overflow-y-auto py-4 px-3"
-          style={{ backgroundColor: '#FAFAFA' }}
-        >
-          {isLoading ? (
-            <div className="flex items-center justify-center h-full">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400"></div>
-            </div>
-          ) : error ? (
-            <div className="text-red-500 text-xs text-center p-4">{error}</div>
-          ) : (
-            <div className="space-y-4">
-              {artworks.map((artwork, index) => (
-                <div
-                  key={artwork.id}
-                  className={`cursor-pointer transition-all duration-200 rounded-lg overflow-hidden bg-white ${
-                    selectedArtwork?.id === artwork.id 
-                      ? 'ring-2 ring-slate-800 shadow-md' 
-                      : 'hover:shadow-md hover:ring-1 hover:ring-gray-300'
-                  }`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedArtwork(artwork);
-                  }}
-                >
-                  <div className="relative aspect-square w-full bg-gray-50">
-                    <img
-                      src={artwork.src}
-                      alt={artwork.title}
-                      className="w-full h-full object-contain"
-                    />
-                  </div>
-                  <div className="p-2 bg-white">
-                    <p className="text-xs text-gray-600 truncate text-center" title={artwork.title}>
-                      {artwork.title || `artwork_${String(index + 1).padStart(2, '0')}.jpg`}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="flex-1 flex flex-col p-6 overflow-hidden min-h-0">
+      <div className="flex flex-col lg:flex-row h-[calc(100%-57px)]">
+        {/* Main content: top on mobile, right on desktop */}
+        <div className="order-1 lg:order-2 flex-1 flex flex-col p-6 overflow-hidden min-h-0">
           {selectedArtwork ? (
             <>
               <div className="flex-1 min-h-0 overflow-auto mb-6 flex justify-center min-w-0">
@@ -270,7 +228,7 @@ export default function CollectionWindow({
                 />
               </div>
 
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-4 lg:gap-8 text-center mb-4 py-3 border-t border-gray-100">
+              <div className="grid grid-cols-1 lg:grid-cols-4 gap-x-6 gap-y-4 lg:gap-8 text-center mb-4 py-3 border-t border-gray-100">
                 <div className="min-w-0">
                   <p className="text-gray-400 text-xs uppercase tracking-wide mb-1">Title</p>
                   <p
@@ -286,7 +244,7 @@ export default function CollectionWindow({
                     {selectedArtwork.title}
                   </p>
                 </div>
-                <div className="min-w-0">
+                <div className="min-w-0 hidden lg:block">
                   <p className="text-gray-400 text-xs uppercase tracking-wide mb-1">Collection</p>
                   <p
                     className="text-gray-700 text-xs lg:text-sm font-medium px-2 leading-snug"
@@ -301,13 +259,13 @@ export default function CollectionWindow({
                     {selectedArtwork.collection || '-'}
                   </p>
                 </div>
-                <div className="min-w-0">
+                <div className="min-w-0 hidden lg:block">
                   <p className="text-gray-400 text-xs uppercase tracking-wide mb-1">Chain</p>
                   <p className="text-gray-700 text-xs lg:text-sm font-medium px-2 break-words leading-snug">
                     {selectedArtwork.chain || '-'}
                   </p>
                 </div>
-                <div className="min-w-0">
+                <div className="min-w-0 hidden lg:block">
                   <p className="text-gray-400 text-xs uppercase tracking-wide mb-1">Technique</p>
                   <p className="text-gray-700 text-xs lg:text-sm font-medium px-2 break-words leading-snug">
                     {selectedArtwork.technique || '-'}
@@ -344,6 +302,50 @@ export default function CollectionWindow({
               ) : (
                 <div className="text-gray-400">Select an artwork to view</div>
               )}
+            </div>
+          )}
+        </div>
+
+        {/* Thumbnail strip: bottom on mobile, left on desktop */}
+        <div
+          className="order-2 lg:order-1 w-full lg:w-44 flex-shrink-0 border-t lg:border-t-0 lg:border-r border-gray-100 overflow-x-auto lg:overflow-x-visible lg:overflow-y-auto overflow-y-hidden py-3 px-4 lg:py-4 lg:px-3"
+          style={{ backgroundColor: '#FAFAFA' }}
+        >
+          {isLoading ? (
+            <div className="flex items-center justify-center h-full min-h-[80px] lg:min-h-0">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400" />
+            </div>
+          ) : error ? (
+            <div className="text-red-500 text-xs text-center p-4">{error}</div>
+          ) : (
+            <div className="flex flex-row lg:flex-col gap-3 lg:gap-4">
+              {artworks.map((artwork, index) => (
+                <div
+                  key={artwork.id}
+                  className={`flex-shrink-0 w-20 lg:w-full cursor-pointer transition-all duration-200 rounded-lg overflow-hidden bg-white ${
+                    selectedArtwork?.id === artwork.id
+                      ? 'ring-2 ring-slate-800 shadow-md'
+                      : 'hover:shadow-md hover:ring-1 hover:ring-gray-300'
+                  }`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedArtwork(artwork);
+                  }}
+                >
+                  <div className="relative aspect-square w-full bg-gray-50">
+                    <img
+                      src={artwork.src}
+                      alt={artwork.title}
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                  <div className="p-1.5 lg:p-2 bg-white">
+                    <p className="text-xs text-gray-600 truncate text-center" title={artwork.title}>
+                      {artwork.title || `artwork_${String(index + 1).padStart(2, '0')}.jpg`}
+                    </p>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
