@@ -154,7 +154,7 @@ My goal is to create art that sparks the imagination and evokes powerful emotion
 
 MY ART NOW
 
-Currently, I’m experimenting with a process that involves creating AI images 
+Currently, I’m experimenting with a process that involves creating images 
 from my photos and then layering digital art elements to produce a new, 
 cohesive artwork. This body of work centers around a central figure in a 
 brutalist landscape, prompting viewers to explore their own existence. 

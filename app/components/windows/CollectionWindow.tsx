@@ -42,7 +42,7 @@ export default function CollectionWindow({
   const [position, setPosition] = useState<{ x: number; y: number } | null>(() => ({ x: 200, y: 150 }));
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const [isMaximized, setIsMaximized] = useState(false);
+  const [isMaximized, setIsMaximized] = useState(true);
   const [prevPosition, setPrevPosition] = useState({ x: 200, y: 150 });
   const windowRef = useRef<HTMLDivElement>(null);
   

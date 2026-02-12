@@ -54,7 +54,7 @@ export default function Taskbar({ openFolders, activeWindow, onFolderClick, onMe
           <button
             key={folder.id}
             onClick={() => onFolderClick(folder.id)}
-            className={`px-4 py-2 text-sm transition-colors w-32 h-9 text-left ${
+            className={`px-4 py-2 text-sm transition-colors w-32 h-9 text-left truncate min-w-0 ${
               activeWindow === folder.id
                 ? 'bg-gray-200 text-gray-900'
                 : 'bg-transparent text-gray-600 hover:bg-gray-100'
@@ -64,6 +64,7 @@ export default function Taskbar({ openFolders, activeWindow, onFolderClick, onMe
                 ? { borderRadius: '10px' }
                 : { borderRadius: '10px', border: '1px solid #E5E7EB' }
             }
+            title={folder.name}
           >
             {folder.name}
           </button>

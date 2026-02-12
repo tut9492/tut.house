@@ -177,10 +177,8 @@ export async function GET(request: NextRequest) {
       }
 
       if (!imageUrl) {
-        imageUrl = nft.original_image_url ? normalizeIpfsUrl(nft.original_image_url) : '';
-        if (!imageUrl) {
-          imageUrl = (nft.display_image_url || nft.image_url || '').trim();
-        }
+        const fallbackRaw = nft.original_image_url || nft.display_image_url || '';
+        imageUrl = fallbackRaw ? normalizeIpfsUrl(fallbackRaw) : (nft.display_image_url || '').trim();
       }
 
       let openseaUrl = '';
