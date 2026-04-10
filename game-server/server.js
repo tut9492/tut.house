@@ -1,0 +1,418 @@
+/**
+ * Toast or Fine Booty — Game Server
+ *
+ * SMB3-style card flip game. Players flip Breadio NFT cards.
+ * Bad cards get burned on-chain. Good cards get transferred to the player.
+ * Real-time multiplayer via WebSocket.
+ */
+
+require('dotenv').config({ path: '/home/ubuntu/.openclaw/.env' });
+const express = require('express');
+const cors = require('cors');
+const http = require('http');
+const { WebSocketServer } = require('ws');
+const { ethers } = require('ethers');
+const Database = require('better-sqlite3');
+const path = require('path');
+const fs = require('fs');
+
+// ─── Config ─────────────────────────────────────────────────────────────────
+
+const PORT = process.env.GAME_PORT || 3001;
+const CONTRACT = '0x015061aa806b5abab9ee453e366e18a713e8ea80';
+const RPC = 'https://mainnet.megaeth.com/rpc';
+const SIGNER_KEY = process.env.BREADIO_PRIVATE_KEY;
+const FLIP_COOLDOWN = 3000; // 3 seconds between flips per player
+
+if (!SIGNER_KEY) {
+  console.error('BREADIO_PRIVATE_KEY not set');
+  process.exit(1);
+}
+
+// ─── Blockchain Setup ───────────────────────────────────────────────────────
+
+const provider = new ethers.JsonRpcProvider(RPC);
+const wallet = new ethers.Wallet(SIGNER_KEY, provider);
+const contract = new ethers.Contract(CONTRACT, [
+  'function burn(uint256 tokenId)',
+  'function transferFrom(address from, address to, uint256 tokenId)',
+  'function ownerOf(uint256 tokenId) view returns (address)',
+  'function balanceOf(address owner) view returns (uint256)',
+  'function tokenURI(uint256 tokenId) view returns (string)',
+], wallet);
+
+console.log(`Signer wallet: ${wallet.address}`);
+
+// ─── Database ───────────────────────────────────────────────────────────────
+
+const db = new Database(path.join(__dirname, 'game.db'));
+db.pragma('journal_mode = WAL');
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS cards (
+    token_id INTEGER PRIMARY KEY,
+    is_prize INTEGER DEFAULT 0,
+    status TEXT DEFAULT 'face_down',
+    flipped_by TEXT,
+    flipped_at TEXT,
+    tx_hash TEXT
+  );
+  CREATE TABLE IF NOT EXISTS players (
+    address TEXT PRIMARY KEY,
+    username TEXT,
+    wins INTEGER DEFAULT 0,
+    burns INTEGER DEFAULT 0,
+    joined_at TEXT DEFAULT (datetime('now'))
+  );
+  CREATE TABLE IF NOT EXISTS flips (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    token_id INTEGER,
+    player_address TEXT,
+    result TEXT,
+    tx_hash TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+`);
+
+// ─── Game State ─────────────────────────────────────────────────────────────
+
+let gameState = {
+  cards: {},       // tokenId -> { status, isPrize, flippedBy }
+  players: {},     // address -> { username, cursor, lastFlip }
+  totalCards: 0,
+  totalPrizes: 0,
+  prizesFound: 0,
+  cardsBurned: 0,
+};
+
+// Load prize list
+const PRIZE_IDS = new Set();
+const BURN_IDS = new Set();
+
+function loadGameData() {
+  const dataFile = path.join(__dirname, 'game-data.json');
+  if (!fs.existsSync(dataFile)) {
+    console.error('game-data.json not found! Run setup first.');
+    process.exit(1);
+  }
+  const data = JSON.parse(fs.readFileSync(dataFile, 'utf8'));
+
+  data.prizes.forEach(id => PRIZE_IDS.add(id));
+  const allCards = [...data.prizes, ...data.burns];
+
+  // Initialize DB if empty
+  const count = db.prepare('SELECT COUNT(*) as c FROM cards').get().c;
+  if (count === 0) {
+    console.log('Initializing game board...');
+    const insert = db.prepare('INSERT OR IGNORE INTO cards (token_id, is_prize) VALUES (?, ?)');
+    const tx = db.transaction(() => {
+      for (const id of allCards) {
+        insert.run(id, PRIZE_IDS.has(id) ? 1 : 0);
+      }
+    });
+    tx();
+    console.log(`Loaded ${allCards.length} cards (${data.prizes.length} prizes, ${data.burns.length} burns)`);
+  }
+
+  // Load into memory
+  const rows = db.prepare('SELECT * FROM cards').all();
+  for (const row of rows) {
+    gameState.cards[row.token_id] = {
+      status: row.status,
+      isPrize: row.is_prize === 1,
+      flippedBy: row.flipped_by,
+    };
+  }
+
+  gameState.totalCards = rows.length;
+  gameState.totalPrizes = rows.filter(r => r.is_prize).length;
+  gameState.prizesFound = rows.filter(r => r.is_prize && r.status !== 'face_down').length;
+  gameState.cardsBurned = rows.filter(r => !r.is_prize && r.status !== 'face_down').length;
+}
+
+// ─── Express Server ─────────────────────────────────────────────────────────
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+// Game state endpoint
+app.get('/api/game/state', (req, res) => {
+  const cards = {};
+  for (const [id, card] of Object.entries(gameState.cards)) {
+    cards[id] = {
+      status: card.status,
+      // Don't reveal if it's a prize until flipped!
+      isPrize: card.status !== 'face_down' ? card.isPrize : undefined,
+      flippedBy: card.flippedBy,
+    };
+  }
+  res.json({
+    cards,
+    totalCards: gameState.totalCards,
+    totalPrizes: gameState.totalPrizes,
+    prizesFound: gameState.prizesFound,
+    cardsBurned: gameState.cardsBurned,
+    cardsRemaining: gameState.totalCards - gameState.prizesFound - gameState.cardsBurned,
+    players: Object.entries(gameState.players).map(([addr, p]) => ({
+      address: addr.slice(0, 6) + '...' + addr.slice(-4),
+      username: p.username,
+    })),
+  });
+});
+
+// Verify ownership of Breadio NFT
+app.post('/api/game/verify', async (req, res) => {
+  const { address } = req.body;
+  if (!address) return res.status(400).json({ error: 'Address required' });
+
+  try {
+    const balance = await contract.balanceOf(address);
+    const owns = Number(balance) > 0;
+    res.json({ owns, balance: Number(balance) });
+  } catch (err) {
+    res.status(500).json({ error: 'Verification failed' });
+  }
+});
+
+// Leaderboard
+app.get('/api/game/leaderboard', (req, res) => {
+  const leaders = db.prepare('SELECT address, username, wins, burns FROM players ORDER BY wins DESC LIMIT 20').all();
+  res.json(leaders.map(l => ({
+    ...l,
+    address: l.address.slice(0, 6) + '...' + l.address.slice(-4),
+  })));
+});
+
+// ─── WebSocket Server ───────────────────────────────────────────────────────
+
+const server = http.createServer(app);
+const wss = new WebSocketServer({ server });
+
+function broadcast(data, exclude = null) {
+  const msg = JSON.stringify(data);
+  wss.clients.forEach(client => {
+    if (client !== exclude && client.readyState === 1) {
+      client.send(msg);
+    }
+  });
+}
+
+wss.on('connection', (ws) => {
+  let playerAddress = null;
+  let playerUsername = null;
+
+  ws.on('message', async (raw) => {
+    let msg;
+    try { msg = JSON.parse(raw); } catch { return; }
+
+    switch (msg.type) {
+      case 'join': {
+        playerAddress = msg.address?.toLowerCase();
+        playerUsername = msg.username || playerAddress?.slice(0, 8);
+
+        if (!playerAddress) return;
+
+        // Verify ownership
+        try {
+          const balance = await contract.balanceOf(playerAddress);
+          if (Number(balance) === 0) {
+            ws.send(JSON.stringify({ type: 'error', message: 'You need a Breadio NFT to play!' }));
+            return;
+          }
+        } catch {
+          ws.send(JSON.stringify({ type: 'error', message: 'Could not verify wallet' }));
+          return;
+        }
+
+        // Register player
+        gameState.players[playerAddress] = {
+          username: playerUsername,
+          cursor: { x: 0, y: 0 },
+          lastFlip: 0,
+          ws,
+        };
+
+        db.prepare('INSERT OR REPLACE INTO players (address, username) VALUES (?, ?)').run(playerAddress, playerUsername);
+
+        // Send full board state to new player
+        const boardState = {};
+        for (const [id, card] of Object.entries(gameState.cards)) {
+          boardState[id] = {
+            status: card.status,
+            isPrize: card.status !== 'face_down' ? card.isPrize : undefined,
+            flippedBy: card.flippedBy,
+          };
+        }
+
+        ws.send(JSON.stringify({
+          type: 'board',
+          cards: boardState,
+          stats: {
+            totalCards: gameState.totalCards,
+            totalPrizes: gameState.totalPrizes,
+            prizesFound: gameState.prizesFound,
+            cardsBurned: gameState.cardsBurned,
+          },
+        }));
+
+        // Announce to others
+        broadcast({
+          type: 'player_joined',
+          address: playerAddress.slice(0, 6) + '...' + playerAddress.slice(-4),
+          username: playerUsername,
+          playerCount: Object.keys(gameState.players).length,
+        }, ws);
+
+        console.log(`[JOIN] ${playerUsername} (${playerAddress.slice(0, 10)}...)`);
+        break;
+      }
+
+      case 'cursor': {
+        if (!playerAddress || !gameState.players[playerAddress]) return;
+        gameState.players[playerAddress].cursor = { x: msg.x, y: msg.y };
+        broadcast({
+          type: 'cursor',
+          address: playerAddress.slice(0, 6) + '...' + playerAddress.slice(-4),
+          username: playerUsername,
+          x: msg.x,
+          y: msg.y,
+        }, ws);
+        break;
+      }
+
+      case 'flip': {
+        if (!playerAddress || !gameState.players[playerAddress]) return;
+
+        const tokenId = msg.tokenId;
+        const card = gameState.cards[tokenId];
+
+        // Validate
+        if (!card) {
+          ws.send(JSON.stringify({ type: 'error', message: 'Card not found' }));
+          return;
+        }
+        if (card.status !== 'face_down') {
+          ws.send(JSON.stringify({ type: 'error', message: 'Already flipped' }));
+          return;
+        }
+
+        // Cooldown
+        const now = Date.now();
+        const lastFlip = gameState.players[playerAddress].lastFlip || 0;
+        if (now - lastFlip < FLIP_COOLDOWN) {
+          const wait = Math.ceil((FLIP_COOLDOWN - (now - lastFlip)) / 1000);
+          ws.send(JSON.stringify({ type: 'error', message: `Wait ${wait}s` }));
+          return;
+        }
+        gameState.players[playerAddress].lastFlip = now;
+
+        // Mark as flipping (prevent double-flips)
+        card.status = 'flipping';
+
+        // Broadcast flip start to everyone
+        broadcast({
+          type: 'flip_start',
+          tokenId,
+          player: playerUsername,
+          playerAddress: playerAddress.slice(0, 6) + '...' + playerAddress.slice(-4),
+        });
+
+        // Execute on-chain
+        let txHash = null;
+        let result = card.isPrize ? 'prize' : 'burn';
+
+        try {
+          if (card.isPrize) {
+            // Transfer to player
+            console.log(`[PRIZE] #${tokenId} → ${playerUsername}`);
+            const tx = await contract.transferFrom(wallet.address, playerAddress, tokenId, { gasLimit: 200000 });
+            txHash = tx.hash;
+            await tx.wait();
+            console.log(`[PRIZE] ✅ #${tokenId} transferred: ${txHash}`);
+
+            gameState.prizesFound++;
+            db.prepare('UPDATE players SET wins = wins + 1 WHERE address = ?').run(playerAddress);
+          } else {
+            // Burn
+            console.log(`[BURN] #${tokenId} 🔥`);
+            const tx = await contract.burn(tokenId, { gasLimit: 200000 });
+            txHash = tx.hash;
+            await tx.wait();
+            console.log(`[BURN] ✅ #${tokenId} burned: ${txHash}`);
+
+            gameState.cardsBurned++;
+            db.prepare('UPDATE players SET burns = burns + 1 WHERE address = ?').run(playerAddress);
+          }
+        } catch (err) {
+          console.error(`[ERROR] Flip #${tokenId} failed:`, err.message.slice(0, 100));
+          // Revert card status
+          card.status = 'face_down';
+          ws.send(JSON.stringify({ type: 'error', message: 'Transaction failed, try again' }));
+          broadcast({ type: 'flip_revert', tokenId });
+          return;
+        }
+
+        // Update state
+        card.status = result;
+        card.flippedBy = playerUsername;
+
+        // Save to DB
+        db.prepare('UPDATE cards SET status = ?, flipped_by = ?, flipped_at = datetime(?), tx_hash = ? WHERE token_id = ?')
+          .run(result, playerAddress, 'now', txHash, tokenId);
+        db.prepare('INSERT INTO flips (token_id, player_address, result, tx_hash) VALUES (?, ?, ?, ?)')
+          .run(tokenId, playerAddress, result, txHash);
+
+        // Broadcast result to everyone
+        broadcast({
+          type: 'flip_result',
+          tokenId,
+          result, // 'prize' or 'burn'
+          player: playerUsername,
+          playerAddress: playerAddress.slice(0, 6) + '...' + playerAddress.slice(-4),
+          txHash,
+          stats: {
+            prizesFound: gameState.prizesFound,
+            cardsBurned: gameState.cardsBurned,
+            cardsRemaining: gameState.totalCards - gameState.prizesFound - gameState.cardsBurned,
+            totalPrizes: gameState.totalPrizes,
+          },
+        });
+
+        // Check if game over
+        if (gameState.prizesFound >= gameState.totalPrizes) {
+          broadcast({ type: 'game_over', message: 'All treasures found! Game over!' });
+        }
+
+        break;
+      }
+    }
+  });
+
+  ws.on('close', () => {
+    if (playerAddress && gameState.players[playerAddress]) {
+      delete gameState.players[playerAddress];
+      broadcast({
+        type: 'player_left',
+        username: playerUsername,
+        playerCount: Object.keys(gameState.players).length,
+      });
+      console.log(`[LEAVE] ${playerUsername}`);
+    }
+  });
+});
+
+// ─── Start ──────────────────────────────────────────────────────────────────
+
+loadGameData();
+
+server.listen(PORT, () => {
+  console.log(`\n🍞 TOAST OR FINE BOOTY`);
+  console.log(`========================`);
+  console.log(`Server: http://0.0.0.0:${PORT}`);
+  console.log(`WebSocket: ws://0.0.0.0:${PORT}`);
+  console.log(`Cards: ${gameState.totalCards} (${gameState.totalPrizes} prizes)`);
+  console.log(`Signer: ${wallet.address}`);
+  console.log(`Contract: ${CONTRACT}`);
+  console.log(`========================\n`);
+});
