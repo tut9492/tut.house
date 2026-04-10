@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 
-const GAME_SERVER = process.env.NEXT_PUBLIC_GAME_SERVER || 'wss://game.tut.house';
-const GAME_API = process.env.NEXT_PUBLIC_GAME_API || 'https://game.tut.house';
+const GAME_SERVER = process.env.NEXT_PUBLIC_GAME_SERVER || 'wss://breadiogame.tut.house';
+const GAME_API = process.env.NEXT_PUBLIC_GAME_API || 'https://breadiogame.tut.house';
 
 type CardStatus = 'face_down' | 'flipping' | 'burn' | 'prize';
 
