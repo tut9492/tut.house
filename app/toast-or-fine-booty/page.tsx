@@ -59,6 +59,12 @@ function LandingDialogue({ phase, ownsNFT, username, setUsername, onConnect, onJ
   const [dialogueStep, setDialogueStep] = useState(0);
   const [typeDone, setTypeDone] = useState(false);
 
+  // Reset when phase changes
+  useEffect(() => {
+    setDialogueStep(0);
+    setTypeDone(false);
+  }, [phase]);
+
   const messages = phase === 'connect'
     ? [
         "I HAVE A LOT OF BREAD TO BURN, PLEASE HELP ME. IF YOU FIND SPECIAL BREAD YOU CAN KEEP IT. GAS ON ME. BREADIO",
