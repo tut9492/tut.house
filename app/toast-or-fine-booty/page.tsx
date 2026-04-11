@@ -238,7 +238,7 @@ export default function ToastOrFineBooty() {
   const [flipping, setFlipping] = useState<number | null>(null);
   const [lastResult, setLastResult] = useState<{ tokenId: number; result: string; player: string } | null>(null);
   const [error, setError] = useState('');
-  const [gamePhase, setGamePhase] = useState<'connect' | 'username' | 'playing' | 'gameover'>('connect');
+  const [gamePhase, setGamePhase] = useState<'connect' | 'verified' | 'rejected' | 'username' | 'playing' | 'gameover'>('connect');
   const wsRef = useRef<WebSocket | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
 
@@ -534,7 +534,7 @@ export default function ToastOrFineBooty() {
       )}
 
       {/* Landing / Connect / Username — Breadio dialogue */}
-      {(gamePhase === 'connect' || gamePhase === 'username') && (
+      {(gamePhase === 'connect' || gamePhase === 'verified' || gamePhase === 'rejected' || gamePhase === 'username') && (
         <LandingDialogue
           phase={gamePhase}
           ownsNFT={ownsNFT}
