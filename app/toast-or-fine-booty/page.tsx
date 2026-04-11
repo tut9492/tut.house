@@ -5,6 +5,136 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 const GAME_SERVER = process.env.NEXT_PUBLIC_GAME_SERVER || 'wss://breadiogame.tut.house';
 const GAME_API = process.env.NEXT_PUBLIC_GAME_API || 'https://breadiogame.tut.house';
 
+// ─── Typewriter text component ──────────────────────────────────────────────
+function Typewriter({ text, speed = 40, onDone }: { text: string; speed?: number; onDone?: () => void }) {
+  const [displayed, setDisplayed] = useState('');
+  const i = useRef(0);
+  useEffect(() => {
+    setDisplayed('');
+    i.current = 0;
+    const interval = setInterval(() => {
+      if (i.current < text.length) {
+        setDisplayed(text.slice(0, i.current + 1));
+        i.current++;
+      } else {
+        clearInterval(interval);
+        onDone?.();
+      }
+    }, speed);
+    return () => clearInterval(interval);
+  }, [text, speed]);
+  return <>{displayed}<span style={{ opacity: 0.5 }}>_</span></>;
+}
+
+// ─── Landing Dialogue (SMB3 style) ─────────────────────────────────────────
+function LandingDialogue({ phase, ownsNFT, username, setUsername, onConnect, onJoin, error }: {
+  phase: string;
+  ownsNFT: boolean | null;
+  username: string;
+  setUsername: (s: string) => void;
+  onConnect: () => void;
+  onJoin: () => void;
+  error: string;
+}) {
+  const [dialogueStep, setDialogueStep] = useState(0);
+  const [typeDone, setTypeDone] = useState(false);
+
+  const messages = phase === 'connect'
+    ? [
+        "I HAVE A LOT OF BREAD TO BURN, PLEASE HELP ME. IF YOU FIND SPECIAL BREAD YOU CAN KEEP IT. GAS ON ME. BREADIO",
+        "YOU MUST HAVE BREAD TO PARTICIPATE, LETS CHECK YOUR WALLET.",
+      ]
+    : [
+        "GIVE ME YOUR NAME.",
+      ];
+
+  const currentMsg = messages[dialogueStep] || messages[messages.length - 1];
+
+  return (
+    <div style={{
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      height: '80vh', padding: '20px',
+    }}>
+      {/* Landing image */}
+      <div style={{
+        position: 'relative', width: '100%', maxWidth: '700px',
+      }}>
+        <img src="/breadio-landing.png" alt="Breadio" style={{
+          width: '100%', imageRendering: 'pixelated', borderRadius: '8px',
+        }} />
+
+        {/* Dialogue text overlay on the pink box area */}
+        <div style={{
+          position: 'absolute', top: '3%', left: '12%', right: '5%', height: '22%',
+          display: 'flex', alignItems: 'center', padding: '8px 12px',
+          fontFamily: "'Press Start 2P'", fontSize: '9px', color: '#000',
+          lineHeight: '1.8', overflow: 'hidden',
+        }}>
+          <Typewriter
+            key={`${phase}-${dialogueStep}`}
+            text={currentMsg}
+            speed={35}
+            onDone={() => setTypeDone(true)}
+          />
+        </div>
+      </div>
+
+      {/* Action area below image */}
+      <div style={{ marginTop: '20px', textAlign: 'center' }}>
+        {phase === 'connect' && dialogueStep === 0 && typeDone && (
+          <button onClick={() => { setDialogueStep(1); setTypeDone(false); }} style={{
+            padding: '10px 20px', background: '#FFD700', color: '#000', border: 'none',
+            fontFamily: "'Press Start 2P'", fontSize: '10px', cursor: 'pointer',
+            boxShadow: '4px 4px 0 #8B4513', animation: 'fadeIn 0.3s',
+          }}>
+            CONTINUE
+          </button>
+        )}
+
+        {phase === 'connect' && dialogueStep === 1 && typeDone && (
+          <button onClick={onConnect} style={{
+            padding: '12px 24px', background: '#FFD700', color: '#000', border: 'none',
+            fontFamily: "'Press Start 2P'", fontSize: '10px', cursor: 'pointer',
+            boxShadow: '4px 4px 0 #8B4513', animation: 'fadeIn 0.3s',
+          }}>
+            CONNECT WALLET
+          </button>
+        )}
+
+        {phase === 'username' && typeDone && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', animation: 'fadeIn 0.3s' }}>
+            <input
+              value={username}
+              onChange={e => setUsername(e.target.value.slice(0, 12))}
+              onKeyDown={e => e.key === 'Enter' && onJoin()}
+              placeholder="PLAYER 1"
+              maxLength={12}
+              style={{
+                padding: '10px', background: '#111', border: '2px solid #FFD700', color: '#fff',
+                fontFamily: "'Press Start 2P'", fontSize: '10px', textAlign: 'center', width: '200px',
+              }}
+              autoFocus
+            />
+            <button onClick={onJoin} style={{
+              padding: '10px 20px', background: '#FFD700', color: '#000', border: 'none',
+              fontFamily: "'Press Start 2P'", fontSize: '10px', cursor: 'pointer',
+              boxShadow: '4px 4px 0 #8B4513',
+            }}>
+              START
+            </button>
+          </div>
+        )}
+
+        {error && (
+          <div style={{ marginTop: '12px', fontSize: '8px', color: '#ff4444', fontFamily: "'Press Start 2P'" }}>
+            {error}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 type CardStatus = 'face_down' | 'flipping' | 'burn' | 'prize';
 
 interface Card {
@@ -335,55 +465,17 @@ export default function ToastOrFineBooty() {
         </div>
       )}
 
-      {/* Connect Screen */}
-      {gamePhase === 'connect' && (
-        <div style={{
-          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-          height: '70vh', gap: '20px',
-        }}>
-          <div style={{ fontSize: '14px', color: '#FFD700', textAlign: 'center', lineHeight: '2' }}>
-            FLIP CARDS.<br />FIND BOOTY.<br />BURN THE REST.
-          </div>
-          <div style={{ fontSize: '8px', color: '#888', textAlign: 'center' }}>
-            Must own a Breadio NFT to play.<br />All burns and wins are on-chain. Gas sponsored.
-          </div>
-          <button onClick={connectWallet} style={{
-            padding: '12px 24px', background: '#FFD700', color: '#000', border: 'none',
-            fontFamily: "'Press Start 2P'", fontSize: '10px', cursor: 'pointer',
-            boxShadow: '4px 4px 0 #8B4513',
-          }}>
-            CONNECT WALLET
-          </button>
-        </div>
-      )}
-
-      {/* Username Screen */}
-      {gamePhase === 'username' && (
-        <div style={{
-          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-          height: '70vh', gap: '20px',
-        }}>
-          <div style={{ fontSize: '10px', color: '#FFD700' }}>ENTER YOUR NAME</div>
-          <input
-            value={username}
-            onChange={e => setUsername(e.target.value.slice(0, 12))}
-            onKeyDown={e => e.key === 'Enter' && joinGame()}
-            placeholder="PLAYER 1"
-            maxLength={12}
-            style={{
-              padding: '10px', background: '#111', border: '2px solid #FFD700', color: '#fff',
-              fontFamily: "'Press Start 2P'", fontSize: '10px', textAlign: 'center', width: '200px',
-            }}
-            autoFocus
-          />
-          <button onClick={joinGame} style={{
-            padding: '10px 20px', background: '#FFD700', color: '#000', border: 'none',
-            fontFamily: "'Press Start 2P'", fontSize: '10px', cursor: 'pointer',
-            boxShadow: '4px 4px 0 #8B4513',
-          }}>
-            START
-          </button>
-        </div>
+      {/* Landing / Connect / Username — Breadio dialogue */}
+      {(gamePhase === 'connect' || gamePhase === 'username') && (
+        <LandingDialogue
+          phase={gamePhase}
+          ownsNFT={ownsNFT}
+          username={username}
+          setUsername={setUsername}
+          onConnect={connectWallet}
+          onJoin={joinGame}
+          error={error}
+        />
       )}
 
       {/* Game Board */}
