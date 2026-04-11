@@ -5,16 +5,36 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 const GAME_SERVER = process.env.NEXT_PUBLIC_GAME_SERVER || 'wss://breadiogame.tut.house';
 const GAME_API = process.env.NEXT_PUBLIC_GAME_API || 'https://breadiogame.tut.house';
 
-// ─── Typewriter text component ──────────────────────────────────────────────
+// ─── Typewriter text component with beep sound ─────────────────────────────
 function Typewriter({ text, speed = 40, onDone }: { text: string; speed?: number; onDone?: () => void }) {
   const [displayed, setDisplayed] = useState('');
   const i = useRef(0);
+  const ctxRef = useRef<AudioContext | null>(null);
+
+  const beep = useCallback(() => {
+    try {
+      if (!ctxRef.current) ctxRef.current = new AudioContext();
+      const ctx = ctxRef.current;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'square';
+      // Alternate between two pitches for "beep bop" feel
+      osc.frequency.value = Math.random() > 0.5 ? 440 : 520;
+      gain.gain.value = 0.04;
+      osc.start();
+      osc.stop(ctx.currentTime + 0.03);
+    } catch {}
+  }, []);
+
   useEffect(() => {
     setDisplayed('');
     i.current = 0;
     const interval = setInterval(() => {
       if (i.current < text.length) {
         setDisplayed(text.slice(0, i.current + 1));
+        if (text[i.current] !== ' ') beep();
         i.current++;
       } else {
         clearInterval(interval);
@@ -63,12 +83,12 @@ function LandingDialogue({ phase, ownsNFT, username, setUsername, onConnect, onJ
           width: '100%', imageRendering: 'pixelated', borderRadius: '8px',
         }} />
 
-        {/* Dialogue text overlay on the pink box area */}
+        {/* Dialogue text overlay — fits inside the pink box */}
         <div style={{
-          position: 'absolute', top: '3%', left: '12%', right: '5%', height: '22%',
-          display: 'flex', alignItems: 'center', padding: '8px 12px',
-          fontFamily: "'Press Start 2P'", fontSize: '9px', color: '#000',
-          lineHeight: '1.8', overflow: 'hidden',
+          position: 'absolute', top: '4%', left: '22%', right: '4%', height: '20%',
+          display: 'flex', alignItems: 'flex-start', padding: '10px 14px',
+          fontFamily: "'Press Start 2P'", fontSize: '8px', color: '#000',
+          lineHeight: '2.2', overflow: 'hidden', wordBreak: 'break-word',
         }}>
           <Typewriter
             key={`${phase}-${dialogueStep}`}
