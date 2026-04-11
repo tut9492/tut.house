@@ -85,7 +85,7 @@ function LandingDialogue({ phase, ownsNFT, username, setUsername, onConnect, onJ
 
         {/* Dialogue text overlay — fits inside the pink box */}
         <div style={{
-          position: 'absolute', top: '4%', left: '22%', right: '4%', height: '20%',
+          position: 'absolute', top: '12%', left: '22%', right: '4%', height: '16%',
           display: 'flex', alignItems: 'flex-start', padding: '10px 14px',
           fontFamily: "'Press Start 2P'", fontSize: '8px', color: '#000',
           lineHeight: '2.2', overflow: 'hidden', wordBreak: 'break-word',
