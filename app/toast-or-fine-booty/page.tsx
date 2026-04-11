@@ -64,6 +64,14 @@ function LandingDialogue({ phase, ownsNFT, username, setUsername, onConnect, onJ
         "I HAVE A LOT OF BREAD TO BURN, PLEASE HELP ME. IF YOU FIND SPECIAL BREAD YOU CAN KEEP IT. GAS ON ME. BREADIO",
         "YOU MUST HAVE BREAD TO PARTICIPATE, LETS CHECK YOUR WALLET.",
       ]
+    : phase === 'verified'
+    ? [
+        "VERY NICE BOOTY... BREAD. YOU CAN HELP ME BURN BREAD. WHATS YOUR NAME?",
+      ]
+    : phase === 'rejected'
+    ? [
+        "WTF, YOU HAVE NO BREAD. GTFO. DON'T TALK TO ME UNTIL YOU HAVE BREAD.",
+      ]
     : [
         "GIVE ME YOUR NAME.",
       ];
@@ -118,6 +126,40 @@ function LandingDialogue({ phase, ownsNFT, username, setUsername, onConnect, onJ
             boxShadow: '4px 4px 0 #8B4513', animation: 'fadeIn 0.3s',
           }}>
             CONNECT WALLET
+          </button>
+        )}
+
+        {phase === 'verified' && typeDone && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', animation: 'fadeIn 0.3s' }}>
+            <input
+              value={username}
+              onChange={e => setUsername(e.target.value.slice(0, 12))}
+              onKeyDown={e => e.key === 'Enter' && onJoin()}
+              placeholder="PLAYER 1"
+              maxLength={12}
+              style={{
+                padding: '10px', background: '#111', border: '2px solid #FFD700', color: '#fff',
+                fontFamily: "'Press Start 2P'", fontSize: '10px', textAlign: 'center', width: '200px',
+              }}
+              autoFocus
+            />
+            <button onClick={onJoin} style={{
+              padding: '10px 20px', background: '#FFD700', color: '#000', border: 'none',
+              fontFamily: "'Press Start 2P'", fontSize: '10px', cursor: 'pointer',
+              boxShadow: '4px 4px 0 #8B4513',
+            }}>
+              START
+            </button>
+          </div>
+        )}
+
+        {phase === 'rejected' && typeDone && (
+          <button onClick={() => window.location.reload()} style={{
+            padding: '10px 20px', background: '#ff4444', color: '#fff', border: 'none',
+            fontFamily: "'Press Start 2P'", fontSize: '10px', cursor: 'pointer',
+            boxShadow: '4px 4px 0 #8B0000', animation: 'fadeIn 0.3s',
+          }}>
+            GET BREAD
           </button>
         )}
 
@@ -268,9 +310,9 @@ export default function ToastOrFineBooty() {
       const data = await res.json();
       setOwnsNFT(data.owns);
       if (data.owns) {
-        setGamePhase('username');
+        setGamePhase('verified');
       } else {
-        setError('You need a Breadio NFT to play!');
+        setGamePhase('rejected');
       }
     } catch (err) {
       setError('Failed to connect wallet');
