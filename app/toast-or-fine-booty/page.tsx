@@ -255,8 +255,22 @@ export default function ToastOrFineBooty() {
       {/* Google Font */}
       <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
 
-      {/* Background Music */}
+      {/* Background Music — starts on first click anywhere */}
       <audio id="bgm" src="/swan-lake.mp3" loop preload="auto" />
+      <div onClick={() => {
+        const audio = document.getElementById('bgm') as HTMLAudioElement;
+        if (audio && audio.paused) { audio.volume = 0.3; audio.play(); }
+      }} style={{ position:'fixed', inset:0, zIndex:199, pointerEvents:'auto' }}
+        ref={(el) => {
+          if (!el) return;
+          const handler = () => {
+            const audio = document.getElementById('bgm') as HTMLAudioElement;
+            if (audio && audio.paused) { audio.volume = 0.3; audio.play(); }
+            document.removeEventListener('click', handler);
+          };
+          document.addEventListener('click', handler);
+        }}
+      />
       <button
         onClick={() => {
           const audio = document.getElementById('bgm') as HTMLAudioElement;
