@@ -255,6 +255,21 @@ export default function ToastOrFineBooty() {
       {/* Google Font */}
       <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
 
+      {/* Background Music */}
+      <audio id="bgm" src="/swan-lake.mp3" loop preload="auto" />
+      <button
+        onClick={() => {
+          const audio = document.getElementById('bgm') as HTMLAudioElement;
+          if (audio.paused) { audio.volume = 0.3; audio.play(); }
+          else audio.pause();
+        }}
+        style={{
+          position: 'fixed', bottom: '12px', right: '12px', zIndex: 200,
+          padding: '6px 10px', background: '#1a1a1a', border: '1px solid #FFD700',
+          color: '#FFD700', fontFamily: "'Press Start 2P'", fontSize: '8px', cursor: 'pointer',
+        }}
+      >🎵 MUSIC</button>
+
       {/* Header */}
       <div style={{
         background: 'repeating-linear-gradient(45deg, #8B4513, #8B4513 10px, #D2691E 10px, #D2691E 20px)',
