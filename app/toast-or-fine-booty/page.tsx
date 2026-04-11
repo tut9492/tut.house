@@ -236,6 +236,7 @@ export default function ToastOrFineBooty() {
   const [stats, setStats] = useState<GameStats | null>(null);
   const [cursors, setCursors] = useState<Record<string, PlayerCursor>>({});
   const [flipping, setFlipping] = useState<number | null>(null);
+  const [revealedImages, setRevealedImages] = useState<Record<number, string>>({});
   const [lastResult, setLastResult] = useState<{ tokenId: number; result: string; player: string } | null>(null);
   const [error, setError] = useState('');
   const [gamePhase, setGamePhase] = useState<'connect' | 'verified' | 'rejected' | 'username' | 'playing' | 'gameover'>('connect');
@@ -363,6 +364,13 @@ export default function ToastOrFineBooty() {
         case 'flip_start':
           setFlipping(msg.tokenId);
           playSound('flip');
+          // Fetch NFT image for the reveal
+          fetch(`${GAME_API}/api/game/nft/${msg.tokenId}`)
+            .then(r => r.json())
+            .then(data => {
+              if (data.image) setRevealedImages(prev => ({ ...prev, [msg.tokenId]: data.image }));
+            })
+            .catch(() => {});
           break;
 
         case 'flip_result':
@@ -572,24 +580,51 @@ export default function ToastOrFineBooty() {
                 const isBurned = card.status === 'burn';
                 const isPrize = card.status === 'prize';
 
+                const nftImage = revealedImages[tokenId];
+
                 if (isBurned) return (
                   <div key={tokenId} style={{
                     width: '100%', aspectRatio: '1',
-                    opacity: 0.1, background: '#1a0000',
-                    borderRadius: '2px',
-                  }} />
+                    borderRadius: '2px', position: 'relative',
+                    overflow: 'hidden',
+                    animation: 'burnAway 1.5s forwards',
+                  }}>
+                    {nftImage ? (
+                      <img src={nftImage} alt={`#${tokenId}`} style={{
+                        width: '100%', height: '100%', objectFit: 'cover',
+                        filter: 'brightness(0.3) saturate(0.2)',
+                      }} />
+                    ) : (
+                      <div style={{ width: '100%', height: '100%', background: '#1a0000' }} />
+                    )}
+                    <div style={{
+                      position: 'absolute', bottom: 0, left: 0, right: 0,
+                      fontSize: '6px', textAlign: 'center', padding: '2px',
+                      background: 'rgba(0,0,0,0.7)', color: '#ff4444',
+                    }}>🔥 #{tokenId}</div>
+                  </div>
                 );
 
                 if (isPrize) return (
                   <div key={tokenId} style={{
                     width: '100%', aspectRatio: '1',
-                    background: 'linear-gradient(135deg, #FFD700, #FFA500)',
-                    borderRadius: '2px', display: 'flex', alignItems: 'center',
-                    justifyContent: 'center', fontSize: '6px', color: '#000',
-                    textAlign: 'center', padding: '2px',
-                    boxShadow: '0 0 8px rgba(255,215,0,0.5)',
+                    borderRadius: '2px', position: 'relative',
+                    overflow: 'hidden',
+                    boxShadow: '0 0 12px rgba(255,215,0,0.6)',
+                    border: '2px solid #FFD700',
                   }}>
-                    🏴‍☠️<br />{card.flippedBy}
+                    {nftImage ? (
+                      <img src={nftImage} alt={`#${tokenId}`} style={{
+                        width: '100%', height: '100%', objectFit: 'cover',
+                      }} />
+                    ) : (
+                      <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, #FFD700, #FFA500)' }} />
+                    )}
+                    <div style={{
+                      position: 'absolute', bottom: 0, left: 0, right: 0,
+                      fontSize: '5px', textAlign: 'center', padding: '2px',
+                      background: 'rgba(0,0,0,0.7)', color: '#FFD700',
+                    }}>🏴‍☠️ {card.flippedBy}</div>
                   </div>
                 );
 
@@ -600,18 +635,48 @@ export default function ToastOrFineBooty() {
                     onMouseEnter={() => playSound('hover')}
                     style={{
                       width: '100%', aspectRatio: '1',
-                      background: isFlipping ? '#333' : '#1a1a1a',
-                      border: `2px solid ${isFlipping ? '#FFD700' : '#333'}`,
                       borderRadius: '2px',
                       cursor: isFaceDown ? 'pointer' : 'default',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: '10px',
-                      transition: 'all 0.15s',
-                      transform: isFlipping ? 'rotateY(90deg)' : 'none',
-                      boxShadow: isFlipping ? '0 0 12px #FFD700' : 'none',
+                      perspective: '400px',
                     }}
                   >
-                    🍞
+                    <div style={{
+                      width: '100%', height: '100%',
+                      transition: 'transform 0.6s',
+                      transformStyle: 'preserve-3d',
+                      transform: isFlipping ? 'rotateY(180deg)' : 'none',
+                    }}>
+                      {/* Front — face down */}
+                      <div style={{
+                        position: 'absolute', width: '100%', height: '100%',
+                        backfaceVisibility: 'hidden',
+                        background: '#1a1a1a', border: '2px solid #333',
+                        borderRadius: '2px',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '10px',
+                      }}>
+                        🍞
+                      </div>
+                      {/* Back — NFT image */}
+                      <div style={{
+                        position: 'absolute', width: '100%', height: '100%',
+                        backfaceVisibility: 'hidden',
+                        transform: 'rotateY(180deg)',
+                        background: '#222',
+                        borderRadius: '2px',
+                        border: '2px solid #FFD700',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        overflow: 'hidden',
+                      }}>
+                        {nftImage ? (
+                          <img src={nftImage} alt={`#${tokenId}`} style={{
+                            width: '100%', height: '100%', objectFit: 'cover',
+                          }} />
+                        ) : (
+                          <span style={{ fontSize: '8px', color: '#FFD700' }}>#{tokenId}</span>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 );
               })}
@@ -651,6 +716,11 @@ export default function ToastOrFineBooty() {
 
       <style>{`
         @keyframes fadeIn { from { opacity: 0; transform: translateX(-50%) translateY(-10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+        @keyframes burnAway {
+          0% { opacity: 1; filter: brightness(1); }
+          30% { opacity: 1; filter: brightness(1.5) saturate(2); }
+          100% { opacity: 0.15; filter: brightness(0.2) saturate(0); }
+        }
         div:hover { transition: all 0.1s; }
       `}</style>
     </div>
