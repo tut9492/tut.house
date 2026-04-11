@@ -286,7 +286,17 @@ export default function ToastOrFineBooty() {
           background: '#000',
           padding: '16px',
           textAlign: 'center',
+          position: 'relative',
         }}>
+          {walletAddress && (
+            <div style={{
+              position: 'absolute', top: '8px', right: '12px',
+              fontSize: '7px', color: '#00ff88',
+              fontFamily: "'Press Start 2P'",
+            }}>
+              {username || walletAddress.slice(0, 6) + '...' + walletAddress.slice(-4)}
+            </div>
+          )}
           <h1 style={{ fontSize: '20px', color: '#FFD700', marginBottom: '8px', textShadow: '2px 2px #8B4513' }}>
             🍞 TOAST OR FINE BOOTY 🏴‍☠️
           </h1>
