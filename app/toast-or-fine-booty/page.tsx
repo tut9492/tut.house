@@ -257,20 +257,13 @@ export default function ToastOrFineBooty() {
 
       {/* Background Music — starts on first click anywhere */}
       <audio id="bgm" src="/swan-lake.mp3" loop preload="auto" />
-      <div onClick={() => {
-        const audio = document.getElementById('bgm') as HTMLAudioElement;
-        if (audio && audio.paused) { audio.volume = 0.3; audio.play(); }
-      }} style={{ position:'fixed', inset:0, zIndex:199, pointerEvents:'auto' }}
-        ref={(el) => {
-          if (!el) return;
-          const handler = () => {
-            const audio = document.getElementById('bgm') as HTMLAudioElement;
-            if (audio && audio.paused) { audio.volume = 0.3; audio.play(); }
-            document.removeEventListener('click', handler);
-          };
-          document.addEventListener('click', handler);
-        }}
-      />
+      <script dangerouslySetInnerHTML={{ __html: `
+        document.addEventListener('click', function _bgm() {
+          var a = document.getElementById('bgm');
+          if (a && a.paused) { a.volume = 0.3; a.play(); }
+          document.removeEventListener('click', _bgm);
+        });
+      `}} />
       <button
         onClick={() => {
           const audio = document.getElementById('bgm') as HTMLAudioElement;
