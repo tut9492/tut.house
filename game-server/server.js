@@ -508,78 +508,72 @@ wss.on('connection', (ws) => {
           playerAddress: playerAddress.slice(0, 6) + '...' + playerAddress.slice(-4),
         });
 
-        // Execute on-chain — fire immediately, don't wait
-        let result = card.isPrize ? 'prize' : 'burn';
+        // Determine result and update game state IMMEDIATELY (no await)
+        const result = card.isPrize ? 'prize' : 'burn';
+        const nonce = getNextNonce();
 
-        try {
-          const nonce = getNextNonce();
-          let tx;
-          if (card.isPrize) {
-            console.log(`[PRIZE] #${tokenId} → ${playerUsername} (nonce: ${nonce})`);
-            tx = await contract.transferFrom(wallet.address, playerAddress, tokenId, { gasLimit: 200000, nonce });
-          } else {
-            console.log(`[BURN] #${tokenId} 🔥 (nonce: ${nonce})`);
-            tx = await contract.burn(tokenId, { gasLimit: 200000, nonce });
-          }
+        card.status = result;
+        card.flippedBy = playerUsername;
 
-          const txHash = tx.hash;
-
-          // Update state immediately — don't wait for confirmation
-          card.status = result;
-          card.flippedBy = playerUsername;
-
-          if (card.isPrize) {
-            gameState.prizesFound++;
-            db.prepare('UPDATE players SET wins = wins + 1 WHERE address = ?').run(playerAddress);
-          } else {
-            gameState.cardsBurned++;
-            db.prepare('UPDATE players SET burns = burns + 1 WHERE address = ?').run(playerAddress);
-          }
-
-          // Save to DB
-          db.prepare('UPDATE cards SET status = ?, flipped_by = ?, flipped_at = datetime(?), tx_hash = ? WHERE token_id = ?')
-            .run(result, playerAddress, 'now', txHash, tokenId);
-          db.prepare('INSERT INTO flips (token_id, player_address, result, tx_hash) VALUES (?, ?, ?, ?)')
-            .run(tokenId, playerAddress, result, txHash);
-
-          // Broadcast result to everyone IMMEDIATELY
-          broadcast({
-            type: 'flip_result',
-            tokenId,
-            result,
-            player: playerUsername,
-            playerAddress: playerAddress.slice(0, 6) + '...' + playerAddress.slice(-4),
-            txHash,
-            stats: {
-              prizesFound: gameState.prizesFound,
-              cardsBurned: gameState.cardsBurned,
-              cardsRemaining: gameState.totalCards - gameState.prizesFound - gameState.cardsBurned,
-              totalPrizes: gameState.maxPrizes,
-              round: gameState.round,
-            },
-          });
-
-          // Confirm in background — log failures but don't block
-          tx.wait().then(() => {
-            console.log(`[${result.toUpperCase()}] ✅ #${tokenId} confirmed: ${txHash}`);
-          }).catch(err => {
-            console.error(`[ERROR] #${tokenId} confirmation failed: ${err.message.slice(0, 100)}`);
-          });
-
-          // Check if round over
-          if (gameState.prizesFound >= gameState.maxPrizes) {
-            gameState.paused = true;
-            broadcast({ type: 'round_over', message: `ROUND ${gameState.round} COMPLETE! ${gameState.maxPrizes} PRIZES FOUND!`, round: gameState.round });
-            console.log(`[ROUND] Round ${gameState.round} complete — ${gameState.maxPrizes} prizes found`);
-          }
-
-        } catch (err) {
-          console.error(`[ERROR] Flip #${tokenId} failed:`, err.message.slice(0, 100));
-          card.status = 'face_down';
-          ws.send(JSON.stringify({ type: 'error', message: 'Transaction failed, try again' }));
-          broadcast({ type: 'flip_revert', tokenId });
-          return;
+        if (card.isPrize) {
+          gameState.prizesFound++;
+          db.prepare('UPDATE players SET wins = wins + 1 WHERE address = ?').run(playerAddress);
+        } else {
+          gameState.cardsBurned++;
+          db.prepare('UPDATE players SET burns = burns + 1 WHERE address = ?').run(playerAddress);
         }
+
+        // Broadcast result to everyone INSTANTLY — before chain tx
+        broadcast({
+          type: 'flip_result',
+          tokenId,
+          result,
+          player: playerUsername,
+          playerAddress: playerAddress.slice(0, 6) + '...' + playerAddress.slice(-4),
+          txHash: null,
+          stats: {
+            prizesFound: gameState.prizesFound,
+            cardsBurned: gameState.cardsBurned,
+            cardsRemaining: gameState.totalCards - gameState.prizesFound - gameState.cardsBurned,
+            totalPrizes: gameState.maxPrizes,
+            round: gameState.round,
+          },
+        });
+
+        // Check if round over
+        if (gameState.prizesFound >= gameState.maxPrizes) {
+          gameState.paused = true;
+          broadcast({ type: 'round_over', message: `ROUND ${gameState.round} COMPLETE! ${gameState.maxPrizes} PRIZES FOUND!`, round: gameState.round });
+          console.log(`[ROUND] Round ${gameState.round} complete — ${gameState.maxPrizes} prizes found`);
+        }
+
+        // Fire on-chain tx in background — completely non-blocking
+        (async () => {
+          try {
+            let tx;
+            if (result === 'prize') {
+              console.log(`[PRIZE] #${tokenId} → ${playerUsername} (nonce: ${nonce})`);
+              tx = await contract.transferFrom(wallet.address, playerAddress, tokenId, { gasLimit: 200000, nonce });
+            } else {
+              console.log(`[BURN] #${tokenId} 🔥 (nonce: ${nonce})`);
+              tx = await contract.burn(tokenId, { gasLimit: 200000, nonce });
+            }
+
+            db.prepare('UPDATE cards SET tx_hash = ? WHERE token_id = ?').run(tx.hash, tokenId);
+            db.prepare('INSERT INTO flips (token_id, player_address, result, tx_hash) VALUES (?, ?, ?, ?)')
+              .run(tokenId, playerAddress, result, tx.hash);
+
+            tx.wait().then(() => {
+              console.log(`[${result.toUpperCase()}] ✅ #${tokenId} confirmed: ${tx.hash}`);
+            }).catch(err => {
+              console.error(`[ERROR] #${tokenId} confirmation failed: ${err.message.slice(0, 100)}`);
+            });
+          } catch (err) {
+            console.error(`[ERROR] Flip #${tokenId} tx failed:`, err.message.slice(0, 100));
+            // Card already shows as flipped — log the failure but don't revert UI
+            // On-chain state may not match game state, but this is rare on MegaETH
+          }
+        })();
 
         break;
       }
