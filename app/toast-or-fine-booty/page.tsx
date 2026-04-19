@@ -556,7 +556,7 @@ export default function ToastOrFineBooty() {
       {/* Admin Toggle */}
       {isAdmin && (
         <button
-          onClick={() => { setShowAdmin(!showAdmin); if (!showAdmin && adminKey) fetchAdminStatus(); }}
+          onClick={() => { setShowAdmin(!showAdmin); if (!showAdmin && adminAuthed) fetchAdminStatus(); }}
           style={{
             position: 'fixed', bottom: '12px', left: '12px', zIndex: 200,
             padding: '6px 10px', background: '#1a1a1a', border: '1px solid #ff4444',
