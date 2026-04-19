@@ -175,6 +175,27 @@ app.post('/api/game/verify', async (req, res) => {
   }
 });
 
+// Get NFT image from on-chain tokenURI
+app.get('/api/game/nft/:tokenId', async (req, res) => {
+  const tokenId = parseInt(req.params.tokenId);
+  if (isNaN(tokenId)) return res.status(400).json({ error: 'Invalid token ID' });
+
+  try {
+    const uri = await contract.tokenURI(tokenId);
+    // tokenURI returns data:application/json;base64,...
+    const b64Idx = uri.indexOf('base64,');
+    if (b64Idx >= 0) {
+      const json = JSON.parse(Buffer.from(uri.slice(b64Idx + 7), 'base64').toString());
+      res.json({ image: json.image || '', name: json.name || `#${tokenId}` });
+    } else {
+      res.json({ image: '', name: `#${tokenId}` });
+    }
+  } catch (err) {
+    console.error(`NFT image fetch error for #${tokenId}:`, err.message);
+    res.status(500).json({ error: 'Failed to fetch NFT data' });
+  }
+});
+
 // Leaderboard
 app.get('/api/game/leaderboard', (req, res) => {
   const leaders = db.prepare('SELECT address, username, wins, burns FROM players ORDER BY wins DESC LIMIT 20').all();
