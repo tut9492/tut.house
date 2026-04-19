@@ -46,6 +46,45 @@ const contract = new ethers.Contract(CONTRACT, ABI, wallet);
 // Read-only contract for verify/tokenURI calls
 const readContract = new ethers.Contract(CONTRACT, ABI, httpProvider);
 
+// ─── Transaction Queue (prevents nonce collisions) ─────────────────────────
+let txQueue = [];
+let txProcessing = false;
+let currentNonce = null;
+
+async function initNonce() {
+  currentNonce = await httpProvider.getTransactionCount(wallet.address, 'pending');
+  console.log(`Initial nonce: ${currentNonce}`);
+}
+
+function enqueueTx(fn) {
+  return new Promise((resolve, reject) => {
+    txQueue.push({ fn, resolve, reject });
+    processQueue();
+  });
+}
+
+async function processQueue() {
+  if (txProcessing || txQueue.length === 0) return;
+  txProcessing = true;
+
+  while (txQueue.length > 0) {
+    const { fn, resolve, reject } = txQueue.shift();
+    try {
+      const result = await fn(currentNonce);
+      currentNonce++;
+      resolve(result);
+    } catch (err) {
+      // If nonce error, refresh and retry
+      if (err.message?.includes('nonce')) {
+        currentNonce = await httpProvider.getTransactionCount(wallet.address, 'pending');
+      }
+      reject(err);
+    }
+  }
+
+  txProcessing = false;
+}
+
 console.log(`Signer wallet: ${wallet.address}`);
 
 // ─── Database ───────────────────────────────────────────────────────────────
@@ -482,10 +521,14 @@ wss.on('connection', (ws) => {
           let tx;
           if (card.isPrize) {
             console.log(`[PRIZE] #${tokenId} → ${playerUsername}`);
-            tx = await contract.transferFrom(wallet.address, playerAddress, tokenId, { gasLimit: 200000 });
+            tx = await enqueueTx((nonce) =>
+              contract.transferFrom(wallet.address, playerAddress, tokenId, { gasLimit: 200000, nonce })
+            );
           } else {
             console.log(`[BURN] #${tokenId} 🔥`);
-            tx = await contract.burn(tokenId, { gasLimit: 200000 });
+            tx = await enqueueTx((nonce) =>
+              contract.burn(tokenId, { gasLimit: 200000, nonce })
+            );
           }
 
           const txHash = tx.hash;
@@ -568,6 +611,7 @@ wss.on('connection', (ws) => {
 // ─── Start ──────────────────────────────────────────────────────────────────
 
 loadGameData();
+initNonce();
 
 server.listen(PORT, () => {
   console.log(`\n🍞 TOAST OR FINE BOOTY`);
