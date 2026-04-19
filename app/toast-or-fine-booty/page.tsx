@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 
-const GAME_SERVER = process.env.NEXT_PUBLIC_GAME_SERVER || 'wss://breadiogame.tut.house';
-const GAME_API = process.env.NEXT_PUBLIC_GAME_API || 'https://breadiogame.tut.house';
+const GAME_SERVER = process.env.NEXT_PUBLIC_GAME_SERVER || 'wss://breadiogame.tuthopium.store';
+const GAME_API = process.env.NEXT_PUBLIC_GAME_API || 'https://breadiogame.tuthopium.store';
 
 // ─── Typewriter text component with beep sound ─────────────────────────────
 function Typewriter({ text, speed = 40, onDone }: { text: string; speed?: number; onDone?: () => void }) {
