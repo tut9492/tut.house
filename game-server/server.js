@@ -22,7 +22,7 @@ const PORT = process.env.GAME_PORT || 3001;
 const CONTRACT = '0x015061aa806b5abab9ee453e366e18a713e8ea80';
 const RPC = 'https://mainnet.megaeth.com/rpc';
 const SIGNER_KEY = process.env.BREADIO_PRIVATE_KEY;
-const FLIP_COOLDOWN = 3000; // 3 seconds between flips per player
+const FLIP_COOLDOWN = 5000; // 5 seconds between flips per player
 const ADMIN_WALLETS = ['0x75775181080b3684cc3be770ba070d1ecc1ec50d'];
 const adminTokens = new Set(); // active admin session tokens
 
@@ -411,7 +411,7 @@ wss.on('connection', (ws) => {
 
         // Max 3 players at a time (admins exempt)
         const playerCount = Object.keys(gameState.players).length;
-        if (playerCount >= 3 && !ADMIN_WALLETS.includes(playerAddress)) {
+        if (playerCount >= 10 && !ADMIN_WALLETS.includes(playerAddress)) {
           ws.send(JSON.stringify({ type: 'error', message: 'ROOM FULL! TRY AGAIN SOON' }));
           return;
         }
