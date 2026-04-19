@@ -46,9 +46,7 @@ const contract = new ethers.Contract(CONTRACT, ABI, wallet);
 // Read-only contract for verify/tokenURI calls
 const readContract = new ethers.Contract(CONTRACT, ABI, httpProvider);
 
-// ─── Transaction Queue (prevents nonce collisions) ─────────────────────────
-let txQueue = [];
-let txProcessing = false;
+// ─── Parallel Nonce Manager (no queue bottleneck) ──────────────────────────
 let currentNonce = null;
 
 async function initNonce() {
@@ -56,34 +54,21 @@ async function initNonce() {
   console.log(`Initial nonce: ${currentNonce}`);
 }
 
-function enqueueTx(fn) {
-  return new Promise((resolve, reject) => {
-    txQueue.push({ fn, resolve, reject });
-    processQueue();
-  });
+function getNextNonce() {
+  const nonce = currentNonce;
+  currentNonce++;
+  return nonce;
 }
 
-async function processQueue() {
-  if (txProcessing || txQueue.length === 0) return;
-  txProcessing = true;
-
-  while (txQueue.length > 0) {
-    const { fn, resolve, reject } = txQueue.shift();
-    try {
-      const result = await fn(currentNonce);
-      currentNonce++;
-      resolve(result);
-    } catch (err) {
-      // If nonce error, refresh and retry
-      if (err.message?.includes('nonce')) {
-        currentNonce = await httpProvider.getTransactionCount(wallet.address, 'pending');
-      }
-      reject(err);
+// Periodically sync nonce in case of drift
+setInterval(async () => {
+  try {
+    const chainNonce = await httpProvider.getTransactionCount(wallet.address, 'pending');
+    if (chainNonce > currentNonce) {
+      currentNonce = chainNonce;
     }
-  }
-
-  txProcessing = false;
-}
+  } catch {}
+}, 10000);
 
 console.log(`Signer wallet: ${wallet.address}`);
 
@@ -520,17 +505,14 @@ wss.on('connection', (ws) => {
         let result = card.isPrize ? 'prize' : 'burn';
 
         try {
+          const nonce = getNextNonce();
           let tx;
           if (card.isPrize) {
-            console.log(`[PRIZE] #${tokenId} → ${playerUsername}`);
-            tx = await enqueueTx((nonce) =>
-              contract.transferFrom(wallet.address, playerAddress, tokenId, { gasLimit: 200000, nonce })
-            );
+            console.log(`[PRIZE] #${tokenId} → ${playerUsername} (nonce: ${nonce})`);
+            tx = await contract.transferFrom(wallet.address, playerAddress, tokenId, { gasLimit: 200000, nonce });
           } else {
-            console.log(`[BURN] #${tokenId} 🔥`);
-            tx = await enqueueTx((nonce) =>
-              contract.burn(tokenId, { gasLimit: 200000, nonce })
-            );
+            console.log(`[BURN] #${tokenId} 🔥 (nonce: ${nonce})`);
+            tx = await contract.burn(tokenId, { gasLimit: 200000, nonce });
           }
 
           const txHash = tx.hash;
