@@ -242,37 +242,55 @@ export default function ToastOrFineBooty() {
   const [error, setError] = useState('');
   const [gamePhase, setGamePhase] = useState<'connect' | 'verified' | 'rejected' | 'username' | 'playing' | 'gameover'>('connect');
   const [showAdmin, setShowAdmin] = useState(false);
-  const [adminKey, setAdminKey] = useState('');
-  const [adminKeyInput, setAdminKeyInput] = useState('');
   const [adminAuthed, setAdminAuthed] = useState(false);
+  const [adminToken, setAdminToken] = useState('');
   const [adminStatus, setAdminStatus] = useState<any>(null);
   const isAdmin = ADMIN_WALLETS.includes(walletAddress.toLowerCase());
   const wsRef = useRef<WebSocket | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
 
-  // Admin actions
+  // Admin: sign message to authenticate
+  const adminAuth = async () => {
+    try {
+      const message = `TOAST ADMIN ${Date.now()}`;
+      const signature = await (window as any).ethereum.request({
+        method: 'personal_sign',
+        params: [message, walletAddress],
+      });
+      const res = await fetch(`${GAME_API}/api/game/admin/auth`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ address: walletAddress, message, signature }),
+      });
+      const data = await res.json();
+      if (data.error) { setError(data.error); return; }
+      setAdminToken(data.token);
+      setAdminAuthed(true);
+      setAdminStatus(data.status);
+    } catch { setError('Signature failed'); }
+  };
+
   const adminAction = async (action: string, body?: any) => {
     try {
-      const opts: any = { method: 'POST', headers: { 'Content-Type': 'application/json' } };
-      if (body) opts.body = JSON.stringify({ ...body, key: adminKey });
-      const url = `${GAME_API}/api/game/admin/${action}?key=${encodeURIComponent(adminKey)}`;
-      const res = await fetch(url, opts);
+      const res = await fetch(`${GAME_API}/api/game/admin/${action}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` },
+        body: body ? JSON.stringify(body) : undefined,
+      });
       const data = await res.json();
       if (data.error) { setError(data.error); return; }
       setAdminStatus(data);
     } catch { setError('Admin action failed'); }
   };
 
-  const fetchAdminStatus = async (key?: string) => {
-    const k = key || adminKey;
+  const fetchAdminStatus = async () => {
     try {
-      const res = await fetch(`${GAME_API}/api/game/admin/status?key=${encodeURIComponent(k)}`);
+      const res = await fetch(`${GAME_API}/api/game/admin/status`, {
+        headers: { 'Authorization': `Bearer ${adminToken}` },
+      });
       const data = await res.json();
-      if (data.error) { setError('Bad admin key'); setAdminAuthed(false); return; }
-      setAdminStatus(data);
-      setAdminAuthed(true);
-      setAdminKey(k);
-    } catch { setError('Admin connect failed'); }
+      if (!data.error) setAdminStatus(data);
+    } catch {}
   };
 
   // Sound effects
@@ -559,21 +577,10 @@ export default function ToastOrFineBooty() {
 
           {!adminAuthed ? (
             <div>
-              <input
-                type="password"
-                placeholder="ADMIN KEY"
-                value={adminKeyInput}
-                onChange={e => setAdminKeyInput(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') fetchAdminStatus(adminKeyInput); }}
-                style={{
-                  width: '100%', padding: '6px', background: '#000', border: '1px solid #333',
-                  color: '#fff', fontFamily: "'Press Start 2P'", fontSize: '7px', marginBottom: '6px',
-                }}
-              />
-              <button onClick={() => fetchAdminStatus(adminKeyInput)} style={{
-                width: '100%', padding: '6px', background: '#333', border: 'none',
+              <button onClick={adminAuth} style={{
+                width: '100%', padding: '8px', background: '#ff4444', border: 'none',
                 color: '#fff', fontFamily: "'Press Start 2P'", fontSize: '7px', cursor: 'pointer',
-              }}>CONNECT</button>
+              }}>SIGN TO VERIFY</button>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>

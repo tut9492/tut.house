@@ -23,7 +23,8 @@ const CONTRACT = '0x015061aa806b5abab9ee453e366e18a713e8ea80';
 const RPC = 'https://mainnet.megaeth.com/rpc';
 const SIGNER_KEY = process.env.BREADIO_PRIVATE_KEY;
 const FLIP_COOLDOWN = 3000; // 3 seconds between flips per player
-const ADMIN_KEY = process.env.ADMIN_KEY || 'breadio-admin-2026';
+const ADMIN_WALLETS = ['0x75775181080b3684cc3be770ba070d1ecc1ec50d'];
+const adminTokens = new Set(); // active admin session tokens
 
 if (!SIGNER_KEY) {
   console.error('BREADIO_PRIVATE_KEY not set');
@@ -203,13 +204,50 @@ app.get('/api/game/nft/:tokenId', async (req, res) => {
 // ─── Admin Endpoints ─────────────────────────────────────────────────────
 
 function requireAdmin(req, res) {
-  const key = req.query.key || req.body?.key;
-  if (key !== ADMIN_KEY) {
+  const auth = req.headers.authorization;
+  const token = auth?.replace('Bearer ', '');
+  if (!token || !adminTokens.has(token)) {
     res.status(403).json({ error: 'Unauthorized' });
     return false;
   }
   return true;
 }
+
+// Admin auth — verify wallet signature
+app.post('/api/game/admin/auth', (req, res) => {
+  const { address, message, signature } = req.body;
+  if (!address || !message || !signature) return res.status(400).json({ error: 'Missing fields' });
+
+  try {
+    const recovered = ethers.verifyMessage(message, signature).toLowerCase();
+    if (recovered !== address.toLowerCase() || !ADMIN_WALLETS.includes(recovered)) {
+      return res.status(403).json({ error: 'Not an admin wallet' });
+    }
+
+    // Generate a session token
+    const token = ethers.hexlify(ethers.randomBytes(32));
+    adminTokens.add(token);
+
+    // Expire after 24 hours
+    setTimeout(() => adminTokens.delete(token), 24 * 60 * 60 * 1000);
+
+    console.log(`[ADMIN] Authenticated: ${address.slice(0, 10)}...`);
+    res.json({
+      token,
+      status: {
+        paused: gameState.paused,
+        round: gameState.round,
+        maxPrizes: gameState.maxPrizes,
+        prizesFound: gameState.prizesFound,
+        cardsBurned: gameState.cardsBurned,
+        cardsRemaining: gameState.totalCards - gameState.prizesFound - gameState.cardsBurned,
+        playersOnline: Object.keys(gameState.players).length,
+      },
+    });
+  } catch (err) {
+    res.status(400).json({ error: 'Invalid signature' });
+  }
+});
 
 // Start the game
 app.post('/api/game/admin/start', (req, res) => {
