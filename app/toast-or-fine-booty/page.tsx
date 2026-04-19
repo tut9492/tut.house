@@ -238,7 +238,8 @@ export default function ToastOrFineBooty() {
   const [cursors, setCursors] = useState<Record<string, PlayerCursor>>({});
   const [flipping, setFlipping] = useState<number | null>(null);
   const [revealedImages, setRevealedImages] = useState<Record<number, string>>({});
-  const [lastResult, setLastResult] = useState<{ tokenId: number; result: string; player: string } | null>(null);
+  const [notifications, setNotifications] = useState<{ id: number; tokenId: number; result: string; player: string }[]>([]);
+  const notifId = useRef(0);
   const [error, setError] = useState('');
   const [cooldown, setCooldown] = useState(0);
   const [gamePhase, setGamePhase] = useState<'connect' | 'verified' | 'rejected' | 'username' | 'playing' | 'gameover'>('connect');
@@ -430,9 +431,10 @@ export default function ToastOrFineBooty() {
             },
           }));
           setStats(msg.stats);
-          setLastResult({ tokenId: msg.tokenId, result: msg.result, player: msg.player });
           playSound(msg.result === 'prize' ? 'win' : 'burn');
-          setTimeout(() => setLastResult(null), 3000);
+          const nid = ++notifId.current;
+          setNotifications(prev => [...prev, { id: nid, tokenId: msg.tokenId, result: msg.result, player: msg.player }]);
+          setTimeout(() => setNotifications(prev => prev.filter(n => n.id !== nid)), 4000);
           // Lazy load image after result is shown
           fetch(`${GAME_API}/api/game/nft/${msg.tokenId}`)
             .then(r => r.json())
@@ -674,20 +676,26 @@ export default function ToastOrFineBooty() {
         </div>
       )}
 
-      {/* Last Result Toast */}
-      {lastResult && (
-        <div style={{
-          position: 'fixed', top: '80px', left: '50%', transform: 'translateX(-50%)',
-          background: lastResult.result === 'prize' ? '#FFD700' : '#ff4444',
-          color: lastResult.result === 'prize' ? '#000' : '#fff',
-          padding: '12px 24px', borderRadius: '4px', fontSize: '10px', zIndex: 100,
-          animation: 'fadeIn 0.3s',
-        }}>
-          {lastResult.result === 'prize'
-            ? `🏴‍☠️ ${lastResult.player} found FINE BOOTY! #${lastResult.tokenId}`
-            : `🔥 ${lastResult.player} got TOASTED! #${lastResult.tokenId}`}
-        </div>
-      )}
+      {/* Stacking Notifications — right side */}
+      <div style={{
+        position: 'fixed', top: '80px', right: '12px', zIndex: 100,
+        display: 'flex', flexDirection: 'column', gap: '6px', pointerEvents: 'none',
+      }}>
+        {notifications.map(n => (
+          <div key={n.id} style={{
+            background: n.result === 'prize' ? '#FFD700' : '#ff4444',
+            color: n.result === 'prize' ? '#000' : '#fff',
+            padding: '8px 14px', borderRadius: '4px', fontSize: '8px',
+            fontFamily: "'Press Start 2P'",
+            animation: 'notifIn 0.3s, notifOut 0.5s 3.5s forwards',
+            whiteSpace: 'nowrap',
+          }}>
+            {n.result === 'prize'
+              ? `🏴‍☠️ ${n.player} FINE BOOTY #${n.tokenId}`
+              : `🔥 ${n.player} TOASTED #${n.tokenId}`}
+          </div>
+        ))}
+      </div>
 
       {/* Landing / Connect / Username — Breadio dialogue */}
       {(gamePhase === 'connect' || gamePhase === 'verified' || gamePhase === 'rejected' || gamePhase === 'username') && (
@@ -869,6 +877,8 @@ export default function ToastOrFineBooty() {
           30% { opacity: 1; filter: brightness(1.5) saturate(2); }
           100% { opacity: 0.15; filter: brightness(0.2) saturate(0); }
         }
+        @keyframes notifIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes notifOut { from { opacity: 1; } to { opacity: 0; transform: translateX(20px); } }
         div:hover { transition: all 0.1s; }
       `}</style>
     </div>
