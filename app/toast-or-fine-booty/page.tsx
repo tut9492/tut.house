@@ -240,6 +240,7 @@ export default function ToastOrFineBooty() {
   const [revealedImages, setRevealedImages] = useState<Record<number, string>>({});
   const [lastResult, setLastResult] = useState<{ tokenId: number; result: string; player: string } | null>(null);
   const [error, setError] = useState('');
+  const [cooldown, setCooldown] = useState(0);
   const [gamePhase, setGamePhase] = useState<'connect' | 'verified' | 'rejected' | 'username' | 'playing' | 'gameover'>('connect');
   const [showAdmin, setShowAdmin] = useState(false);
   const [adminAuthed, setAdminAuthed] = useState(false);
@@ -497,11 +498,20 @@ export default function ToastOrFineBooty() {
 
   // Flip card
   const flipCard = (tokenId: number) => {
-    if (!wsRef.current || flipping) return;
+    if (!wsRef.current || flipping || cooldown > 0) return;
     const card = cards[tokenId];
     if (!card || card.status !== 'face_down') return;
 
     wsRef.current.send(JSON.stringify({ type: 'flip', tokenId }));
+
+    // Start 5 second cooldown
+    setCooldown(5);
+    const interval = setInterval(() => {
+      setCooldown(prev => {
+        if (prev <= 1) { clearInterval(interval); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
   };
 
   // Track cursor
@@ -641,6 +651,14 @@ export default function ToastOrFineBooty() {
               <span>PRIZES: {stats.prizesFound}/{stats.totalPrizes}</span>
               <span>BURNED: {stats.cardsBurned}</span>
               <span>REMAINING: {stats.cardsRemaining}</span>
+            </div>
+          )}
+          {cooldown > 0 && (
+            <div style={{
+              fontSize: '12px', color: '#FFD700', marginTop: '8px',
+              fontFamily: "'Press Start 2P'", textShadow: '2px 2px #8B4513',
+            }}>
+              WAIT {cooldown}s
             </div>
           )}
         </div>
