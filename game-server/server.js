@@ -374,6 +374,13 @@ wss.on('connection', (ws) => {
 
         if (!playerAddress) return;
 
+        // Max 3 players at a time (admins exempt)
+        const playerCount = Object.keys(gameState.players).length;
+        if (playerCount >= 3 && !ADMIN_WALLETS.includes(playerAddress)) {
+          ws.send(JSON.stringify({ type: 'error', message: 'ROOM FULL! TRY AGAIN SOON' }));
+          return;
+        }
+
         // Verify ownership
         try {
           const balance = await readContract.balanceOf(playerAddress);
