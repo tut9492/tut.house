@@ -243,6 +243,8 @@ export default function ToastOrFineBooty() {
   const [gamePhase, setGamePhase] = useState<'connect' | 'verified' | 'rejected' | 'username' | 'playing' | 'gameover'>('connect');
   const [showAdmin, setShowAdmin] = useState(false);
   const [adminKey, setAdminKey] = useState('');
+  const [adminKeyInput, setAdminKeyInput] = useState('');
+  const [adminAuthed, setAdminAuthed] = useState(false);
   const [adminStatus, setAdminStatus] = useState<any>(null);
   const isAdmin = ADMIN_WALLETS.includes(walletAddress.toLowerCase());
   const wsRef = useRef<WebSocket | null>(null);
@@ -261,12 +263,16 @@ export default function ToastOrFineBooty() {
     } catch { setError('Admin action failed'); }
   };
 
-  const fetchAdminStatus = async () => {
+  const fetchAdminStatus = async (key?: string) => {
+    const k = key || adminKey;
     try {
-      const res = await fetch(`${GAME_API}/api/game/admin/status?key=${encodeURIComponent(adminKey)}`);
+      const res = await fetch(`${GAME_API}/api/game/admin/status?key=${encodeURIComponent(k)}`);
       const data = await res.json();
-      if (!data.error) setAdminStatus(data);
-    } catch {}
+      if (data.error) { setError('Bad admin key'); setAdminAuthed(false); return; }
+      setAdminStatus(data);
+      setAdminAuthed(true);
+      setAdminKey(k);
+    } catch { setError('Admin connect failed'); }
   };
 
   // Sound effects
@@ -551,19 +557,20 @@ export default function ToastOrFineBooty() {
         }}>
           <div style={{ color: '#ff4444', marginBottom: '8px' }}>ADMIN PANEL</div>
 
-          {!adminKey ? (
+          {!adminAuthed ? (
             <div>
               <input
                 type="password"
                 placeholder="ADMIN KEY"
-                onChange={e => setAdminKey(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') fetchAdminStatus(); }}
+                value={adminKeyInput}
+                onChange={e => setAdminKeyInput(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') fetchAdminStatus(adminKeyInput); }}
                 style={{
                   width: '100%', padding: '6px', background: '#000', border: '1px solid #333',
                   color: '#fff', fontFamily: "'Press Start 2P'", fontSize: '7px', marginBottom: '6px',
                 }}
               />
-              <button onClick={fetchAdminStatus} style={{
+              <button onClick={() => fetchAdminStatus(adminKeyInput)} style={{
                 width: '100%', padding: '6px', background: '#333', border: 'none',
                 color: '#fff', fontFamily: "'Press Start 2P'", fontSize: '7px', cursor: 'pointer',
               }}>CONNECT</button>
