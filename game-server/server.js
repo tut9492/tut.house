@@ -383,9 +383,10 @@ wss.on('connection', (ws) => {
           cards: boardState,
           stats: {
             totalCards: gameState.totalCards,
-            totalPrizes: gameState.totalPrizes,
+            totalPrizes: gameState.maxPrizes,
             prizesFound: gameState.prizesFound,
             cardsBurned: gameState.cardsBurned,
+            round: gameState.round,
           },
         }));
 
@@ -520,7 +521,8 @@ wss.on('connection', (ws) => {
             prizesFound: gameState.prizesFound,
             cardsBurned: gameState.cardsBurned,
             cardsRemaining: gameState.totalCards - gameState.prizesFound - gameState.cardsBurned,
-            totalPrizes: gameState.totalPrizes,
+            totalPrizes: gameState.maxPrizes,
+            round: gameState.round,
           },
         });
 
