@@ -33,16 +33,18 @@ if (!SIGNER_KEY) {
 
 // ─── Blockchain Setup ───────────────────────────────────────────────────────
 
-const provider = new ethers.WebSocketProvider('wss://mainnet.megaeth.com/ws');
-const httpProvider = new ethers.JsonRpcProvider(RPC); // fallback for reads
-const wallet = new ethers.Wallet(SIGNER_KEY, provider);
-const contract = new ethers.Contract(CONTRACT, [
+const httpProvider = new ethers.JsonRpcProvider(RPC);
+const wallet = new ethers.Wallet(SIGNER_KEY, httpProvider);
+const ABI = [
   'function burn(uint256 tokenId)',
   'function transferFrom(address from, address to, uint256 tokenId)',
   'function ownerOf(uint256 tokenId) view returns (address)',
   'function balanceOf(address owner) view returns (uint256)',
   'function tokenURI(uint256 tokenId) view returns (string)',
-], wallet);
+];
+const contract = new ethers.Contract(CONTRACT, ABI, wallet);
+// Read-only contract for verify/tokenURI calls
+const readContract = new ethers.Contract(CONTRACT, ABI, httpProvider);
 
 console.log(`Signer wallet: ${wallet.address}`);
 
@@ -173,7 +175,7 @@ app.post('/api/game/verify', async (req, res) => {
   if (!address) return res.status(400).json({ error: 'Address required' });
 
   try {
-    const balance = await contract.balanceOf(address);
+    const balance = await readContract.balanceOf(address);
     const owns = Number(balance) > 0;
     res.json({ owns, balance: Number(balance) });
   } catch (err) {
@@ -187,7 +189,7 @@ app.get('/api/game/nft/:tokenId', async (req, res) => {
   if (isNaN(tokenId)) return res.status(400).json({ error: 'Invalid token ID' });
 
   try {
-    const uri = await contract.tokenURI(tokenId);
+    const uri = await readContract.tokenURI(tokenId);
     // tokenURI returns data:application/json;base64,...
     const b64Idx = uri.indexOf('base64,');
     if (b64Idx >= 0) {
@@ -349,7 +351,7 @@ wss.on('connection', (ws) => {
 
         // Verify ownership
         try {
-          const balance = await contract.balanceOf(playerAddress);
+          const balance = await readContract.balanceOf(playerAddress);
           if (Number(balance) === 0) {
             ws.send(JSON.stringify({ type: 'error', message: 'You need a Breadio NFT to play!' }));
             return;
