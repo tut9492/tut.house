@@ -415,13 +415,6 @@ export default function ToastOrFineBooty() {
         case 'flip_start':
           setFlipping(msg.tokenId);
           playSound('flip');
-          // Fetch NFT image for the reveal
-          fetch(`${GAME_API}/api/game/nft/${msg.tokenId}`)
-            .then(r => r.json())
-            .then(data => {
-              if (data.image) setRevealedImages(prev => ({ ...prev, [msg.tokenId]: data.image }));
-            })
-            .catch(() => {});
           break;
 
         case 'flip_result':
@@ -439,6 +432,13 @@ export default function ToastOrFineBooty() {
           setLastResult({ tokenId: msg.tokenId, result: msg.result, player: msg.player });
           playSound(msg.result === 'prize' ? 'win' : 'burn');
           setTimeout(() => setLastResult(null), 3000);
+          // Lazy load image after result is shown
+          fetch(`${GAME_API}/api/game/nft/${msg.tokenId}`)
+            .then(r => r.json())
+            .then(data => {
+              if (data.image) setRevealedImages(prev => ({ ...prev, [msg.tokenId]: data.image }));
+            })
+            .catch(() => {});
           break;
 
         case 'flip_revert':
