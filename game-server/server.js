@@ -486,11 +486,13 @@ wss.on('connection', (ws) => {
           return;
         }
 
-        // Check if player hit their win cap — no more turns
-        const playerRow = db.prepare('SELECT wins FROM players WHERE address = ?').get(playerAddress);
-        if (playerRow && playerRow.wins >= gameState.maxWinsPerPlayer) {
-          ws.send(JSON.stringify({ type: 'error', message: `YOU WON ${gameState.maxWinsPerPlayer} ALREADY! LET OTHERS PLAY` }));
-          return;
+        // Check if player hit their win cap — no more turns (admins exempt)
+        if (!ADMIN_WALLETS.includes(playerAddress)) {
+          const playerRow = db.prepare('SELECT wins FROM players WHERE address = ?').get(playerAddress);
+          if (playerRow && playerRow.wins >= gameState.maxWinsPerPlayer) {
+            ws.send(JSON.stringify({ type: 'error', message: `YOU WON ${gameState.maxWinsPerPlayer} ALREADY! LET OTHERS PLAY` }));
+            return;
+          }
         }
 
         // Cooldown
