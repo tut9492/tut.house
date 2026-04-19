@@ -91,6 +91,7 @@ let gameState = {
   paused: true,    // game starts paused — admin must start it
   round: 1,
   maxPrizes: 25,   // prizes allowed this round
+  maxWinsPerPlayer: 2, // max wins per address per round
 };
 
 // Load prize list
@@ -443,6 +444,13 @@ wss.on('connection', (ws) => {
         }
         if (card.status !== 'face_down') {
           ws.send(JSON.stringify({ type: 'error', message: 'Already flipped' }));
+          return;
+        }
+
+        // Check if player hit their win cap — no more turns
+        const playerRow = db.prepare('SELECT wins FROM players WHERE address = ?').get(playerAddress);
+        if (playerRow && playerRow.wins >= gameState.maxWinsPerPlayer) {
+          ws.send(JSON.stringify({ type: 'error', message: `YOU WON ${gameState.maxWinsPerPlayer} ALREADY! LET OTHERS PLAY` }));
           return;
         }
 
