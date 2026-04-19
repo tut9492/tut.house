@@ -590,11 +590,7 @@ export default function ToastOrFineBooty() {
                   color: '#000', fontFamily: "'Press Start 2P'", fontSize: '7px', cursor: 'pointer',
                 }}>PAUSE</button>
               </div>
-              <button onClick={() => { if (confirm('Reset the entire board?')) adminAction('reset'); }} style={{
-                padding: '8px', background: '#ff4444', border: 'none',
-                color: '#fff', fontFamily: "'Press Start 2P'", fontSize: '7px', cursor: 'pointer',
-              }}>RESET BOARD</button>
-              <button onClick={fetchAdminStatus} style={{
+<button onClick={fetchAdminStatus} style={{
                 padding: '6px', background: '#333', border: 'none',
                 color: '#fff', fontFamily: "'Press Start 2P'", fontSize: '7px', cursor: 'pointer',
               }}>REFRESH</button>
