@@ -23,6 +23,7 @@ const CONTRACT = '0x015061aa806b5abab9ee453e366e18a713e8ea80';
 const RPC = 'https://mainnet.megaeth.com/rpc';
 const SIGNER_KEY = process.env.BREADIO_PRIVATE_KEY;
 const FLIP_COOLDOWN = 3000; // 3 seconds between flips per player
+const ADMIN_KEY = process.env.ADMIN_KEY || 'breadio-admin-2026';
 
 if (!SIGNER_KEY) {
   console.error('BREADIO_PRIVATE_KEY not set');
@@ -83,6 +84,9 @@ let gameState = {
   totalPrizes: 0,
   prizesFound: 0,
   cardsBurned: 0,
+  paused: true,    // game starts paused — admin must start it
+  round: 1,
+  maxPrizes: 25,   // prizes allowed this round
 };
 
 // Load prize list
@@ -196,6 +200,76 @@ app.get('/api/game/nft/:tokenId', async (req, res) => {
   }
 });
 
+// ─── Admin Endpoints ─────────────────────────────────────────────────────
+
+function requireAdmin(req, res) {
+  const key = req.query.key || req.body?.key;
+  if (key !== ADMIN_KEY) {
+    res.status(403).json({ error: 'Unauthorized' });
+    return false;
+  }
+  return true;
+}
+
+// Start the game
+app.post('/api/game/admin/start', (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  gameState.paused = false;
+  broadcast({ type: 'game_resumed', message: 'GAME ON! START FLIPPING!' });
+  console.log(`[ADMIN] Game STARTED (Round ${gameState.round}, max ${gameState.maxPrizes} prizes)`);
+  res.json({ status: 'started', round: gameState.round, maxPrizes: gameState.maxPrizes });
+});
+
+// Pause the game
+app.post('/api/game/admin/pause', (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  gameState.paused = true;
+  broadcast({ type: 'game_paused', message: 'GAME PAUSED BY ADMIN' });
+  console.log(`[ADMIN] Game PAUSED`);
+  res.json({ status: 'paused' });
+});
+
+// Set round config
+app.post('/api/game/admin/round', (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  const { round, maxPrizes } = req.body;
+  if (round) gameState.round = round;
+  if (maxPrizes) gameState.maxPrizes = maxPrizes;
+  console.log(`[ADMIN] Round set to ${gameState.round}, max prizes: ${gameState.maxPrizes}`);
+  res.json({ round: gameState.round, maxPrizes: gameState.maxPrizes, prizesFound: gameState.prizesFound });
+});
+
+// Reset the game board (clear all flips, fresh start)
+app.post('/api/game/admin/reset', (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  gameState.paused = true;
+  db.exec('DELETE FROM cards');
+  db.exec('DELETE FROM flips');
+  db.exec('DELETE FROM players');
+  // Reload from game-data.json
+  gameState.cards = {};
+  gameState.prizesFound = 0;
+  gameState.cardsBurned = 0;
+  loadGameData();
+  broadcast({ type: 'game_reset', message: 'BOARD RESET! NEW ROUND INCOMING...' });
+  console.log(`[ADMIN] Game RESET — board reloaded`);
+  res.json({ status: 'reset', totalCards: gameState.totalCards, totalPrizes: gameState.totalPrizes });
+});
+
+// Game status
+app.get('/api/game/admin/status', (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  res.json({
+    paused: gameState.paused,
+    round: gameState.round,
+    maxPrizes: gameState.maxPrizes,
+    prizesFound: gameState.prizesFound,
+    cardsBurned: gameState.cardsBurned,
+    cardsRemaining: gameState.totalCards - gameState.prizesFound - gameState.cardsBurned,
+    playersOnline: Object.keys(gameState.players).length,
+  });
+});
+
 // Leaderboard
 app.get('/api/game/leaderboard', (req, res) => {
   const leaders = db.prepare('SELECT address, username, wins, burns FROM players ORDER BY wins DESC LIMIT 20').all();
@@ -305,6 +379,18 @@ wss.on('connection', (ws) => {
       case 'flip': {
         if (!playerAddress || !gameState.players[playerAddress]) return;
 
+        // Check if game is paused
+        if (gameState.paused) {
+          ws.send(JSON.stringify({ type: 'error', message: 'GAME IS PAUSED' }));
+          return;
+        }
+
+        // Check if round prize cap reached
+        if (gameState.prizesFound >= gameState.maxPrizes) {
+          ws.send(JSON.stringify({ type: 'error', message: 'ROUND OVER! ALL PRIZES FOUND' }));
+          return;
+        }
+
         const tokenId = msg.tokenId;
         const card = gameState.cards[tokenId];
 
@@ -400,9 +486,11 @@ wss.on('connection', (ws) => {
           },
         });
 
-        // Check if game over
-        if (gameState.prizesFound >= gameState.totalPrizes) {
-          broadcast({ type: 'game_over', message: 'All treasures found! Game over!' });
+        // Check if round over (hit prize cap)
+        if (gameState.prizesFound >= gameState.maxPrizes) {
+          gameState.paused = true;
+          broadcast({ type: 'round_over', message: `ROUND ${gameState.round} COMPLETE! ${gameState.maxPrizes} PRIZES FOUND!`, round: gameState.round });
+          console.log(`[ROUND] Round ${gameState.round} complete — ${gameState.maxPrizes} prizes found`);
         }
 
         break;

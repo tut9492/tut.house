@@ -414,6 +414,25 @@ export default function ToastOrFineBooty() {
           setGamePhase('gameover');
           break;
 
+        case 'round_over':
+          setGamePhase('gameover');
+          break;
+
+        case 'game_paused':
+          setError('GAME PAUSED');
+          break;
+
+        case 'game_resumed':
+          setError('');
+          break;
+
+        case 'game_reset':
+          setGamePhase('connect');
+          setCards({});
+          setCardOrder([]);
+          setStats(null);
+          break;
+
         case 'error':
           setError(msg.message);
           setTimeout(() => setError(''), 2000);
