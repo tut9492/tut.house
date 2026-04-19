@@ -321,8 +321,9 @@ export default function ToastOrFineBooty() {
       } else {
         setGamePhase('rejected');
       }
-    } catch (err) {
-      setError('Failed to connect wallet');
+    } catch (err: any) {
+      console.error('Wallet connect error:', err);
+      setError(err?.message || 'Failed to connect wallet');
     }
   };
 
