@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 
 const GAME_SERVER = process.env.NEXT_PUBLIC_GAME_SERVER || 'wss://breadiogame.tuthopium.store';
 const GAME_API = process.env.NEXT_PUBLIC_GAME_API || 'https://breadiogame.tuthopium.store';
+const ADMIN_WALLETS = ['0x75775181080b3684cc3be770ba070d1ecc1ec50d'];
 
 // ─── Typewriter text component with beep sound ─────────────────────────────
 function Typewriter({ text, speed = 40, onDone }: { text: string; speed?: number; onDone?: () => void }) {
@@ -240,8 +241,33 @@ export default function ToastOrFineBooty() {
   const [lastResult, setLastResult] = useState<{ tokenId: number; result: string; player: string } | null>(null);
   const [error, setError] = useState('');
   const [gamePhase, setGamePhase] = useState<'connect' | 'verified' | 'rejected' | 'username' | 'playing' | 'gameover'>('connect');
+  const [showAdmin, setShowAdmin] = useState(false);
+  const [adminKey, setAdminKey] = useState('');
+  const [adminStatus, setAdminStatus] = useState<any>(null);
+  const isAdmin = ADMIN_WALLETS.includes(walletAddress.toLowerCase());
   const wsRef = useRef<WebSocket | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
+
+  // Admin actions
+  const adminAction = async (action: string, body?: any) => {
+    try {
+      const opts: any = { method: 'POST', headers: { 'Content-Type': 'application/json' } };
+      if (body) opts.body = JSON.stringify({ ...body, key: adminKey });
+      const url = `${GAME_API}/api/game/admin/${action}?key=${encodeURIComponent(adminKey)}`;
+      const res = await fetch(url, opts);
+      const data = await res.json();
+      if (data.error) { setError(data.error); return; }
+      setAdminStatus(data);
+    } catch { setError('Admin action failed'); }
+  };
+
+  const fetchAdminStatus = async () => {
+    try {
+      const res = await fetch(`${GAME_API}/api/game/admin/status?key=${encodeURIComponent(adminKey)}`);
+      const data = await res.json();
+      if (!data.error) setAdminStatus(data);
+    } catch {}
+  };
 
   // Sound effects
   const playSound = useCallback((type: 'flip' | 'burn' | 'win' | 'hover') => {
@@ -502,6 +528,80 @@ export default function ToastOrFineBooty() {
           color: '#FFD700', fontFamily: "'Press Start 2P'", fontSize: '8px', cursor: 'pointer',
         }}
       >🎵 MUSIC</button>
+
+      {/* Admin Toggle */}
+      {isAdmin && (
+        <button
+          onClick={() => { setShowAdmin(!showAdmin); if (!showAdmin && adminKey) fetchAdminStatus(); }}
+          style={{
+            position: 'fixed', bottom: '12px', left: '12px', zIndex: 200,
+            padding: '6px 10px', background: '#1a1a1a', border: '1px solid #ff4444',
+            color: '#ff4444', fontFamily: "'Press Start 2P'", fontSize: '8px', cursor: 'pointer',
+          }}
+        >ADMIN</button>
+      )}
+
+      {/* Admin Panel */}
+      {isAdmin && showAdmin && (
+        <div style={{
+          position: 'fixed', bottom: '40px', left: '12px', zIndex: 200,
+          background: '#111', border: '2px solid #ff4444', borderRadius: '4px',
+          padding: '12px', fontFamily: "'Press Start 2P'", fontSize: '7px',
+          width: '280px', maxHeight: '400px', overflowY: 'auto',
+        }}>
+          <div style={{ color: '#ff4444', marginBottom: '8px' }}>ADMIN PANEL</div>
+
+          {!adminKey ? (
+            <div>
+              <input
+                type="password"
+                placeholder="ADMIN KEY"
+                onChange={e => setAdminKey(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') fetchAdminStatus(); }}
+                style={{
+                  width: '100%', padding: '6px', background: '#000', border: '1px solid #333',
+                  color: '#fff', fontFamily: "'Press Start 2P'", fontSize: '7px', marginBottom: '6px',
+                }}
+              />
+              <button onClick={fetchAdminStatus} style={{
+                width: '100%', padding: '6px', background: '#333', border: 'none',
+                color: '#fff', fontFamily: "'Press Start 2P'", fontSize: '7px', cursor: 'pointer',
+              }}>CONNECT</button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {adminStatus && (
+                <div style={{ color: '#aaa', lineHeight: '2' }}>
+                  STATUS: <span style={{ color: adminStatus.paused ? '#ff4444' : '#00ff88' }}>{adminStatus.paused ? 'PAUSED' : 'LIVE'}</span><br/>
+                  ROUND: {adminStatus.round}<br/>
+                  PRIZES: {adminStatus.prizesFound}/{adminStatus.maxPrizes}<br/>
+                  BURNED: {adminStatus.cardsBurned}<br/>
+                  REMAINING: {adminStatus.cardsRemaining}<br/>
+                  ONLINE: {adminStatus.playersOnline}
+                </div>
+              )}
+              <div style={{ display: 'flex', gap: '4px' }}>
+                <button onClick={() => adminAction('start')} style={{
+                  flex: 1, padding: '8px', background: '#00ff88', border: 'none',
+                  color: '#000', fontFamily: "'Press Start 2P'", fontSize: '7px', cursor: 'pointer',
+                }}>START</button>
+                <button onClick={() => adminAction('pause')} style={{
+                  flex: 1, padding: '8px', background: '#FFD700', border: 'none',
+                  color: '#000', fontFamily: "'Press Start 2P'", fontSize: '7px', cursor: 'pointer',
+                }}>PAUSE</button>
+              </div>
+              <button onClick={() => { if (confirm('Reset the entire board?')) adminAction('reset'); }} style={{
+                padding: '8px', background: '#ff4444', border: 'none',
+                color: '#fff', fontFamily: "'Press Start 2P'", fontSize: '7px', cursor: 'pointer',
+              }}>RESET BOARD</button>
+              <button onClick={fetchAdminStatus} style={{
+                padding: '6px', background: '#333', border: 'none',
+                color: '#fff', fontFamily: "'Press Start 2P'", fontSize: '7px', cursor: 'pointer',
+              }}>REFRESH</button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Header */}
       <div style={{
