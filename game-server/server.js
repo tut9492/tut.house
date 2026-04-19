@@ -208,8 +208,11 @@ app.post('/api/game/verify', async (req, res) => {
   }
 });
 
-// Get NFT image from on-chain tokenURI (with cache)
+// Caches
 const imageCache = {};
+const verifyCache = {};
+
+// Get NFT image from on-chain tokenURI (with cache)
 app.get('/api/game/nft/:tokenId', async (req, res) => {
   const tokenId = parseInt(req.params.tokenId);
   if (isNaN(tokenId)) return res.status(400).json({ error: 'Invalid token ID' });
@@ -379,6 +382,33 @@ wss.on('connection', (ws) => {
 
         if (!playerAddress) return;
 
+        // Already connected — skip re-verification
+        if (gameState.players[playerAddress]) {
+          gameState.players[playerAddress].ws = ws;
+          // Resend board state
+          const boardState = {};
+          for (const [id, card] of Object.entries(gameState.cards)) {
+            boardState[id] = {
+              status: card.status,
+              isPrize: card.status !== 'face_down' ? card.isPrize : undefined,
+              flippedBy: card.flippedBy,
+            };
+          }
+          ws.send(JSON.stringify({
+            type: 'board',
+            cards: boardState,
+            stats: {
+              totalCards: gameState.totalCards,
+              totalPrizes: gameState.maxPrizes,
+              prizesFound: gameState.prizesFound,
+              cardsBurned: gameState.cardsBurned,
+              round: gameState.round,
+            },
+          }));
+          console.log(`[REJOIN] ${playerUsername} (${playerAddress.slice(0, 10)}...)`);
+          break;
+        }
+
         // Max 3 players at a time (admins exempt)
         const playerCount = Object.keys(gameState.players).length;
         if (playerCount >= 3 && !ADMIN_WALLETS.includes(playerAddress)) {
@@ -386,15 +416,22 @@ wss.on('connection', (ws) => {
           return;
         }
 
-        // Verify ownership
-        try {
-          const balance = await readContract.balanceOf(playerAddress);
-          if (Number(balance) === 0) {
-            ws.send(JSON.stringify({ type: 'error', message: 'You need a Breadio NFT to play!' }));
+        // Verify ownership (cached for 5 min)
+        const cacheKey = `bal_${playerAddress}`;
+        let owns = verifyCache[cacheKey];
+        if (owns === undefined) {
+          try {
+            const balance = await readContract.balanceOf(playerAddress);
+            owns = Number(balance) > 0;
+            verifyCache[cacheKey] = owns;
+            setTimeout(() => delete verifyCache[cacheKey], 5 * 60 * 1000);
+          } catch {
+            ws.send(JSON.stringify({ type: 'error', message: 'Could not verify wallet' }));
             return;
           }
-        } catch {
-          ws.send(JSON.stringify({ type: 'error', message: 'Could not verify wallet' }));
+        }
+        if (!owns) {
+          ws.send(JSON.stringify({ type: 'error', message: 'You need a Breadio NFT to play!' }));
           return;
         }
 
