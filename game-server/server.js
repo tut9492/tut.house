@@ -416,30 +416,27 @@ wss.on('connection', (ws) => {
           return;
         }
 
-        // Verify ownership (cached for 5 min)
+        // Check ownership (cached for 5 min)
         const cacheKey = `bal_${playerAddress}`;
-        let owns = verifyCache[cacheKey];
-        if (owns === undefined) {
+        let isHolder = verifyCache[cacheKey];
+        if (isHolder === undefined) {
           try {
             const balance = await readContract.balanceOf(playerAddress);
-            owns = Number(balance) > 0;
-            verifyCache[cacheKey] = owns;
+            isHolder = Number(balance) > 0;
+            verifyCache[cacheKey] = isHolder;
             setTimeout(() => delete verifyCache[cacheKey], 5 * 60 * 1000);
           } catch {
             ws.send(JSON.stringify({ type: 'error', message: 'Could not verify wallet' }));
             return;
           }
         }
-        if (!owns) {
-          ws.send(JSON.stringify({ type: 'error', message: 'You need a Breadio NFT to play!' }));
-          return;
-        }
 
-        // Register player
+        // Register player with holder status
         gameState.players[playerAddress] = {
           username: playerUsername,
           cursor: { x: 0, y: 0 },
           lastFlip: 0,
+          isHolder,
           ws,
         };
 
@@ -520,20 +517,25 @@ wss.on('connection', (ws) => {
           return;
         }
 
-        // Check if player hit their win cap — no more turns (admins exempt)
+        // Tiered win cap — holders: 2, non-holders: 1, admins: unlimited
+        const player = gameState.players[playerAddress];
         if (!ADMIN_WALLETS.includes(playerAddress)) {
+          const maxWins = player.isHolder ? 2 : 1;
           const playerRow = db.prepare('SELECT wins FROM players WHERE address = ?').get(playerAddress);
-          if (playerRow && playerRow.wins >= gameState.maxWinsPerPlayer) {
-            ws.send(JSON.stringify({ type: 'error', message: `YOU WON ${gameState.maxWinsPerPlayer} ALREADY! LET OTHERS PLAY` }));
+          if (playerRow && playerRow.wins >= maxWins) {
+            ws.send(JSON.stringify({ type: 'error', message: player.isHolder
+              ? `YOU WON ${maxWins} ALREADY! LET OTHERS PLAY`
+              : `NON-HOLDERS GET 1 WIN. GET BREAD FOR MORE!` }));
             return;
           }
         }
 
-        // Cooldown
+        // Tiered cooldown — holders: 5s, non-holders: 30s, admins: 5s
+        const playerCooldown = player.isHolder || ADMIN_WALLETS.includes(playerAddress) ? 5000 : 30000;
         const now = Date.now();
-        const lastFlip = gameState.players[playerAddress].lastFlip || 0;
-        if (now - lastFlip < FLIP_COOLDOWN) {
-          const wait = Math.ceil((FLIP_COOLDOWN - (now - lastFlip)) / 1000);
+        const lastFlip = player.lastFlip || 0;
+        if (now - lastFlip < playerCooldown) {
+          const wait = Math.ceil((playerCooldown - (now - lastFlip)) / 1000);
           ws.send(JSON.stringify({ type: 'error', message: `Wait ${wait}s` }));
           return;
         }

@@ -368,11 +368,8 @@ export default function ToastOrFineBooty() {
       });
       const data = await res.json();
       setOwnsNFT(data.owns);
-      if (data.owns) {
-        setGamePhase('verified');
-      } else {
-        setGamePhase('rejected');
-      }
+      // Everyone can play — holders get better perks
+      setGamePhase('verified');
     } catch (err: any) {
       console.error('Wallet connect error:', err);
       setError(err?.message || 'Failed to connect wallet');
@@ -506,8 +503,9 @@ export default function ToastOrFineBooty() {
 
     wsRef.current.send(JSON.stringify({ type: 'flip', tokenId }));
 
-    // Start 5 second cooldown
-    setCooldown(5);
+    // Start cooldown — holders: 5s, non-holders: 30s
+    const cd = ownsNFT ? 5 : 30;
+    setCooldown(cd);
     const interval = setInterval(() => {
       setCooldown(prev => {
         if (prev <= 1) { clearInterval(interval); return 0; }
