@@ -71,9 +71,13 @@ function LandingDialogue({ phase, ownsNFT, username, setUsername, onConnect, onJ
         "I HAVE A LOT OF BREAD TO BURN, PLEASE HELP ME. IF YOU FIND SPECIAL BREAD YOU CAN KEEP IT. GAS ON ME. BREADIO",
         "CONNECT YOUR WALLET TO PLAY.",
       ]
-    : phase === 'verified'
+    : phase === 'verified' && ownsNFT
     ? [
-        "WELCOME. YOU CAN HELP ME BURN BREAD. WHATS YOUR NAME?",
+        "VERY NICE BOOTY... BREAD. YOU CAN HELP ME BURN BREAD. WHATS YOUR NAME?",
+      ]
+    : phase === 'verified' && !ownsNFT
+    ? [
+        "YOU HAVE NO BREAD. SHAME. YOU CAN STILL PLAY. 30 SECOND COOLDOWN THOUGH.",
       ]
     : [
         "GIVE ME YOUR NAME.",
