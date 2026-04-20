@@ -32,7 +32,16 @@ if (!SIGNER_KEY) {
 
 // ─── Blockchain Setup ───────────────────────────────────────────────────────
 
-const httpProvider = new ethers.JsonRpcProvider(RPC);
+// HTTP provider with keep-alive for persistent connections
+const https = require('https');
+const keepAliveAgent = new https.Agent({ keepAlive: true, maxSockets: 10 });
+const httpProvider = new ethers.JsonRpcProvider(RPC, undefined, {
+  staticNetwork: ethers.Network.from(4326),
+  batchMaxCount: 1,
+});
+// Patch fetch options to use keep-alive agent
+const origFetch = httpProvider._getConnection?.bind(httpProvider);
+
 const wallet = new ethers.Wallet(SIGNER_KEY, httpProvider);
 const ABI = [
   'function burn(uint256 tokenId)',
@@ -44,6 +53,37 @@ const ABI = [
 const contract = new ethers.Contract(CONTRACT, ABI, wallet);
 // Read-only contract for verify/tokenURI calls
 const readContract = new ethers.Contract(CONTRACT, ABI, httpProvider);
+
+// Warm up RPC connection on startup
+async function warmUpRpc() {
+  try {
+    await httpProvider.getNetwork();
+    console.log('RPC connection warmed up');
+  } catch {}
+}
+
+// Send raw signed tx using MegaETH's sync method for instant receipt
+async function sendRawSync(signedTx) {
+  try {
+    const res = await fetch(RPC, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        method: 'eth_sendRawTransactionSync',
+        params: [signedTx],
+        id: Date.now(),
+      }),
+      agent: keepAliveAgent,
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    return data.result; // full receipt
+  } catch (err) {
+    // Fallback to normal send
+    return null;
+  }
+}
 
 // ─── Parallel Nonce Manager (no queue bottleneck) ──────────────────────────
 let currentNonce = null;
@@ -701,31 +741,51 @@ wss.on('connection', (ws) => {
           console.log(`[ROUND] Round ${gameState.round} complete — ${gameState.maxPrizes} prizes found`);
         }
 
-        // Fire on-chain tx in background — completely non-blocking
+        // Fire on-chain tx in background — sign locally, send via sync RPC
         (async () => {
           try {
-            let tx;
+            // Build and sign the tx locally
+            let txData;
+            const iface = new ethers.Interface(ABI);
             if (result === 'prize') {
               console.log(`[PRIZE] #${tokenId} → ${playerUsername} (nonce: ${nonce})`);
-              tx = await contract.transferFrom(wallet.address, playerAddress, tokenId, { gasLimit: 200000, nonce });
+              txData = iface.encodeFunctionData('transferFrom', [wallet.address, playerAddress, tokenId]);
             } else {
               console.log(`[BURN] #${tokenId} 🔥 (nonce: ${nonce})`);
-              tx = await contract.burn(tokenId, { gasLimit: 200000, nonce });
+              txData = iface.encodeFunctionData('burn', [tokenId]);
             }
 
-            db.prepare('UPDATE cards SET tx_hash = ? WHERE token_id = ?').run(tx.hash, tokenId);
-            db.prepare('INSERT INTO flips (token_id, player_address, result, tx_hash) VALUES (?, ?, ?, ?)')
-              .run(tokenId, playerAddress, result, tx.hash);
+            const txReq = {
+              to: CONTRACT,
+              data: txData,
+              gasLimit: 200000,
+              nonce,
+              chainId: 4326,
+              maxFeePerGas: ethers.parseUnits('0.001', 'gwei'),
+              maxPriorityFeePerGas: 0,
+              type: 2,
+            };
+            const signedTx = await wallet.signTransaction(txReq);
 
-            tx.wait().then(() => {
-              console.log(`[${result.toUpperCase()}] ✅ #${tokenId} confirmed: ${tx.hash}`);
-            }).catch(err => {
-              console.error(`[ERROR] #${tokenId} confirmation failed: ${err.message.slice(0, 100)}`);
-            });
+            // Try MegaETH sync method first (instant receipt)
+            const receipt = await sendRawSync(signedTx);
+            if (receipt && receipt.transactionHash) {
+              const txHash = receipt.transactionHash;
+              db.prepare('UPDATE cards SET tx_hash = ? WHERE token_id = ?').run(txHash, tokenId);
+              db.prepare('INSERT INTO flips (token_id, player_address, result, tx_hash) VALUES (?, ?, ?, ?)')
+                .run(tokenId, playerAddress, result, txHash);
+              console.log(`[${result.toUpperCase()}] ✅ #${tokenId} confirmed instantly: ${txHash}`);
+            } else {
+              // Fallback: send via ethers (normal async)
+              const txResponse = await httpProvider.broadcastTransaction(signedTx);
+              db.prepare('UPDATE cards SET tx_hash = ? WHERE token_id = ?').run(txResponse.hash, tokenId);
+              db.prepare('INSERT INTO flips (token_id, player_address, result, tx_hash) VALUES (?, ?, ?, ?)')
+                .run(tokenId, playerAddress, result, txResponse.hash);
+              console.log(`[${result.toUpperCase()}] 📤 #${tokenId} sent: ${txResponse.hash}`);
+            }
           } catch (err) {
             console.error(`[ERROR] Flip #${tokenId} tx failed:`, err.message.slice(0, 100));
             // Card already shows as flipped — log the failure but don't revert UI
-            // On-chain state may not match game state, but this is rare on MegaETH
           }
         })();
 
@@ -758,6 +818,7 @@ wss.on('connection', (ws) => {
 
 loadGameData();
 initNonce();
+warmUpRpc();
 
 server.listen(PORT, () => {
   console.log(`\n🍞 TOAST OR FINE BOOTY`);
