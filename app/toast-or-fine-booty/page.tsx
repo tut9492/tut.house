@@ -401,8 +401,12 @@ export default function ToastOrFineBooty() {
       setOwnsNFT(data.owns);
       localStorage.setItem('toast_wallet', addr);
       localStorage.setItem('toast_owns', data.owns ? '1' : '0');
-      // Everyone can play — holders get better perks
-      setGamePhase('verified');
+      if (data.owns) {
+        setGamePhase('verified');
+      } else {
+        setGamePhase('rejected');
+        setError('YOU NEED BREADIO TO PLAY');
+      }
     } catch (err: any) {
       console.error('Wallet connect error:', err);
       setError(err?.message || 'Failed to connect wallet');

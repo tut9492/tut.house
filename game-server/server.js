@@ -551,6 +551,12 @@ wss.on('connection', (ws) => {
           }
         }
 
+        // Holders only
+        if (!isHolder && !ADMIN_WALLETS.includes(playerAddress)) {
+          ws.send(JSON.stringify({ type: 'error', message: 'YOU NEED BREADIO TO PLAY' }));
+          return;
+        }
+
         // Build board state (sent to everyone)
         const boardState = {};
         for (const [id, card] of Object.entries(gameState.cards)) {
