@@ -267,7 +267,7 @@ export default function ToastOrFineBooty() {
       wsRef.current = ws;
       ws.onopen = () => {
         setConnected(true);
-        ws.send(JSON.stringify({ type: 'join', address: savedWallet, username: savedUsername, room: savedOwns === '1' ? 'breadio' : 'public' }));
+        ws.send(JSON.stringify({ type: 'join', address: savedWallet, username: savedUsername }));
       };
       ws.onmessage = handleWsMessage;
       ws.onclose = () => setConnected(false);
@@ -486,7 +486,6 @@ export default function ToastOrFineBooty() {
         type: 'join',
         address: walletAddress,
         username: username.trim(),
-        room: ownsNFT ? 'breadio' : 'public',
       }));
     };
 

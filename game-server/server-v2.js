@@ -143,20 +143,40 @@ db.exec(`
 
 const ROOM_CONFIG = {
   breadio: {
-    name: 'BREADIO ROOM',
+    name: 'BREADIO ROOM 1',
     requiresHolding: true,
     cooldown: 5000,
     maxWins: 2,
     maxPlayers: 10,
-    maxPrizes: 15,
+    maxPrizes: 5,
+    fillOrder: 1,
+  },
+  breadio2: {
+    name: 'BREADIO ROOM 2',
+    requiresHolding: true,
+    cooldown: 5000,
+    maxWins: 2,
+    maxPlayers: 10,
+    maxPrizes: 5,
+    fillOrder: 2,
   },
   public: {
-    name: 'PUBLIC ROOM',
+    name: 'PUBLIC ROOM 1',
     requiresHolding: false,
     cooldown: 30000,
     maxWins: 1,
     maxPlayers: 10,
-    maxPrizes: 10,
+    maxPrizes: 5,
+    fillOrder: 1,
+  },
+  public2: {
+    name: 'PUBLIC ROOM 2',
+    requiresHolding: false,
+    cooldown: 30000,
+    maxWins: 1,
+    maxPlayers: 10,
+    maxPrizes: 5,
+    fillOrder: 2,
   },
 };
 
@@ -494,21 +514,38 @@ wss.on('connection', (ws) => {
       case 'join': {
         playerAddress = msg.address?.toLowerCase();
         playerUsername = msg.username || playerAddress?.slice(0, 8);
-        const roomId = msg.room || 'breadio';
-        playerRoom = roomId;
 
         if (!playerAddress) return;
-        const room = rooms[roomId];
-        if (!room) { ws.send(JSON.stringify({ type: 'error', message: 'Room not found' })); return; }
 
         // Check holder status
         const isHolder = await checkHolder(playerAddress);
         if (isHolder === null) { ws.send(JSON.stringify({ type: 'error', message: 'Could not verify wallet' })); return; }
+        const isAdmin = ADMIN_WALLETS.includes(playerAddress);
 
-        // Room requires holding?
-        if (room.config.requiresHolding && !isHolder && !ADMIN_WALLETS.includes(playerAddress)) {
-          ws.send(JSON.stringify({ type: 'error', message: 'YOU NEED BREADIO FOR THIS ROOM' })); return;
+        // Auto-route to best room: fill Room 1 first, overflow to Room 2
+        const holderRooms = isHolder || isAdmin ? ['breadio', 'breadio2'] : ['public', 'public2'];
+        let roomId = null;
+
+        // Check if already in a room
+        for (const rid of holderRooms) {
+          if (rooms[rid]?.players[playerAddress]) { roomId = rid; break; }
         }
+
+        // Find room with space
+        if (!roomId) {
+          for (const rid of holderRooms) {
+            const r = rooms[rid];
+            if (r && (Object.keys(r.players).length < r.config.maxPlayers || isAdmin)) {
+              roomId = rid; break;
+            }
+          }
+        }
+
+        // All full — join lobby of first room
+        if (!roomId) roomId = holderRooms[0];
+
+        playerRoom = roomId;
+        const room = rooms[roomId];
 
         const boardMsg = buildBoardMsg(roomId);
 
@@ -520,7 +557,6 @@ wss.on('connection', (ws) => {
           break;
         }
 
-        const isAdmin = ADMIN_WALLETS.includes(playerAddress);
         const activeCount = Object.keys(room.players).length;
 
         if (activeCount < room.config.maxPlayers || isAdmin) {
@@ -656,58 +692,59 @@ wss.on('connection', (ws) => {
           console.log(`[${playerRoom}] ROUND ${room.round} COMPLETE`);
         }
 
-        // Queue on-chain tx with backpressure
-        const capturedAddress = playerAddress;
-        const capturedRoom = playerRoom;
-        enqueueTx(async () => {
-          try {
-            const iface = new ethers.Interface(ABI);
-            let txData;
-            if (result === 'prize') {
-              console.log(`[${capturedRoom}] PRIZE #${tokenId} → ${playerUsername} (nonce: ${nonce})`);
-              txData = iface.encodeFunctionData('transferFrom', [wallet.address, capturedAddress, tokenId]);
-            } else {
-              console.log(`[${capturedRoom}] BURN #${tokenId} (nonce: ${nonce})`);
-              txData = iface.encodeFunctionData('burn', [tokenId]);
-            }
-
-            const txReq = {
-              to: CONTRACT, data: txData, gasLimit: 200000, nonce,
-              chainId: 4326, maxFeePerGas: ethers.parseUnits('0.001', 'gwei'),
-              maxPriorityFeePerGas: 0, type: 2,
-            };
-            const signedTx = await wallet.signTransaction(txReq);
-
-            // Try sync first
+        // On-chain: ONLY for prizes. Burns are game-state only (no chain tx).
+        if (result === 'prize') {
+          const capturedAddress = playerAddress;
+          const capturedRoom = playerRoom;
+          const capturedUsername = playerUsername;
+          enqueueTx(async () => {
             try {
-              const syncRes = await fetch(WRITE_RPC, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_sendRawTransactionSync', params: [signedTx], id: Date.now() }),
-              });
-              const syncData = await syncRes.json();
-              if (syncData.result?.transactionHash) {
-                db.prepare('UPDATE cards SET tx_hash = ? WHERE token_id = ? AND room = ?').run(syncData.result.transactionHash, tokenId, capturedRoom);
-                db.prepare('INSERT INTO flips (token_id, room, player_address, player_username, result, tx_hash) VALUES (?, ?, ?, ?, ?, ?)')
-                  .run(tokenId, capturedRoom, capturedAddress, playerUsername, result, syncData.result.transactionHash);
-                console.log(`[${capturedRoom}] ✅ #${tokenId} confirmed: ${syncData.result.transactionHash}`);
-                return;
-              }
-            } catch {}
+              const iface = new ethers.Interface(ABI);
+              const txData = iface.encodeFunctionData('transferFrom', [wallet.address, capturedAddress, tokenId]);
+              console.log(`[${capturedRoom}] PRIZE #${tokenId} → ${capturedUsername} (nonce: ${nonce})`);
 
-            // Fallback
-            const txResponse = await writeProvider.broadcastTransaction(signedTx);
-            db.prepare('UPDATE cards SET tx_hash = ? WHERE token_id = ? AND room = ?').run(txResponse.hash, tokenId, capturedRoom);
-            db.prepare('INSERT INTO flips (token_id, room, player_address, player_username, result, tx_hash) VALUES (?, ?, ?, ?, ?, ?)')
-              .run(tokenId, capturedRoom, capturedAddress, playerUsername, result, txResponse.hash);
-            console.log(`[${capturedRoom}] 📤 #${tokenId} sent: ${txResponse.hash}`);
-          } catch (err) {
-            console.error(`[${capturedRoom}] ERROR #${tokenId}: ${err.message.slice(0, 80)}`);
-            // Still log to flips without tx hash
-            db.prepare('INSERT INTO flips (token_id, room, player_address, player_username, result) VALUES (?, ?, ?, ?, ?)')
-              .run(tokenId, capturedRoom, capturedAddress, playerUsername, result);
-          }
-        });
+              const txReq = {
+                to: CONTRACT, data: txData, gasLimit: 200000, nonce,
+                chainId: 4326, maxFeePerGas: ethers.parseUnits('0.001', 'gwei'),
+                maxPriorityFeePerGas: 0, type: 2,
+              };
+              const signedTx = await wallet.signTransaction(txReq);
+
+              // Try sync first
+              try {
+                const syncRes = await fetch(WRITE_RPC, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_sendRawTransactionSync', params: [signedTx], id: Date.now() }),
+                });
+                const syncData = await syncRes.json();
+                if (syncData.result?.transactionHash) {
+                  db.prepare('UPDATE cards SET tx_hash = ? WHERE token_id = ? AND room = ?').run(syncData.result.transactionHash, tokenId, capturedRoom);
+                  db.prepare('INSERT INTO flips (token_id, room, player_address, player_username, result, tx_hash) VALUES (?, ?, ?, ?, ?, ?)')
+                    .run(tokenId, capturedRoom, capturedAddress, capturedUsername, result, syncData.result.transactionHash);
+                  console.log(`[${capturedRoom}] ✅ #${tokenId} confirmed: ${syncData.result.transactionHash}`);
+                  return;
+                }
+              } catch {}
+
+              // Fallback
+              const txResponse = await writeProvider.broadcastTransaction(signedTx);
+              db.prepare('UPDATE cards SET tx_hash = ? WHERE token_id = ? AND room = ?').run(txResponse.hash, tokenId, capturedRoom);
+              db.prepare('INSERT INTO flips (token_id, room, player_address, player_username, result, tx_hash) VALUES (?, ?, ?, ?, ?, ?)')
+                .run(tokenId, capturedRoom, capturedAddress, capturedUsername, result, txResponse.hash);
+              console.log(`[${capturedRoom}] 📤 #${tokenId} sent: ${txResponse.hash}`);
+            } catch (err) {
+              console.error(`[${capturedRoom}] ERROR prize #${tokenId}: ${err.message.slice(0, 80)}`);
+              db.prepare('INSERT INTO flips (token_id, room, player_address, player_username, result) VALUES (?, ?, ?, ?, ?)')
+                .run(tokenId, capturedRoom, capturedAddress, capturedUsername, result);
+            }
+          });
+        } else {
+          // Burns: game-state only, just log to DB
+          db.prepare('INSERT INTO flips (token_id, room, player_address, player_username, result) VALUES (?, ?, ?, ?, ?)')
+            .run(tokenId, playerRoom, playerAddress, playerUsername, result);
+          console.log(`[${playerRoom}] BURN #${tokenId} (game-state only)`);
+        }
 
         break;
       }
