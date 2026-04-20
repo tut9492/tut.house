@@ -107,15 +107,18 @@ db.exec(`
 
 let gameState = {
   cards: {},       // tokenId -> { status, isPrize, flippedBy }
-  players: {},     // address -> { username, cursor, lastFlip }
+  players: {},     // address -> { username, cursor, lastFlip, isHolder }
+  spectators: {},  // address -> { username, ws }
+  lobby: [],       // [{address, username, isHolder, ws}] — waiting to play
   totalCards: 0,
   totalPrizes: 0,
   prizesFound: 0,
   cardsBurned: 0,
-  paused: true,    // game starts paused — admin must start it
+  paused: true,
   round: 1,
-  maxPrizes: 25,   // prizes allowed this round
-  maxWinsPerPlayer: 2, // max wins per address per round
+  maxPrizes: 25,
+  maxWinsPerPlayer: 2,
+  maxActivePlayers: 10,
 };
 
 // Load prize list
@@ -341,6 +344,12 @@ app.get('/api/game/admin/status', (req, res) => {
     cardsBurned: gameState.cardsBurned,
     cardsRemaining: gameState.totalCards - gameState.prizesFound - gameState.cardsBurned,
     playersOnline: Object.keys(gameState.players).length,
+    lobbyCount: gameState.lobby.length,
+    activePlayers: Object.entries(gameState.players).map(([addr, p]) => ({
+      address: addr.slice(0, 6) + '...' + addr.slice(-4),
+      username: p.username,
+      isHolder: p.isHolder,
+    })),
   });
 });
 
@@ -367,6 +376,44 @@ function broadcast(data, exclude = null) {
   });
 }
 
+function broadcastCounts() {
+  broadcast({
+    type: 'counts',
+    players: Object.keys(gameState.players).length,
+    lobby: gameState.lobby.length,
+    spectators: wss.clients.size - Object.keys(gameState.players).length,
+  });
+}
+
+// Promote next lobby player to active
+function promoteFromLobby() {
+  while (gameState.lobby.length > 0 && Object.keys(gameState.players).length < gameState.maxActivePlayers) {
+    const next = gameState.lobby.shift();
+    if (next.ws.readyState !== 1) continue; // skip disconnected
+
+    gameState.players[next.address] = {
+      username: next.username,
+      cursor: { x: 0, y: 0 },
+      lastFlip: 0,
+      isHolder: next.isHolder,
+      ws: next.ws,
+    };
+    db.prepare('INSERT OR REPLACE INTO players (address, username) VALUES (?, ?)').run(next.address, next.username);
+
+    next.ws.send(JSON.stringify({ type: 'promoted', message: 'YOUR TURN! START FLIPPING!' }));
+    broadcast({ type: 'player_joined', username: next.username, playerCount: Object.keys(gameState.players).length, lobbyCount: gameState.lobby.length });
+    console.log(`[PROMOTED] ${next.username} from lobby`);
+
+    // Notify remaining lobby of new positions
+    gameState.lobby.forEach((l, i) => {
+      if (l.ws.readyState === 1) {
+        l.ws.send(JSON.stringify({ type: 'lobby_update', position: i + 1, lobbySize: gameState.lobby.length }));
+      }
+    });
+  }
+  broadcastCounts();
+}
+
 wss.on('connection', (ws) => {
   let playerAddress = null;
   let playerUsername = null;
@@ -381,40 +428,6 @@ wss.on('connection', (ws) => {
         playerUsername = msg.username || playerAddress?.slice(0, 8);
 
         if (!playerAddress) return;
-
-        // Already connected — skip re-verification
-        if (gameState.players[playerAddress]) {
-          gameState.players[playerAddress].ws = ws;
-          // Resend board state
-          const boardState = {};
-          for (const [id, card] of Object.entries(gameState.cards)) {
-            boardState[id] = {
-              status: card.status,
-              isPrize: card.status !== 'face_down' ? card.isPrize : undefined,
-              flippedBy: card.flippedBy,
-            };
-          }
-          ws.send(JSON.stringify({
-            type: 'board',
-            cards: boardState,
-            stats: {
-              totalCards: gameState.totalCards,
-              totalPrizes: gameState.maxPrizes,
-              prizesFound: gameState.prizesFound,
-              cardsBurned: gameState.cardsBurned,
-              round: gameState.round,
-            },
-          }));
-          console.log(`[REJOIN] ${playerUsername} (${playerAddress.slice(0, 10)}...)`);
-          break;
-        }
-
-        // Max 3 players at a time (admins exempt)
-        const playerCount = Object.keys(gameState.players).length;
-        if (playerCount >= 10 && !ADMIN_WALLETS.includes(playerAddress)) {
-          ws.send(JSON.stringify({ type: 'error', message: 'ROOM FULL! TRY AGAIN SOON' }));
-          return;
-        }
 
         // Check ownership (cached for 5 min)
         const cacheKey = `bal_${playerAddress}`;
@@ -431,18 +444,7 @@ wss.on('connection', (ws) => {
           }
         }
 
-        // Register player with holder status
-        gameState.players[playerAddress] = {
-          username: playerUsername,
-          cursor: { x: 0, y: 0 },
-          lastFlip: 0,
-          isHolder,
-          ws,
-        };
-
-        db.prepare('INSERT OR REPLACE INTO players (address, username) VALUES (?, ?)').run(playerAddress, playerUsername);
-
-        // Send full board state to new player
+        // Build board state (sent to everyone)
         const boardState = {};
         for (const [id, card] of Object.entries(gameState.cards)) {
           boardState[id] = {
@@ -451,8 +453,7 @@ wss.on('connection', (ws) => {
             flippedBy: card.flippedBy,
           };
         }
-
-        ws.send(JSON.stringify({
+        const boardMsg = {
           type: 'board',
           cards: boardState,
           stats: {
@@ -462,17 +463,55 @@ wss.on('connection', (ws) => {
             cardsBurned: gameState.cardsBurned,
             round: gameState.round,
           },
-        }));
+        };
 
-        // Announce to others
-        broadcast({
-          type: 'player_joined',
-          address: playerAddress.slice(0, 6) + '...' + playerAddress.slice(-4),
-          username: playerUsername,
-          playerCount: Object.keys(gameState.players).length,
-        }, ws);
+        // Already an active player — just update WS
+        if (gameState.players[playerAddress]) {
+          gameState.players[playerAddress].ws = ws;
+          ws.send(JSON.stringify({ ...boardMsg, role: 'player' }));
+          console.log(`[REJOIN] ${playerUsername}`);
+          break;
+        }
 
-        console.log(`[JOIN] ${playerUsername} (${playerAddress.slice(0, 10)}...)`);
+        const isAdmin = ADMIN_WALLETS.includes(playerAddress);
+        const activeCount = Object.keys(gameState.players).length;
+
+        // Try to join as active player
+        if (activeCount < gameState.maxActivePlayers || isAdmin) {
+          gameState.players[playerAddress] = {
+            username: playerUsername,
+            cursor: { x: 0, y: 0 },
+            lastFlip: 0,
+            isHolder,
+            ws,
+          };
+          db.prepare('INSERT OR REPLACE INTO players (address, username) VALUES (?, ?)').run(playerAddress, playerUsername);
+          ws.send(JSON.stringify({ ...boardMsg, role: 'player' }));
+
+          broadcast({
+            type: 'player_joined',
+            username: playerUsername,
+            playerCount: Object.keys(gameState.players).length,
+            lobbyCount: gameState.lobby.length,
+          }, ws);
+
+          console.log(`[JOIN] ${playerUsername} (${isHolder ? 'holder' : 'non-holder'})`);
+        } else {
+          // Check if already in lobby
+          const inLobby = gameState.lobby.find(l => l.address === playerAddress);
+          if (!inLobby) {
+            gameState.lobby.push({ address: playerAddress, username: playerUsername, isHolder, ws });
+            console.log(`[LOBBY] ${playerUsername} — position ${gameState.lobby.length}`);
+          } else {
+            inLobby.ws = ws;
+          }
+
+          const pos = gameState.lobby.findIndex(l => l.address === playerAddress) + 1;
+          ws.send(JSON.stringify({ ...boardMsg, role: 'spectator', lobbyPosition: pos, lobbySize: gameState.lobby.length }));
+        }
+
+        // Send spectator/lobby counts to everyone
+        broadcastCounts();
         break;
       }
 
@@ -625,14 +664,21 @@ wss.on('connection', (ws) => {
   });
 
   ws.on('close', () => {
-    if (playerAddress && gameState.players[playerAddress]) {
-      delete gameState.players[playerAddress];
-      broadcast({
-        type: 'player_left',
-        username: playerUsername,
-        playerCount: Object.keys(gameState.players).length,
-      });
-      console.log(`[LEAVE] ${playerUsername}`);
+    if (playerAddress) {
+      if (gameState.players[playerAddress]) {
+        delete gameState.players[playerAddress];
+        broadcast({
+          type: 'player_left',
+          username: playerUsername,
+          playerCount: Object.keys(gameState.players).length,
+        });
+        console.log(`[LEAVE] ${playerUsername}`);
+        // Promote next from lobby
+        promoteFromLobby();
+      }
+      // Remove from lobby if there
+      gameState.lobby = gameState.lobby.filter(l => l.address !== playerAddress);
+      broadcastCounts();
     }
   });
 });

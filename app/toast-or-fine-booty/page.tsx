@@ -242,6 +242,9 @@ export default function ToastOrFineBooty() {
   const notifId = useRef(0);
   const [error, setError] = useState('');
   const [cooldown, setCooldown] = useState(0);
+  const [role, setRole] = useState<'player' | 'spectator'>('player');
+  const [lobbyPosition, setLobbyPosition] = useState(0);
+  const [counts, setCounts] = useState({ players: 0, lobby: 0, spectators: 0 });
   const [gamePhase, setGamePhase] = useState<'connect' | 'verified' | 'rejected' | 'username' | 'playing' | 'gameover'>('connect');
   const [showAdmin, setShowAdmin] = useState(false);
   const [adminAuthed, setAdminAuthed] = useState(false);
@@ -403,11 +406,12 @@ export default function ToastOrFineBooty() {
             newCards[Number(id)] = { tokenId: Number(id), ...card };
             order.push(Number(id));
           }
-          // Shuffle order for display
           order.sort(() => Math.random() - 0.5);
           setCards(newCards);
           setCardOrder(order);
           setStats(msg.stats);
+          setRole(msg.role || 'player');
+          if (msg.lobbyPosition) setLobbyPosition(msg.lobbyPosition);
           setGamePhase('playing');
           break;
 
@@ -476,6 +480,21 @@ export default function ToastOrFineBooty() {
           setError('');
           break;
 
+        case 'promoted':
+          setRole('player');
+          setLobbyPosition(0);
+          setError('YOUR TURN! START FLIPPING!');
+          setTimeout(() => setError(''), 3000);
+          break;
+
+        case 'lobby_update':
+          setLobbyPosition(msg.position);
+          break;
+
+        case 'counts':
+          setCounts(msg);
+          break;
+
         case 'game_reset':
           setGamePhase('connect');
           setCards({});
@@ -497,7 +516,7 @@ export default function ToastOrFineBooty() {
 
   // Flip card
   const flipCard = (tokenId: number) => {
-    if (!wsRef.current || flipping || cooldown > 0) return;
+    if (!wsRef.current || flipping || cooldown > 0 || role !== 'player') return;
     const card = cards[tokenId];
     if (!card || card.status !== 'face_down') return;
 
@@ -659,6 +678,27 @@ export default function ToastOrFineBooty() {
               fontFamily: "'Press Start 2P'", textShadow: '2px 2px #8B4513',
             }}>
               WAIT {cooldown}s
+            </div>
+          )}
+          {role === 'spectator' && lobbyPosition > 0 && (
+            <div style={{
+              fontSize: '10px', color: '#FFD700', marginTop: '8px',
+              fontFamily: "'Press Start 2P'", textShadow: '2px 2px #8B4513',
+            }}>
+              SPECTATING — QUEUE POSITION: {lobbyPosition}
+            </div>
+          )}
+          {role === 'spectator' && lobbyPosition === 0 && (
+            <div style={{
+              fontSize: '10px', color: '#aaa', marginTop: '8px',
+              fontFamily: "'Press Start 2P'",
+            }}>
+              SPECTATING
+            </div>
+          )}
+          {gamePhase === 'playing' && (
+            <div style={{ fontSize: '7px', color: '#666', marginTop: '4px', fontFamily: "'Press Start 2P'" }}>
+              PLAYERS: {counts.players} | LOBBY: {counts.lobby}
             </div>
           )}
         </div>
