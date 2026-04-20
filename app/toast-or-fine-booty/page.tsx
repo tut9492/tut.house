@@ -252,6 +252,11 @@ export default function ToastOrFineBooty() {
     const savedWallet = localStorage.getItem('toast_wallet');
     const savedUsername = localStorage.getItem('toast_username');
     const savedOwns = localStorage.getItem('toast_owns');
+    const savedAdminToken = localStorage.getItem('toast_admin_token');
+    if (savedAdminToken) {
+      setAdminToken(savedAdminToken);
+      setAdminAuthed(true);
+    }
     if (savedWallet && savedUsername) {
       setWalletAddress(savedWallet);
       setUsername(savedUsername);
@@ -286,6 +291,7 @@ export default function ToastOrFineBooty() {
       setAdminToken(data.token);
       setAdminAuthed(true);
       setAdminStatus(data.status);
+      localStorage.setItem('toast_admin_token', data.token);
     } catch { setError('Signature failed'); }
   };
 
