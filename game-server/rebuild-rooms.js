@@ -32,7 +32,7 @@ async function scan() {
   var signerTokens = [];
   var treasuryTokens = [];
 
-  for (var id = 4500; id <= 6969; id++) {
+  for (var id = 1; id <= 6969; id++) {
     try {
       var owner = (await contract.ownerOf(id)).toLowerCase();
       if (owner === SIGNER) signerTokens.push(id);
