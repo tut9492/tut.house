@@ -246,7 +246,10 @@ async function checkHolder(address) {
 // ─── Express Server ─────────────────────────────────────────────────────────
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: ['https://tuthouse.vercel.app', 'https://tut.house', 'https://www.tut.house', 'http://localhost:3000'],
+  credentials: true,
+}));
 app.use(express.json());
 
 // Room list
@@ -615,6 +618,24 @@ wss.on('connection', (ws) => {
         } else {
           room.cardsBurned++;
           db.prepare('UPDATE players SET burns = burns + 1 WHERE address = ? AND room = ?').run(playerAddress, playerRoom);
+        }
+
+        // Auto-kick if player hit win cap (after a prize)
+        if (card.isPrize && !ADMIN_WALLETS.includes(playerAddress)) {
+          const updatedRow = db.prepare('SELECT wins FROM players WHERE address = ? AND room = ?').get(playerAddress, playerRoom);
+          if (updatedRow && updatedRow.wins >= room.config.maxWins) {
+            // Delay kick slightly so the player sees their win animation
+            setTimeout(() => {
+              const p = room.players[playerAddress];
+              if (p?.ws?.readyState === 1) {
+                p.ws.send(JSON.stringify({ type: 'maxed_out', message: `YOU WON ${room.config.maxWins}! NICE BOOTY! MAKING ROOM FOR OTHERS...` }));
+              }
+              delete room.players[playerAddress];
+              broadcastToRoom(playerRoom, { type: 'player_left', username: playerUsername });
+              console.log(`[${playerRoom}] AUTO-KICK ${playerUsername} (hit ${room.config.maxWins} wins)`);
+              promoteFromLobby(playerRoom);
+            }, 3000);
+          }
         }
 
         // Broadcast result instantly
