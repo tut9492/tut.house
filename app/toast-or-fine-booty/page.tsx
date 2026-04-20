@@ -708,14 +708,6 @@ export default function ToastOrFineBooty() {
               <span>REMAINING: {stats.cardsRemaining}</span>
             </div>
           )}
-          {cooldown > 0 && (
-            <div style={{
-              fontSize: '12px', color: '#FFD700', marginTop: '8px',
-              fontFamily: "'Press Start 2P'", textShadow: '2px 2px #8B4513',
-            }}>
-              WAIT {cooldown}s
-            </div>
-          )}
           {role === 'spectator' && lobbyPosition > 0 && (
             <div style={{
               fontSize: '10px', color: '#FFD700', marginTop: '8px',
@@ -739,6 +731,18 @@ export default function ToastOrFineBooty() {
           )}
         </div>
       </div>
+
+      {/* Cooldown Timer — fixed on screen */}
+      {cooldown > 0 && (
+        <div style={{
+          position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+          fontSize: '24px', color: '#FFD700', zIndex: 150,
+          fontFamily: "'Press Start 2P'", textShadow: '3px 3px #8B4513',
+          pointerEvents: 'none', opacity: 0.9,
+        }}>
+          WAIT {cooldown}s
+        </div>
+      )}
 
       {/* Error Toast */}
       {error && (
