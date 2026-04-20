@@ -240,6 +240,30 @@ export default function ToastOrFineBooty() {
   const wsRef = useRef<WebSocket | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
 
+  // Auto-reconnect if returning player
+  const hasAutoReconnected = useRef(false);
+  useEffect(() => {
+    if (hasAutoReconnected.current) return;
+    hasAutoReconnected.current = true;
+    const savedWallet = localStorage.getItem('toast_wallet');
+    const savedUsername = localStorage.getItem('toast_username');
+    const savedOwns = localStorage.getItem('toast_owns');
+    if (savedWallet && savedUsername) {
+      setWalletAddress(savedWallet);
+      setUsername(savedUsername);
+      setOwnsNFT(savedOwns === '1');
+      // Auto-join
+      const ws = new WebSocket(GAME_SERVER);
+      wsRef.current = ws;
+      ws.onopen = () => {
+        setConnected(true);
+        ws.send(JSON.stringify({ type: 'join', address: savedWallet, username: savedUsername }));
+      };
+      ws.onmessage = handleWsMessage;
+      ws.onclose = () => setConnected(false);
+    }
+  }, []);
+
   // Admin: sign message to authenticate
   const adminAuth = async () => {
     try {
@@ -365,6 +389,8 @@ export default function ToastOrFineBooty() {
       });
       const data = await res.json();
       setOwnsNFT(data.owns);
+      localStorage.setItem('toast_wallet', addr);
+      localStorage.setItem('toast_owns', data.owns ? '1' : '0');
       // Everyone can play — holders get better perks
       setGamePhase('verified');
     } catch (err: any) {
@@ -373,9 +399,71 @@ export default function ToastOrFineBooty() {
     }
   };
 
+  // Shared WebSocket message handler
+  const handleWsMessage = useCallback((event: MessageEvent) => {
+    const msg = JSON.parse(event.data);
+    switch (msg.type) {
+      case 'board':
+        const newCards: Record<number, Card> = {};
+        const order: number[] = [];
+        for (const [id, card] of Object.entries(msg.cards) as any) {
+          newCards[Number(id)] = { tokenId: Number(id), ...card };
+          order.push(Number(id));
+        }
+        order.sort(() => Math.random() - 0.5);
+        setCards(newCards);
+        setCardOrder(order);
+        setStats(msg.stats);
+        setRole(msg.role || 'player');
+        if (msg.lobbyPosition) setLobbyPosition(msg.lobbyPosition);
+        setGamePhase('playing');
+        break;
+      case 'flip_start':
+        setFlipping(msg.tokenId);
+        playSound('flip');
+        break;
+      case 'flip_result':
+        setFlipping(null);
+        setCards(prev => ({
+          ...prev,
+          [msg.tokenId]: { tokenId: msg.tokenId, status: msg.result, isPrize: msg.result === 'prize', flippedBy: msg.player },
+        }));
+        setStats(msg.stats);
+        playSound(msg.result === 'prize' ? 'win' : 'burn');
+        const nid = ++notifId.current;
+        setNotifications(prev => [...prev, { id: nid, tokenId: msg.tokenId, result: msg.result, player: msg.player }]);
+        setTimeout(() => setNotifications(prev => prev.filter(n => n.id !== nid)), 4000);
+        fetch(`${GAME_API}/api/game/nft/${msg.tokenId}`).then(r => r.json()).then(data => {
+          if (data.image) setRevealedImages(prev => ({ ...prev, [msg.tokenId]: data.image }));
+        }).catch(() => {});
+        break;
+      case 'flip_revert':
+        setFlipping(null);
+        setCards(prev => ({ ...prev, [msg.tokenId]: { ...prev[msg.tokenId], status: 'face_down' } }));
+        break;
+      case 'cursor':
+        setCursors(prev => ({ ...prev, [msg.address]: { username: msg.username, x: msg.x, y: msg.y } }));
+        break;
+      case 'player_joined': case 'player_left': break;
+      case 'game_over': case 'round_over': setGamePhase('gameover'); break;
+      case 'game_paused': setError('GAME PAUSED'); break;
+      case 'game_resumed': setError(''); break;
+      case 'promoted':
+        setRole('player'); setLobbyPosition(0);
+        setError('YOUR TURN! START FLIPPING!'); setTimeout(() => setError(''), 3000);
+        break;
+      case 'lobby_update': setLobbyPosition(msg.position); break;
+      case 'counts': setCounts(msg); break;
+      case 'kicked': setError('REMOVED BY ADMIN'); setGamePhase('connect'); break;
+      case 'game_reset': setGamePhase('connect'); setCards({}); setCardOrder([]); setStats(null); break;
+      case 'error': setError(msg.message); setTimeout(() => setError(''), 2000); break;
+    }
+  }, [playSound]);
+
   // Join game
   const joinGame = () => {
     if (!username.trim()) return;
+    localStorage.setItem('toast_username', username.trim());
 
     const ws = new WebSocket(GAME_SERVER);
     wsRef.current = ws;
@@ -389,128 +477,8 @@ export default function ToastOrFineBooty() {
       }));
     };
 
-    ws.onmessage = (event) => {
-      const msg = JSON.parse(event.data);
-
-      switch (msg.type) {
-        case 'board':
-          const newCards: Record<number, Card> = {};
-          const order: number[] = [];
-          for (const [id, card] of Object.entries(msg.cards) as any) {
-            newCards[Number(id)] = { tokenId: Number(id), ...card };
-            order.push(Number(id));
-          }
-          order.sort(() => Math.random() - 0.5);
-          setCards(newCards);
-          setCardOrder(order);
-          setStats(msg.stats);
-          setRole(msg.role || 'player');
-          if (msg.lobbyPosition) setLobbyPosition(msg.lobbyPosition);
-          setGamePhase('playing');
-          break;
-
-        case 'flip_start':
-          setFlipping(msg.tokenId);
-          playSound('flip');
-          break;
-
-        case 'flip_result':
-          setFlipping(null);
-          setCards(prev => ({
-            ...prev,
-            [msg.tokenId]: {
-              tokenId: msg.tokenId,
-              status: msg.result,
-              isPrize: msg.result === 'prize',
-              flippedBy: msg.player,
-            },
-          }));
-          setStats(msg.stats);
-          playSound(msg.result === 'prize' ? 'win' : 'burn');
-          const nid = ++notifId.current;
-          setNotifications(prev => [...prev, { id: nid, tokenId: msg.tokenId, result: msg.result, player: msg.player }]);
-          setTimeout(() => setNotifications(prev => prev.filter(n => n.id !== nid)), 4000);
-          // Lazy load image after result is shown
-          fetch(`${GAME_API}/api/game/nft/${msg.tokenId}`)
-            .then(r => r.json())
-            .then(data => {
-              if (data.image) setRevealedImages(prev => ({ ...prev, [msg.tokenId]: data.image }));
-            })
-            .catch(() => {});
-          break;
-
-        case 'flip_revert':
-          setFlipping(null);
-          setCards(prev => ({
-            ...prev,
-            [msg.tokenId]: { ...prev[msg.tokenId], status: 'face_down' },
-          }));
-          break;
-
-        case 'cursor':
-          setCursors(prev => ({
-            ...prev,
-            [msg.address]: { username: msg.username, x: msg.x, y: msg.y },
-          }));
-          break;
-
-        case 'player_joined':
-        case 'player_left':
-          break;
-
-        case 'game_over':
-          setGamePhase('gameover');
-          break;
-
-        case 'round_over':
-          setGamePhase('gameover');
-          break;
-
-        case 'game_paused':
-          setError('GAME PAUSED');
-          break;
-
-        case 'game_resumed':
-          setError('');
-          break;
-
-        case 'promoted':
-          setRole('player');
-          setLobbyPosition(0);
-          setError('YOUR TURN! START FLIPPING!');
-          setTimeout(() => setError(''), 3000);
-          break;
-
-        case 'lobby_update':
-          setLobbyPosition(msg.position);
-          break;
-
-        case 'counts':
-          setCounts(msg);
-          break;
-
-        case 'kicked':
-          setError('REMOVED BY ADMIN');
-          setGamePhase('connect');
-          break;
-
-        case 'game_reset':
-          setGamePhase('connect');
-          setCards({});
-          setCardOrder([]);
-          setStats(null);
-          break;
-
-        case 'error':
-          setError(msg.message);
-          setTimeout(() => setError(''), 2000);
-          break;
-      }
-    };
-
-    ws.onclose = () => {
-      setConnected(false);
-    };
+    ws.onmessage = handleWsMessage;
+    ws.onclose = () => setConnected(false);
   };
 
   // Flip card
