@@ -7,7 +7,7 @@ require('dotenv').config({ path: '/home/ubuntu/.openclaw/.env' });
 const { ethers } = require('ethers');
 
 const CONTRACT = '0x015061aa806b5abab9ee453e366e18a713e8ea80';
-const RPC = 'https://megaeth.drpc.org';
+const RPC = 'https://mainnet.megaeth.com/rpc';
 const SIGNER_KEY = process.env.BREADIO_PRIVATE_KEY;
 const DRY_RUN = process.argv.includes('--dry-run');
 
@@ -19,6 +19,7 @@ const provider = new ethers.JsonRpcProvider(RPC, undefined, {
 const wallet = new ethers.Wallet(SIGNER_KEY, provider);
 const contract = new ethers.Contract(CONTRACT, [
   'function transferFrom(address from, address to, uint256 tokenId)',
+  'function ownerOf(uint256 tokenId) view returns (address)',
   'function balanceOf(address owner) view returns (uint256)',
 ], wallet);
 
@@ -51,41 +52,23 @@ async function main() {
   WINNERS.forEach(function(w) { totalToSend += w.count; });
   console.log('Total prizes to send: ' + totalToSend);
 
-  // Find signer tokens
+  // Find signer tokens (individual calls to avoid batch issues)
   console.log('\nScanning for signer tokens...');
   var signerTokens = [];
-  var BATCH = 50;
-  for (var start = 4500; start <= 6969; start += BATCH) {
-    var end = Math.min(start + BATCH - 1, 6969);
-    var calls = [];
-    for (var id = start; id <= end; id++) {
-      var hex = '0x' + id.toString(16).padStart(64, '0');
-      calls.push({
-        jsonrpc: '2.0',
-        method: 'eth_call',
-        params: [{ to: CONTRACT, data: '0x6352211e' + hex.slice(2) }, 'latest'],
-        id: id,
-      });
-    }
+  var signerAddr = wallet.address.toLowerCase();
+  for (var id = 4500; id <= 6969; id++) {
     try {
-      var res = await fetch(RPC, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(calls),
-      });
-      var results = await res.json();
-      for (var r of results) {
-        if (r.result && !r.error && r.result.length >= 42) {
-          var owner = ('0x' + r.result.slice(-40)).toLowerCase();
-          if (owner === wallet.address.toLowerCase()) {
-            signerTokens.push(r.id);
-          }
-        }
+      var owner = (await contract.ownerOf(id)).toLowerCase();
+      if (owner === signerAddr) {
+        signerTokens.push(id);
       }
-    } catch (err) { console.error('Scan error at ' + start); }
-    await new Promise(function(r) { setTimeout(r, 200); });
+    } catch (e) {
+      // token burned or doesn't exist
+    }
+    if (id % 100 === 0) process.stdout.write('\r  Scanned ' + id + '/6969 — found: ' + signerTokens.length);
+    if (id % 10 === 0) await new Promise(function(r) { setTimeout(r, 50); });
   }
-  console.log('Found ' + signerTokens.length + ' tokens in signer');
+  console.log('\nFound ' + signerTokens.length + ' tokens in signer');
 
   // Assign tokens
   var tokenIndex = 0;
