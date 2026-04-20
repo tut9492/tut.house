@@ -155,7 +155,7 @@ let gameState = {
   paused: true,
   round: 1,
   maxPrizes: 25,
-  maxActivePlayers: 10,
+  maxActivePlayers: 15,
 };
 
 // Load prize list
