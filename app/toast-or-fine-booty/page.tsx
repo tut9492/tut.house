@@ -495,6 +495,11 @@ export default function ToastOrFineBooty() {
           setCounts(msg);
           break;
 
+        case 'kicked':
+          setError('REMOVED BY ADMIN');
+          setGamePhase('connect');
+          break;
+
         case 'game_reset':
           setGamePhase('connect');
           setCards({});
@@ -620,7 +625,7 @@ export default function ToastOrFineBooty() {
                   PRIZES: {adminStatus.prizesFound}/{adminStatus.maxPrizes}<br/>
                   BURNED: {adminStatus.cardsBurned}<br/>
                   REMAINING: {adminStatus.cardsRemaining}<br/>
-                  ONLINE: {adminStatus.playersOnline}
+                  PLAYERS: {adminStatus.playersOnline} | LOBBY: {adminStatus.lobbyCount}
                 </div>
               )}
               <div style={{ display: 'flex', gap: '4px' }}>
@@ -633,7 +638,40 @@ export default function ToastOrFineBooty() {
                   color: '#000', fontFamily: "'Press Start 2P'", fontSize: '7px', cursor: 'pointer',
                 }}>PAUSE</button>
               </div>
-<button onClick={fetchAdminStatus} style={{
+
+              {/* Active Players */}
+              {adminStatus?.activePlayers && adminStatus.activePlayers.length > 0 && (
+                <div style={{ marginTop: '4px' }}>
+                  <div style={{ color: '#00ff88', marginBottom: '4px' }}>ACTIVE:</div>
+                  {adminStatus.activePlayers.map((p: any) => (
+                    <div key={p.address} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                      <span style={{ color: p.isHolder ? '#FFD700' : '#aaa' }}>{p.username} {p.short}</span>
+                      <button onClick={() => adminAction('kick', { address: p.address })} style={{
+                        padding: '2px 6px', background: '#ff4444', border: 'none',
+                        color: '#fff', fontFamily: "'Press Start 2P'", fontSize: '6px', cursor: 'pointer',
+                      }}>KICK</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Lobby */}
+              {adminStatus?.lobbyPlayers && adminStatus.lobbyPlayers.length > 0 && (
+                <div style={{ marginTop: '4px' }}>
+                  <div style={{ color: '#FFD700', marginBottom: '4px' }}>LOBBY:</div>
+                  {adminStatus.lobbyPlayers.map((p: any) => (
+                    <div key={p.address} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                      <span style={{ color: '#aaa' }}>#{p.position} {p.username}</span>
+                      <button onClick={() => adminAction('promote', { address: p.address })} style={{
+                        padding: '2px 6px', background: '#00ff88', border: 'none',
+                        color: '#000', fontFamily: "'Press Start 2P'", fontSize: '6px', cursor: 'pointer',
+                      }}>ADD</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <button onClick={fetchAdminStatus} style={{
                 padding: '6px', background: '#333', border: 'none',
                 color: '#fff', fontFamily: "'Press Start 2P'", fontSize: '7px', cursor: 'pointer',
               }}>REFRESH</button>

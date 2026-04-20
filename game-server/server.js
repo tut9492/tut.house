@@ -346,11 +346,82 @@ app.get('/api/game/admin/status', (req, res) => {
     playersOnline: Object.keys(gameState.players).length,
     lobbyCount: gameState.lobby.length,
     activePlayers: Object.entries(gameState.players).map(([addr, p]) => ({
-      address: addr.slice(0, 6) + '...' + addr.slice(-4),
+      address: addr,
+      short: addr.slice(0, 6) + '...' + addr.slice(-4),
       username: p.username,
       isHolder: p.isHolder,
     })),
+    lobbyPlayers: gameState.lobby.map((l, i) => ({
+      address: l.address,
+      short: l.address.slice(0, 6) + '...' + l.address.slice(-4),
+      username: l.username,
+      position: i + 1,
+    })),
   });
+});
+
+// Kick a player
+app.post('/api/game/admin/kick', (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  const { address } = req.body;
+  if (!address) return res.status(400).json({ error: 'Address required' });
+
+  const addr = address.toLowerCase();
+  const player = gameState.players[addr];
+  if (player) {
+    if (player.ws && player.ws.readyState === 1) {
+      player.ws.send(JSON.stringify({ type: 'kicked', message: 'YOU HAVE BEEN REMOVED BY ADMIN' }));
+      player.ws.close();
+    }
+    delete gameState.players[addr];
+    broadcast({ type: 'player_left', username: player.username, playerCount: Object.keys(gameState.players).length });
+    console.log(`[ADMIN] Kicked ${player.username}`);
+    promoteFromLobby();
+    res.json({ status: 'kicked', username: player.username });
+  } else {
+    // Check lobby
+    const idx = gameState.lobby.findIndex(l => l.address === addr);
+    if (idx >= 0) {
+      const removed = gameState.lobby.splice(idx, 1)[0];
+      if (removed.ws && removed.ws.readyState === 1) {
+        removed.ws.send(JSON.stringify({ type: 'kicked', message: 'YOU HAVE BEEN REMOVED BY ADMIN' }));
+        removed.ws.close();
+      }
+      console.log(`[ADMIN] Removed ${removed.username} from lobby`);
+      res.json({ status: 'removed from lobby', username: removed.username });
+    } else {
+      res.status(404).json({ error: 'Player not found' });
+    }
+  }
+});
+
+// Promote specific address from lobby to active
+app.post('/api/game/admin/promote', (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  const { address } = req.body;
+  if (!address) return res.status(400).json({ error: 'Address required' });
+
+  const addr = address.toLowerCase();
+  const idx = gameState.lobby.findIndex(l => l.address === addr);
+  if (idx < 0) return res.status(404).json({ error: 'Not in lobby' });
+
+  const player = gameState.lobby.splice(idx, 1)[0];
+  gameState.players[player.address] = {
+    username: player.username,
+    cursor: { x: 0, y: 0 },
+    lastFlip: 0,
+    isHolder: player.isHolder,
+    ws: player.ws,
+  };
+  db.prepare('INSERT OR REPLACE INTO players (address, username) VALUES (?, ?)').run(player.address, player.username);
+
+  if (player.ws && player.ws.readyState === 1) {
+    player.ws.send(JSON.stringify({ type: 'promoted', message: 'YOUR TURN! START FLIPPING!' }));
+  }
+  broadcast({ type: 'player_joined', username: player.username, playerCount: Object.keys(gameState.players).length });
+  broadcastCounts();
+  console.log(`[ADMIN] Promoted ${player.username} from lobby`);
+  res.json({ status: 'promoted', username: player.username });
 });
 
 // Leaderboard
