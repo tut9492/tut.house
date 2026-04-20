@@ -69,15 +69,11 @@ function LandingDialogue({ phase, ownsNFT, username, setUsername, onConnect, onJ
   const messages = phase === 'connect'
     ? [
         "I HAVE A LOT OF BREAD TO BURN, PLEASE HELP ME. IF YOU FIND SPECIAL BREAD YOU CAN KEEP IT. GAS ON ME. BREADIO",
-        "YOU MUST HAVE BREAD TO PARTICIPATE, LETS CHECK YOUR WALLET.",
+        "CONNECT YOUR WALLET TO PLAY.",
       ]
     : phase === 'verified'
     ? [
-        "VERY NICE BOOTY... BREAD. YOU CAN HELP ME BURN BREAD. WHATS YOUR NAME?",
-      ]
-    : phase === 'rejected'
-    ? [
-        "WTF, YOU HAVE NO BREAD. GTFO. DON'T TALK TO ME UNTIL YOU HAVE BREAD.",
+        "WELCOME. YOU CAN HELP ME BURN BREAD. WHATS YOUR NAME?",
       ]
     : [
         "GIVE ME YOUR NAME.",
@@ -158,16 +154,6 @@ function LandingDialogue({ phase, ownsNFT, username, setUsername, onConnect, onJ
               START
             </button>
           </div>
-        )}
-
-        {phase === 'rejected' && typeDone && (
-          <button onClick={() => window.location.reload()} style={{
-            padding: '10px 20px', background: '#ff4444', color: '#fff', border: 'none',
-            fontFamily: "'Press Start 2P'", fontSize: '10px', cursor: 'pointer',
-            boxShadow: '4px 4px 0 #8B0000', animation: 'fadeIn 0.3s',
-          }}>
-            GET BREAD
-          </button>
         )}
 
         {phase === 'username' && typeDone && (
@@ -298,59 +284,67 @@ export default function ToastOrFineBooty() {
     } catch {}
   };
 
-  // Sound effects
-  const playSound = useCallback((type: 'flip' | 'burn' | 'win' | 'hover') => {
-    const ctx = new AudioContext();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-
-    switch (type) {
-      case 'flip':
-        osc.frequency.value = 800;
-        gain.gain.value = 0.1;
-        osc.start();
-        osc.stop(ctx.currentTime + 0.05);
-        break;
-      case 'burn':
-        osc.type = 'sawtooth';
-        osc.frequency.value = 200;
-        gain.gain.value = 0.15;
-        osc.start();
-        osc.frequency.linearRampToValueAtTime(50, ctx.currentTime + 0.3);
-        gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.4);
-        osc.stop(ctx.currentTime + 0.4);
-        break;
-      case 'win':
-        osc.type = 'sine';
-        osc.frequency.value = 523;
-        gain.gain.value = 0.15;
-        osc.start();
-        setTimeout(() => {
-          const osc2 = ctx.createOscillator();
-          osc2.connect(gain);
-          osc2.frequency.value = 659;
-          osc2.start();
-          osc2.stop(ctx.currentTime + 0.2);
-        }, 100);
-        setTimeout(() => {
-          const osc3 = ctx.createOscillator();
-          osc3.connect(gain);
-          osc3.frequency.value = 784;
-          osc3.start();
-          osc3.stop(ctx.currentTime + 0.3);
-        }, 200);
-        osc.stop(ctx.currentTime + 0.1);
-        break;
-      case 'hover':
-        osc.frequency.value = 1200;
-        gain.gain.value = 0.03;
-        osc.start();
-        osc.stop(ctx.currentTime + 0.02);
-        break;
-    }
+  // Sound effects — reuse single AudioContext
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const getAudioCtx = useCallback(() => {
+    if (!audioCtxRef.current) audioCtxRef.current = new AudioContext();
+    return audioCtxRef.current;
   }, []);
+
+  const playSound = useCallback((type: 'flip' | 'burn' | 'win' | 'hover') => {
+    try {
+      const ctx = getAudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      switch (type) {
+        case 'flip':
+          osc.frequency.value = 800;
+          gain.gain.value = 0.1;
+          osc.start();
+          osc.stop(ctx.currentTime + 0.05);
+          break;
+        case 'burn':
+          osc.type = 'sawtooth';
+          osc.frequency.value = 200;
+          gain.gain.value = 0.15;
+          osc.start();
+          osc.frequency.linearRampToValueAtTime(50, ctx.currentTime + 0.3);
+          gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.4);
+          osc.stop(ctx.currentTime + 0.4);
+          break;
+        case 'win':
+          osc.type = 'sine';
+          osc.frequency.value = 523;
+          gain.gain.value = 0.15;
+          osc.start();
+          setTimeout(() => {
+            const osc2 = ctx.createOscillator();
+            osc2.connect(gain);
+            osc2.frequency.value = 659;
+            osc2.start();
+            osc2.stop(ctx.currentTime + 0.2);
+          }, 100);
+          setTimeout(() => {
+            const osc3 = ctx.createOscillator();
+            osc3.connect(gain);
+            osc3.frequency.value = 784;
+            osc3.start();
+            osc3.stop(ctx.currentTime + 0.3);
+          }, 200);
+          osc.stop(ctx.currentTime + 0.1);
+          break;
+        case 'hover':
+          osc.frequency.value = 1200;
+          gain.gain.value = 0.03;
+          osc.start();
+          osc.stop(ctx.currentTime + 0.02);
+          break;
+      }
+    } catch {}
+  }, [getAudioCtx]);
 
   // Connect wallet
   const connectWallet = async () => {
@@ -538,10 +532,14 @@ export default function ToastOrFineBooty() {
     }, 1000);
   };
 
-  // Track cursor
+  // Track cursor (throttled to 10/sec)
+  const lastCursorSend = useRef(0);
   useEffect(() => {
     if (!wsRef.current || gamePhase !== 'playing') return;
     const handleMove = (e: MouseEvent) => {
+      const now = Date.now();
+      if (now - lastCursorSend.current < 100) return;
+      lastCursorSend.current = now;
       if (!boardRef.current) return;
       const rect = boardRef.current.getBoundingClientRect();
       const x = ((e.clientX - rect.left) / rect.width) * 100;
@@ -774,7 +772,7 @@ export default function ToastOrFineBooty() {
       </div>
 
       {/* Landing / Connect / Username — Breadio dialogue */}
-      {(gamePhase === 'connect' || gamePhase === 'verified' || gamePhase === 'rejected' || gamePhase === 'username') && (
+      {(gamePhase === 'connect' || gamePhase === 'verified' || gamePhase === 'username') && (
         <LandingDialogue
           phase={gamePhase}
           ownsNFT={ownsNFT}

@@ -22,7 +22,6 @@ const PORT = process.env.GAME_PORT || 3001;
 const CONTRACT = '0x015061aa806b5abab9ee453e366e18a713e8ea80';
 const RPC = 'https://mainnet.megaeth.com/rpc';
 const SIGNER_KEY = process.env.BREADIO_PRIVATE_KEY;
-const FLIP_COOLDOWN = 5000; // 5 seconds between flips per player
 const ADMIN_WALLETS = ['0x75775181080b3684cc3be770ba070d1ecc1ec50d'];
 const adminTokens = new Set(); // active admin session tokens
 
@@ -108,7 +107,6 @@ db.exec(`
 let gameState = {
   cards: {},       // tokenId -> { status, isPrize, flippedBy }
   players: {},     // address -> { username, cursor, lastFlip, isHolder }
-  spectators: {},  // address -> { username, ws }
   lobby: [],       // [{address, username, isHolder, ws}] — waiting to play
   totalCards: 0,
   totalPrizes: 0,
@@ -117,13 +115,11 @@ let gameState = {
   paused: true,
   round: 1,
   maxPrizes: 25,
-  maxWinsPerPlayer: 2,
   maxActivePlayers: 10,
 };
 
 // Load prize list
 const PRIZE_IDS = new Set();
-const BURN_IDS = new Set();
 
 function loadGameData() {
   const dataFile = path.join(__dirname, 'game-data.json');
@@ -588,7 +584,11 @@ wss.on('connection', (ws) => {
 
       case 'cursor': {
         if (!playerAddress || !gameState.players[playerAddress]) return;
-        gameState.players[playerAddress].cursor = { x: msg.x, y: msg.y };
+        const p = gameState.players[playerAddress];
+        const cursorNow = Date.now();
+        if (p.lastCursor && cursorNow - p.lastCursor < 100) return; // throttle to 10/sec
+        p.lastCursor = cursorNow;
+        p.cursor = { x: msg.x, y: msg.y };
         broadcast({
           type: 'cursor',
           address: playerAddress.slice(0, 6) + '...' + playerAddress.slice(-4),
