@@ -233,6 +233,7 @@ export default function ToastOrFineBooty() {
   const [error, setError] = useState('');
   const [cooldown, setCooldown] = useState(0);
   const [role, setRole] = useState<'player' | 'spectator'>('player');
+  const [roomName, setRoomName] = useState('');
   const [lobbyPosition, setLobbyPosition] = useState(0);
   const [counts, setCounts] = useState({ players: 0, lobby: 0, spectators: 0 });
   const [gamePhase, setGamePhase] = useState<'connect' | 'verified' | 'rejected' | 'username' | 'playing' | 'gameover'>('connect');
@@ -266,7 +267,7 @@ export default function ToastOrFineBooty() {
       wsRef.current = ws;
       ws.onopen = () => {
         setConnected(true);
-        ws.send(JSON.stringify({ type: 'join', address: savedWallet, username: savedUsername }));
+        ws.send(JSON.stringify({ type: 'join', address: savedWallet, username: savedUsername, room: savedOwns === '1' ? 'breadio' : 'public' }));
       };
       ws.onmessage = handleWsMessage;
       ws.onclose = () => setConnected(false);
@@ -401,12 +402,7 @@ export default function ToastOrFineBooty() {
       setOwnsNFT(data.owns);
       localStorage.setItem('toast_wallet', addr);
       localStorage.setItem('toast_owns', data.owns ? '1' : '0');
-      if (data.owns) {
-        setGamePhase('verified');
-      } else {
-        setGamePhase('rejected');
-        setError('YOU NEED BREADIO TO PLAY');
-      }
+      setGamePhase('verified');
     } catch (err: any) {
       console.error('Wallet connect error:', err);
       setError(err?.message || 'Failed to connect wallet');
@@ -429,6 +425,7 @@ export default function ToastOrFineBooty() {
         setCardOrder(order);
         setStats(msg.stats);
         setRole(msg.role || 'player');
+        if (msg.roomName) setRoomName(msg.roomName);
         if (msg.lobbyPosition) setLobbyPosition(msg.lobbyPosition);
         setGamePhase('playing');
         break;
@@ -468,7 +465,8 @@ export default function ToastOrFineBooty() {
         break;
       case 'lobby_update': setLobbyPosition(msg.position); break;
       case 'counts': setCounts(msg); break;
-      case 'kicked': setError('REMOVED BY ADMIN'); setGamePhase('connect'); break;
+      case 'kicked': setError('REMOVED BY ADMIN'); setGamePhase('connect'); localStorage.clear(); break;
+      case 'maxed_out': setError(msg.message); setTimeout(() => { setGamePhase('connect'); localStorage.clear(); }, 5000); break;
       case 'game_reset': setGamePhase('connect'); setCards({}); setCardOrder([]); setStats(null); break;
       case 'error': setError(msg.message); setTimeout(() => setError(''), 2000); break;
     }
@@ -488,6 +486,7 @@ export default function ToastOrFineBooty() {
         type: 'join',
         address: walletAddress,
         username: username.trim(),
+        room: ownsNFT ? 'breadio' : 'public',
       }));
     };
 
@@ -680,9 +679,14 @@ export default function ToastOrFineBooty() {
               {username || walletAddress.slice(0, 6) + '...' + walletAddress.slice(-4)}
             </div>
           )}
-          <h1 style={{ fontSize: '20px', color: '#FFD700', marginBottom: '8px', textShadow: '2px 2px #8B4513' }}>
+          <h1 style={{ fontSize: '20px', color: '#FFD700', marginBottom: '4px', textShadow: '2px 2px #8B4513' }}>
             🍞 TOAST OR FINE BOOTY 🏴‍☠️
           </h1>
+          {roomName && (
+            <div style={{ fontSize: '8px', color: '#FFD700', marginBottom: '6px', fontFamily: "'Press Start 2P'" }}>
+              {roomName}
+            </div>
+          )}
           {stats && (
             <div style={{ fontSize: '8px', color: '#aaa', display: 'flex', justifyContent: 'center', gap: '20px' }}>
               <span>PRIZES: {stats.prizesFound}/{stats.totalPrizes}</span>
