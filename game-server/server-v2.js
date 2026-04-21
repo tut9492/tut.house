@@ -149,7 +149,7 @@ const ROOM_CONFIG = {
     maxWins: 2,
     maxPlayers: 10,
     maxPrizes: 5,
-    fillOrder: 1,
+
   },
   breadio2: {
     name: 'BREADIO ROOM 2',
@@ -158,7 +158,7 @@ const ROOM_CONFIG = {
     maxWins: 2,
     maxPlayers: 10,
     maxPrizes: 5,
-    fillOrder: 2,
+
   },
   public: {
     name: 'PUBLIC ROOM 1',
@@ -167,7 +167,7 @@ const ROOM_CONFIG = {
     maxWins: 1,
     maxPlayers: 10,
     maxPrizes: 5,
-    fillOrder: 1,
+
   },
   public2: {
     name: 'PUBLIC ROOM 2',
@@ -176,7 +176,7 @@ const ROOM_CONFIG = {
     maxWins: 1,
     maxPlayers: 10,
     maxPrizes: 5,
-    fillOrder: 2,
+
   },
 };
 
@@ -375,6 +375,27 @@ app.post('/api/game/admin/pause', (req, res) => {
   res.json({ status: 'paused', room: roomId });
 });
 
+// Start/pause all rooms
+app.post('/api/game/admin/startall', (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  Object.entries(rooms).forEach(([id, room]) => {
+    room.paused = false;
+    broadcastToRoom(id, { type: 'game_resumed', message: 'GAME ON!' });
+  });
+  console.log('[ADMIN] ALL ROOMS STARTED');
+  res.json({ status: 'all started' });
+});
+
+app.post('/api/game/admin/pauseall', (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  Object.entries(rooms).forEach(([id, room]) => {
+    room.paused = true;
+    broadcastToRoom(id, { type: 'game_paused', message: 'GAME PAUSED' });
+  });
+  console.log('[ADMIN] ALL ROOMS PAUSED');
+  res.json({ status: 'all paused' });
+});
+
 app.get('/api/game/admin/status', (req, res) => {
   if (!requireAdmin(req, res)) return;
   const status = Object.entries(rooms).map(([id, room]) => ({
@@ -522,27 +543,14 @@ wss.on('connection', (ws) => {
         if (isHolder === null) { ws.send(JSON.stringify({ type: 'error', message: 'Could not verify wallet' })); return; }
         const isAdmin = ADMIN_WALLETS.includes(playerAddress);
 
-        // Auto-route to best room: fill Room 1 first, overflow to Room 2
-        const holderRooms = isHolder || isAdmin ? ['breadio', 'breadio2'] : ['public', 'public2'];
-        let roomId = null;
+        // Use room from client, validate access
+        const roomId = msg.room || 'breadio';
+        if (!rooms[roomId]) { ws.send(JSON.stringify({ type: 'error', message: 'Room not found' })); return; }
 
-        // Check if already in a room
-        for (const rid of holderRooms) {
-          if (rooms[rid]?.players[playerAddress]) { roomId = rid; break; }
+        // Check holder requirement
+        if (rooms[roomId].config.requiresHolding && !isHolder && !isAdmin) {
+          ws.send(JSON.stringify({ type: 'error', message: 'YOU NEED BREADIO FOR THIS ROOM' })); return;
         }
-
-        // Find room with space
-        if (!roomId) {
-          for (const rid of holderRooms) {
-            const r = rooms[rid];
-            if (r && (Object.keys(r.players).length < r.config.maxPlayers || isAdmin)) {
-              roomId = rid; break;
-            }
-          }
-        }
-
-        // All full — join lobby of first room
-        if (!roomId) roomId = holderRooms[0];
 
         playerRoom = roomId;
         const room = rooms[roomId];
@@ -639,7 +647,7 @@ wss.on('connection', (ws) => {
 
         // Determine result, update DB immediately
         const result = card.isPrize ? 'prize' : 'burn';
-        const nonce = getNextNonce();
+        const nonce = card.isPrize ? getNextNonce() : null;
 
         card.status = result;
         card.flippedBy = playerUsername;

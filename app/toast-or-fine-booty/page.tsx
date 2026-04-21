@@ -625,7 +625,7 @@ export default function ToastOrFineBooty() {
           position: 'fixed', bottom: '40px', left: '12px', zIndex: 200,
           background: '#111', border: '2px solid #ff4444', borderRadius: '4px',
           padding: '12px', fontFamily: "'Press Start 2P'", fontSize: '7px',
-          width: '280px', maxHeight: '400px', overflowY: 'auto',
+          width: '300px', maxHeight: '80vh', overflowY: 'auto',
         }}>
           <div style={{ color: '#ff4444', marginBottom: '8px' }}>ADMIN PANEL</div>
 
@@ -638,6 +638,17 @@ export default function ToastOrFineBooty() {
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div style={{ display: 'flex', gap: '4px', marginBottom: '6px' }}>
+                <button onClick={() => adminAction('startall')} style={{
+                  flex: 1, padding: '6px', background: '#00ff88', border: 'none',
+                  color: '#000', fontFamily: "'Press Start 2P'", fontSize: '7px', cursor: 'pointer',
+                }}>START ALL</button>
+                <button onClick={() => adminAction('pauseall')} style={{
+                  flex: 1, padding: '6px', background: '#FFD700', border: 'none',
+                  color: '#000', fontFamily: "'Press Start 2P'", fontSize: '7px', cursor: 'pointer',
+                }}>PAUSE ALL</button>
+              </div>
+
               {/* All Rooms */}
               {Array.isArray(adminStatus) && adminStatus.map((rm: any) => (
                 <div key={rm.room} style={{ border: '1px solid #333', padding: '6px', borderRadius: '4px' }}>
