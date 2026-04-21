@@ -291,8 +291,13 @@ export default function ToastOrFineBooty() {
       if (data.error) { setError(data.error); return; }
       setAdminToken(data.token);
       setAdminAuthed(true);
-      setAdminStatus(data.status);
       localStorage.setItem('toast_admin_token', data.token);
+      // Fetch full room status after auth
+      const statusRes = await fetch(`${GAME_API}/api/game/admin/status`, {
+        headers: { 'Authorization': `Bearer ${data.token}` },
+      });
+      const statusData = await statusRes.json();
+      if (!statusData.error) setAdminStatus(statusData);
     } catch { setError('Signature failed'); }
   };
 
@@ -305,7 +310,7 @@ export default function ToastOrFineBooty() {
       });
       const data = await res.json();
       if (data.error) { setError(data.error); return; }
-      setAdminStatus(data);
+      fetchAdminStatus();
     } catch { setError('Admin action failed'); }
   };
 
@@ -596,59 +601,38 @@ export default function ToastOrFineBooty() {
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              {adminStatus && (
-                <div style={{ color: '#aaa', lineHeight: '2' }}>
-                  STATUS: <span style={{ color: adminStatus.paused ? '#ff4444' : '#00ff88' }}>{adminStatus.paused ? 'PAUSED' : 'LIVE'}</span><br/>
-                  ROUND: {adminStatus.round}<br/>
-                  PRIZES: {adminStatus.prizesFound}/{adminStatus.maxPrizes}<br/>
-                  BURNED: {adminStatus.cardsBurned}<br/>
-                  REMAINING: {adminStatus.cardsRemaining}<br/>
-                  PLAYERS: {adminStatus.playersOnline} | LOBBY: {adminStatus.lobbyCount}
-                </div>
-              )}
-              <div style={{ display: 'flex', gap: '4px' }}>
-                <button onClick={() => adminAction('start')} style={{
-                  flex: 1, padding: '8px', background: '#00ff88', border: 'none',
-                  color: '#000', fontFamily: "'Press Start 2P'", fontSize: '7px', cursor: 'pointer',
-                }}>START</button>
-                <button onClick={() => adminAction('pause')} style={{
-                  flex: 1, padding: '8px', background: '#FFD700', border: 'none',
-                  color: '#000', fontFamily: "'Press Start 2P'", fontSize: '7px', cursor: 'pointer',
-                }}>PAUSE</button>
-              </div>
-
-              {/* Active Players */}
-              {adminStatus?.activePlayers && adminStatus.activePlayers.length > 0 && (
-                <div style={{ marginTop: '4px' }}>
-                  <div style={{ color: '#00ff88', marginBottom: '4px' }}>ACTIVE:</div>
-                  {adminStatus.activePlayers.map((p: any) => (
-                    <div key={p.address} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
-                      <span style={{ color: p.isHolder ? '#FFD700' : '#aaa' }}>{p.username} {p.short}</span>
-                      <button onClick={() => adminAction('kick', { address: p.address })} style={{
-                        padding: '2px 6px', background: '#ff4444', border: 'none',
-                        color: '#fff', fontFamily: "'Press Start 2P'", fontSize: '6px', cursor: 'pointer',
+              {/* All Rooms */}
+              {Array.isArray(adminStatus) && adminStatus.map((rm: any) => (
+                <div key={rm.room} style={{ border: '1px solid #333', padding: '6px', borderRadius: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                    <span style={{ color: '#FFD700' }}>{rm.room.toUpperCase()}</span>
+                    <span style={{ color: rm.paused ? '#ff4444' : '#00ff88' }}>{rm.paused ? 'PAUSED' : 'LIVE'}</span>
+                  </div>
+                  <div style={{ color: '#aaa', lineHeight: '1.8', marginBottom: '4px' }}>
+                    PRIZES: {rm.prizesFound}/{rm.maxPrizes} | BURNED: {rm.cardsBurned} | LEFT: {rm.cardsRemaining}<br/>
+                    PLAYERS: {rm.players} | LOBBY: {rm.lobby}
+                  </div>
+                  <div style={{ display: 'flex', gap: '4px', marginBottom: '4px' }}>
+                    <button onClick={() => adminAction('start', { room: rm.room })} style={{
+                      flex: 1, padding: '4px', background: '#00ff88', border: 'none',
+                      color: '#000', fontFamily: "'Press Start 2P'", fontSize: '6px', cursor: 'pointer',
+                    }}>START</button>
+                    <button onClick={() => adminAction('pause', { room: rm.room })} style={{
+                      flex: 1, padding: '4px', background: '#FFD700', border: 'none',
+                      color: '#000', fontFamily: "'Press Start 2P'", fontSize: '6px', cursor: 'pointer',
+                    }}>PAUSE</button>
+                  </div>
+                  {rm.activePlayers?.map((p: any) => (
+                    <div key={p.address} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1px' }}>
+                      <span style={{ color: p.isHolder ? '#FFD700' : '#aaa' }}>{p.username}</span>
+                      <button onClick={() => adminAction('kick', { address: p.address, room: rm.room })} style={{
+                        padding: '1px 4px', background: '#ff4444', border: 'none',
+                        color: '#fff', fontFamily: "'Press Start 2P'", fontSize: '5px', cursor: 'pointer',
                       }}>KICK</button>
                     </div>
                   ))}
                 </div>
-              )}
-
-              {/* Lobby */}
-              {adminStatus?.lobbyPlayers && adminStatus.lobbyPlayers.length > 0 && (
-                <div style={{ marginTop: '4px' }}>
-                  <div style={{ color: '#FFD700', marginBottom: '4px' }}>LOBBY:</div>
-                  {adminStatus.lobbyPlayers.map((p: any) => (
-                    <div key={p.address} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
-                      <span style={{ color: '#aaa' }}>#{p.position} {p.username}</span>
-                      <button onClick={() => adminAction('promote', { address: p.address })} style={{
-                        padding: '2px 6px', background: '#00ff88', border: 'none',
-                        color: '#000', fontFamily: "'Press Start 2P'", fontSize: '6px', cursor: 'pointer',
-                      }}>ADD</button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
+              ))}
               <button onClick={fetchAdminStatus} style={{
                 padding: '6px', background: '#333', border: 'none',
                 color: '#fff', fontFamily: "'Press Start 2P'", fontSize: '7px', cursor: 'pointer',
