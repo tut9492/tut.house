@@ -236,7 +236,9 @@ export default function ToastOrFineBooty() {
   const [roomName, setRoomName] = useState('');
   const [lobbyPosition, setLobbyPosition] = useState(0);
   const [counts, setCounts] = useState({ players: 0, lobby: 0, spectators: 0 });
-  const [gamePhase, setGamePhase] = useState<'connect' | 'verified' | 'rejected' | 'username' | 'playing' | 'gameover'>('connect');
+  const [roomList, setRoomList] = useState<any[]>([]);
+  const [selectedRoom, setSelectedRoom] = useState('');
+  const [gamePhase, setGamePhase] = useState<'connect' | 'verified' | 'rejected' | 'username' | 'rooms' | 'playing' | 'gameover'>('connect');
   const [showAdmin, setShowAdmin] = useState(false);
   const [adminAuthed, setAdminAuthed] = useState(false);
   const [adminToken, setAdminToken] = useState('');
@@ -262,15 +264,11 @@ export default function ToastOrFineBooty() {
       setWalletAddress(savedWallet);
       setUsername(savedUsername);
       setOwnsNFT(savedOwns === '1');
-      // Auto-join
-      const ws = new WebSocket(GAME_SERVER);
-      wsRef.current = ws;
-      ws.onopen = () => {
-        setConnected(true);
-        ws.send(JSON.stringify({ type: 'join', address: savedWallet, username: savedUsername }));
-      };
-      ws.onmessage = handleWsMessage;
-      ws.onclose = () => setConnected(false);
+      // Go to room selection
+      fetch(`${GAME_API}/api/game/rooms`).then(r => r.json()).then(data => {
+        setRoomList(data);
+        setGamePhase('rooms');
+      }).catch(() => setGamePhase('verified'));
     }
   }, []);
 
@@ -414,6 +412,28 @@ export default function ToastOrFineBooty() {
     }
   };
 
+  // Fetch room list
+  const fetchRooms = async () => {
+    try {
+      const res = await fetch(`${GAME_API}/api/game/rooms`);
+      const data = await res.json();
+      setRoomList(data);
+    } catch {}
+  };
+
+  // Join a specific room
+  const joinRoom = (roomId: string) => {
+    setSelectedRoom(roomId);
+    const ws = new WebSocket(GAME_SERVER);
+    wsRef.current = ws;
+    ws.onopen = () => {
+      setConnected(true);
+      ws.send(JSON.stringify({ type: 'join', address: walletAddress, username: username.trim(), room: roomId }));
+    };
+    ws.onmessage = handleWsMessage;
+    ws.onclose = () => setConnected(false);
+  };
+
   // Shared WebSocket message handler
   const handleWsMessage = useCallback((event: MessageEvent) => {
     const msg = JSON.parse(event.data);
@@ -470,18 +490,23 @@ export default function ToastOrFineBooty() {
         break;
       case 'lobby_update': setLobbyPosition(msg.position); break;
       case 'counts': setCounts(msg); break;
-      case 'kicked': setError('REMOVED BY ADMIN'); setGamePhase('connect'); localStorage.clear(); break;
-      case 'maxed_out': setError(msg.message); setTimeout(() => { setGamePhase('connect'); localStorage.clear(); }, 5000); break;
+      case 'kicked': setError('REMOVED BY ADMIN'); fetchRooms(); setGamePhase('rooms'); break;
+      case 'maxed_out': setError(msg.message); setTimeout(() => { fetchRooms(); setGamePhase('rooms'); }, 5000); break;
       case 'game_reset': setGamePhase('connect'); setCards({}); setCardOrder([]); setStats(null); break;
       case 'error': setError(msg.message); setTimeout(() => setError(''), 2000); break;
     }
   }, [playSound]);
 
-  // Join game
+  // Join game — go to room selection
   const joinGame = () => {
     if (!username.trim()) return;
     localStorage.setItem('toast_username', username.trim());
+    fetchRooms();
+    setGamePhase('rooms');
+  };
 
+  // Legacy join (unused, kept for reference)
+  const _legacyJoin = () => {
     const ws = new WebSocket(GAME_SERVER);
     wsRef.current = ws;
 
@@ -569,6 +594,18 @@ export default function ToastOrFineBooty() {
           color: '#FFD700', fontFamily: "'Press Start 2P'", fontSize: '8px', cursor: 'pointer',
         }}
       >🎵 MUSIC</button>
+
+      {/* Back to Rooms */}
+      {gamePhase === 'playing' && (
+        <button
+          onClick={() => { wsRef.current?.close(); fetchRooms(); setGamePhase('rooms'); }}
+          style={{
+            position: 'fixed', bottom: '12px', right: '100px', zIndex: 200,
+            padding: '6px 10px', background: '#1a1a1a', border: '1px solid #FFD700',
+            color: '#FFD700', fontFamily: "'Press Start 2P'", fontSize: '8px', cursor: 'pointer',
+          }}
+        >ROOMS</button>
+      )}
 
       {/* Admin Toggle */}
       {isAdmin && (
@@ -755,6 +792,60 @@ export default function ToastOrFineBooty() {
           onJoin={joinGame}
           error={error}
         />
+      )}
+
+      {/* Room Selection */}
+      {gamePhase === 'rooms' && (
+        <div style={{
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          padding: '40px 20px', gap: '16px',
+        }}>
+          <div style={{ fontSize: '14px', color: '#FFD700', fontFamily: "'Press Start 2P'", textShadow: '2px 2px #8B4513' }}>
+            SELECT A ROOM
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '12px', width: '100%', maxWidth: '600px' }}>
+            {roomList.map((rm: any) => {
+              const isFull = rm.players >= rm.maxPlayers;
+              const isHolder = rm.requiresHolding;
+              const canJoin = !isHolder || ownsNFT;
+              return (
+                <div key={rm.id} style={{
+                  border: '2px solid ' + (rm.paused ? '#666' : isFull ? '#ff4444' : '#FFD700'),
+                  borderRadius: '4px', padding: '12px', background: '#111',
+                  opacity: canJoin ? 1 : 0.5,
+                }}>
+                  <div style={{ fontSize: '10px', color: '#FFD700', fontFamily: "'Press Start 2P'", marginBottom: '8px' }}>
+                    {rm.name}
+                  </div>
+                  <div style={{ fontSize: '7px', color: '#aaa', fontFamily: "'Press Start 2P'", lineHeight: '2' }}>
+                    PLAYERS: {rm.players}/{rm.maxPlayers}{rm.lobby > 0 ? ` (+${rm.lobby} waiting)` : ''}<br/>
+                    PRIZES: {rm.prizesFound}/{rm.maxPrizes}<br/>
+                    CARDS LEFT: {rm.cardsRemaining}<br/>
+                    {rm.paused ? <span style={{color:'#ff4444'}}>PAUSED</span> : <span style={{color:'#00ff88'}}>LIVE</span>}
+                    {isHolder && !ownsNFT && <><br/><span style={{color:'#ff4444'}}>HOLDERS ONLY</span></>}
+                  </div>
+                  <button
+                    onClick={() => canJoin && joinRoom(rm.id)}
+                    disabled={!canJoin}
+                    style={{
+                      marginTop: '8px', width: '100%', padding: '8px',
+                      background: !canJoin ? '#333' : isFull ? '#ff4444' : '#FFD700',
+                      color: '#000', border: 'none',
+                      fontFamily: "'Press Start 2P'", fontSize: '8px', cursor: canJoin ? 'pointer' : 'not-allowed',
+                      boxShadow: canJoin ? '3px 3px 0 #8B4513' : 'none',
+                    }}
+                  >
+                    {!canJoin ? 'NEED BREADIO' : isFull ? 'JOIN LOBBY' : 'ENTER'}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+          <button onClick={fetchRooms} style={{
+            padding: '6px 12px', background: '#333', border: 'none',
+            color: '#fff', fontFamily: "'Press Start 2P'", fontSize: '7px', cursor: 'pointer',
+          }}>REFRESH ROOMS</button>
+        </div>
       )}
 
       {/* Game Board */}
