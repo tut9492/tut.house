@@ -189,10 +189,10 @@ const ROOM_CONFIG = {
 
   },
   test: {
-    name: 'TEST ROOM',
+    name: 'BREADIO ROOM 4',
     requiresHolding: true,
     cooldown: 5000,
-    maxWins: 1,
+    maxWins: 2,
     maxPlayers: 10,
     maxPrizes: 5,
 
