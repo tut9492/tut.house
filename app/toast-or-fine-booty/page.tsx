@@ -270,7 +270,7 @@ export default function ToastOrFineBooty() {
       setWalletAddress(savedWallet);
       setUsername(savedUsername);
       setOwnsNFT(savedOwns === '1');
-      setGamePhase('rooms');
+      setGamePhase('verified');
     }
   }, []);
 
