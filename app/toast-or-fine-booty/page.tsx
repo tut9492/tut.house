@@ -834,6 +834,7 @@ export default function ToastOrFineBooty() {
             {roomList.map((rm: any) => {
               const isFull = rm.players >= rm.maxPlayers;
               const isHolder = rm.requiresHolding;
+              const isWL = rm.requiresWhitelist;
               const hasWallet = !!walletAddress && !!username.trim();
               const canJoin = hasWallet && (!isHolder || ownsNFT);
               return (
@@ -851,6 +852,7 @@ export default function ToastOrFineBooty() {
                     CARDS LEFT: {rm.cardsRemaining}<br/>
                     {rm.paused ? <span style={{color:'#ff4444'}}>PAUSED</span> : <span style={{color:'#00ff88'}}>LIVE</span>}
                     {isHolder && hasWallet && !ownsNFT && <><br/><span style={{color:'#ff4444'}}>HOLDERS ONLY</span></>}
+                    {isWL && <><br/><span style={{color:'#FFD700'}}>INVITE ONLY</span></>}
                   </div>
                   <button
                     onClick={() => canJoin && joinRoom(rm.id)}

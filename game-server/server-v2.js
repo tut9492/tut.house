@@ -308,6 +308,7 @@ app.get('/api/game/rooms', (req, res) => {
     id,
     name: room.config.name,
     requiresHolding: room.config.requiresHolding,
+    requiresWhitelist: room.config.requiresWhitelist || false,
     players: Object.keys(room.players).length,
     maxPlayers: room.config.maxPlayers,
     lobby: room.lobby.length,
