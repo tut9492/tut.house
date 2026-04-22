@@ -80,7 +80,7 @@ setInterval(async () => {
 
 // ─── Tx Queue with backpressure ─────────────────────────────────────────────
 
-const MAX_CONCURRENT_TX = 3;
+const MAX_CONCURRENT_TX = 1; // serial to prevent nonce collisions
 let activeTxCount = 0;
 const txQueue = [];
 
@@ -743,7 +743,6 @@ wss.on('connection', (ws) => {
 
         // Determine result, update DB immediately
         const result = card.isPrize ? 'prize' : 'burn';
-        const nonce = card.isPrize ? getNextNonce() : null;
 
         card.status = result;
         card.flippedBy = playerUsername;
@@ -803,6 +802,7 @@ wss.on('connection', (ws) => {
           const capturedUsername = playerUsername;
           enqueueTx(async () => {
             try {
+              const nonce = getNextNonce();
               const iface = new ethers.Interface(ABI);
               const txData = iface.encodeFunctionData('transferFrom', [wallet.address, capturedAddress, tokenId]);
               console.log(`[${capturedRoom}] PRIZE #${tokenId} → ${capturedUsername} (nonce: ${nonce})`);
