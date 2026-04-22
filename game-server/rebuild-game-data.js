@@ -8,10 +8,12 @@
 
 const { ethers } = require('ethers');
 
-const CONTRACT = '0x015061aa806b5abab9ee453e366e18a713e8ea80';
-const RPC = 'https://mainnet.megaeth.com/rpc';
-const SIGNER = '0xEdaA4c0e0056eD6A17A755493c283296Fe8202Bb'.toLowerCase();
-const TREASURY = '0x75775181080b3684cc3be770ba070d1ecc1ec50d'.toLowerCase();
+const CONTRACT = process.env.CONTRACT_ADDRESS || '0x015061aa806b5abab9ee453e366e18a713e8ea80';
+const RPC = process.env.WRITE_RPC || 'https://mainnet.megaeth.com/rpc';
+const SIGNER = (process.env.SIGNER_ADDRESS || '').toLowerCase();
+const TREASURY = (process.env.TREASURY_ADDRESS || '').toLowerCase();
+
+if (!SIGNER || !TREASURY) { console.error('Set SIGNER_ADDRESS and TREASURY_ADDRESS env vars'); process.exit(1); }
 
 const TOTAL_CARDS = parseInt(process.argv[2]) || 1500;
 const PRIZE_COUNT = parseInt(process.argv[3]) || 25;

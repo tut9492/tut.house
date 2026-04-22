@@ -69,7 +69,7 @@ SMB3-style card flip game where players flip face-down Breadio NFT cards. Bad ca
 - Contract: 0x015061aa806b5abab9ee453e366e18a713e8ea80
 - Chain: MegaETH (4326)
 - RPC: https://mainnet.megaeth.com/rpc
-- Signer: 0xEdaA4c0e0056eD6A17A755493c283296Fe8202Bb
+- Signer: (set via SIGNER_ADDRESS env var)
 - burn(uint256 tokenId) — for toast cards
 - transferFrom(signer, player, tokenId) — for prize cards
 - Requires: setApprovalForAll for signer on prize NFTs

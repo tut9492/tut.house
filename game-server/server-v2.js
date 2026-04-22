@@ -30,7 +30,7 @@ const CONTRACT = '0x015061aa806b5abab9ee453e366e18a713e8ea80';
 const WRITE_RPC = 'https://mainnet.megaeth.com/rpc';
 const READ_RPC = 'https://megaeth.drpc.org';
 const SIGNER_KEY = process.env.BREADIO_PRIVATE_KEY;
-const ADMIN_WALLETS = ['0x75775181080b3684cc3be770ba070d1ecc1ec50d'];
+const ADMIN_WALLETS = (process.env.ADMIN_WALLETS || '').split(',').map(a => a.trim().toLowerCase()).filter(Boolean);
 const adminTokens = new Set();
 
 if (!SIGNER_KEY) { console.error('BREADIO_PRIVATE_KEY not set'); process.exit(1); }
@@ -141,18 +141,9 @@ db.exec(`
 `);
 
 // ─── Whitelist ──────────────────────────────────────────────────────────────
-const WHITELIST = new Set([
-  '0x0fd7e54a44146a4e42f325444c488f721e1bec47',
-  '0x1659aae09b4b87d989089be1ca43e5940cd3fffe',
-  '0xf82de931da8202303f6174e8699317733c293eef',
-  '0x207d4af00d8a52c57abecc0cac0684a4199598cf',
-  '0xc37690d82157653632d2d47b43d1b69b5d22eeca5',
-  '0x261bd70d614b487b78591a7adb757b00c9f20be3',
-  '0x772f51a3dde61fcacab149796792786d29c09181',
-  '0x76500b6a6c640ae7b695ef049f20d24a2ca476df',
-  '0x5e5c9b7be45e8d7a958265f3addea9460d8a346a',
-  '0x6400cd71fcef2e10903522dc41ab0c959be99571',
-].map(a => a.toLowerCase()));
+const WHITELIST = new Set(
+  (process.env.WHITELIST_WALLETS || '').split(',').map(a => a.trim().toLowerCase()).filter(Boolean)
+);
 
 // ─── Room System ────────────────────────────────────────────────────────────
 

@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 
 const GAME_SERVER = process.env.NEXT_PUBLIC_GAME_SERVER || 'wss://breadiogame.tuthopium.store';
 const GAME_API = process.env.NEXT_PUBLIC_GAME_API || 'https://breadiogame.tuthopium.store';
-const ADMIN_WALLETS = ['0x75775181080b3684cc3be770ba070d1ecc1ec50d'];
+const ADMIN_WALLETS = (process.env.NEXT_PUBLIC_ADMIN_WALLETS || '').split(',').map(a => a.trim().toLowerCase()).filter(Boolean);
 
 // ─── Typewriter text component with beep sound ─────────────────────────────
 function Typewriter({ text, speed = 40, onDone }: { text: string; speed?: number; onDone?: () => void }) {

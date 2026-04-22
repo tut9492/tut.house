@@ -9,10 +9,12 @@ require('dotenv').config({ path: '/home/ubuntu/.openclaw/.env' });
 const { ethers } = require('ethers');
 const fs = require('fs');
 
-const CONTRACT = '0x015061aa806b5abab9ee453e366e18a713e8ea80';
-const RPC = 'https://mainnet.megaeth.com/rpc';
-const BREADIO_WALLET = '0xEdaA4c0e0056eD6A17A755493c283296Fe8202Bb'.toLowerCase();
-const MAIN_WALLET = '0x75775181080b3684Cc3be770ba070D1ECc1ec50D'.toLowerCase();
+const CONTRACT = process.env.CONTRACT_ADDRESS || '0x015061aa806b5abab9ee453e366e18a713e8ea80';
+const RPC = process.env.WRITE_RPC || 'https://mainnet.megaeth.com/rpc';
+const BREADIO_WALLET = (process.env.SIGNER_ADDRESS || '').toLowerCase();
+const MAIN_WALLET = (process.env.TREASURY_ADDRESS || '').toLowerCase();
+
+if (!BREADIO_WALLET || !MAIN_WALLET) { console.error('Set SIGNER_ADDRESS and TREASURY_ADDRESS env vars'); process.exit(1); }
 const TOTAL_SUPPLY = 6969;
 
 // IDs to exclude from the game entirely (rare saves staying in main wallet)

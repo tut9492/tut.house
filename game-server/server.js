@@ -22,7 +22,7 @@ const PORT = process.env.GAME_PORT || 3001;
 const CONTRACT = '0x015061aa806b5abab9ee453e366e18a713e8ea80';
 const RPC = 'https://mainnet.megaeth.com/rpc';
 const SIGNER_KEY = process.env.BREADIO_PRIVATE_KEY;
-const ADMIN_WALLETS = ['0x75775181080b3684cc3be770ba070d1ecc1ec50d'];
+const ADMIN_WALLETS = (process.env.ADMIN_WALLETS || '').split(',').map(a => a.trim().toLowerCase()).filter(Boolean);
 const adminTokens = new Set(); // active admin session tokens
 
 if (!SIGNER_KEY) {

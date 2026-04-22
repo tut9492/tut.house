@@ -10,7 +10,8 @@ const { ethers } = require('ethers');
 const CONTRACT = '0x015061aa806b5abab9ee453e366e18a713e8ea80';
 const RPC = 'https://mainnet.megaeth.com/rpc';
 const SIGNER_KEY = process.env.BREADIO_PRIVATE_KEY;
-const TREASURY = '0x75775181080b3684cc3be770ba070d1ecc1ec50d';
+const TREASURY = process.env.TREASURY_ADDRESS;
+if (!TREASURY) { console.error('TREASURY_ADDRESS not set'); process.exit(1); }
 const BURN_COUNT = parseInt(process.argv[2]) || 1000;
 const DRY_RUN = process.argv.includes('--dry-run');
 
