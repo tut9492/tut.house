@@ -401,20 +401,20 @@ function endRound(roomId) {
   // Broadcast GAME OVER
   broadcastToRoom(roomId, { type: 'game_over', message: 'GAME OVER!' });
 
-  // Kick all active players → back of lobby
+  // Kick all active players — sent to GAME OVER, must re-join from rooms
   const kicked = [];
   for (const [addr, p] of Object.entries(room.players)) {
     if (p.ws?.readyState === 1) {
-      room.lobby.push({ address: addr, username: p.username, isHolder: p.isHolder, ws: p.ws });
+      p.ws.send(JSON.stringify({ type: 'game_over', message: 'GAME OVER!' }));
     }
     kicked.push(p.username);
     delete room.players[addr];
   }
 
-  // Promote lobby into empty slots
+  // Promote lobby players into the now-empty slots
   promoteFromLobby(roomId);
 
-  console.log(`[${roomId}] GAME OVER — kicked: ${kicked.join(', ')}`);
+  console.log(`[${roomId}] GAME OVER — kicked: ${kicked.join(', ')}, lobby promoted: ${Object.keys(room.players).length}`);
 }
 
 // Admin actions take a room parameter
