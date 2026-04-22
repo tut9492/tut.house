@@ -144,6 +144,13 @@ db.exec(`
 const WHITELIST = new Set([
   '0x0fd7e54a44146a4e42f325444c488f721e1bec47',
   '0x1659aae09b4b87d989089be1ca43e5940cd3fffe',
+  '0xf82de931da8202303f6174e8699317733c293eef',
+  '0x207d4af00d8a52c57abecc0cac0684a4199598cf',
+  '0xc37690d82157653632d2d47b43d1b69b5d22eeca5',
+  '0x261bd70d614b487b78591a7adb757b00c9f20be3',
+  '0x772f51a3dde61fcacab149796792786d29c09181',
+  '0x76500b6a6c640ae7b695ef049f20d24a2ca476df',
+  '0x5e5c9b7be45e8d7a958265f3addea9460d8a346a',
 ].map(a => a.toLowerCase()));
 
 // ─── Room System ────────────────────────────────────────────────────────────
