@@ -212,8 +212,8 @@ const ROOM_CONFIG = {
 
   },
   vip: {
-    name: 'BREADIO ROOM 5',
-    requiresHolding: true,
+    name: 'SPECIAL ROOM — WL ONLY',
+    requiresHolding: false,
     requiresWhitelist: true,
     cooldown: 5000,
     maxWins: 2,
