@@ -13,7 +13,7 @@ const fs = require('fs');
 const path = require('path');
 
 const CONTRACT = '0x015061aa806b5abab9ee453e366e18a713e8ea80';
-const RPC = 'https://megaeth.drpc.org';
+const RPC = 'https://mainnet.megaeth.com/rpc';
 const SIGNER = '0xEdaA4c0e0056eD6A17A755493c283296Fe8202Bb'.toLowerCase();
 
 const BREADIO_PRIZES = parseInt(process.argv[2]) || 5;
@@ -29,25 +29,30 @@ async function scan() {
   console.log('Need ' + totalPrizes + ' prize tokens from signer\n');
 
   var signerTokens = [];
-  var BATCH = 20;
+  var BATCH = 5;
+
+  async function checkOwner(id) {
+    for (var attempt = 0; attempt < 3; attempt++) {
+      try {
+        var owner = (await contract.ownerOf(id)).toLowerCase();
+        return { id: id, owner: owner };
+      } catch (e) {
+        if (e.message && e.message.includes('reverted')) return null; // burned/nonexistent
+        if (attempt < 2) await new Promise(function(r) { setTimeout(r, 200 * (attempt + 1)); });
+      }
+    }
+    return null;
+  }
 
   for (var start = 1; start <= 6969; start += BATCH) {
     if (signerTokens.length >= totalPrizes) break;
     var batch = [];
     for (var i = start; i < start + BATCH && i <= 6969; i++) batch.push(i);
 
-    var results = await Promise.allSettled(
-      batch.map(function(id) {
-        return contract.ownerOf(id).then(function(owner) {
-          return { id: id, owner: owner.toLowerCase() };
-        });
-      })
-    );
+    var results = await Promise.all(batch.map(checkOwner));
 
     results.forEach(function(r) {
-      if (r.status === 'fulfilled' && r.value.owner === SIGNER) {
-        signerTokens.push(r.value.id);
-      }
+      if (r && r.owner === SIGNER) signerTokens.push(r.id);
     });
 
     if (start % 100 < BATCH) {
