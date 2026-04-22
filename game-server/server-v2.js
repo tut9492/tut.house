@@ -181,7 +181,7 @@ const ROOM_CONFIG = {
   },
   test: {
     name: 'TEST ROOM',
-    requiresHolding: false,
+    requiresHolding: true,
     cooldown: 5000,
     maxWins: 1,
     maxPlayers: 10,
