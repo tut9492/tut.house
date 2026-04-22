@@ -29,15 +29,30 @@ async function scan() {
   console.log('Need ' + totalPrizes + ' prize tokens from signer\n');
 
   var signerTokens = [];
+  var BATCH = 20;
 
-  for (var id = 1; id <= 6969; id++) {
+  for (var start = 1; start <= 6969; start += BATCH) {
     if (signerTokens.length >= totalPrizes) break;
-    try {
-      var owner = (await contract.ownerOf(id)).toLowerCase();
-      if (owner === SIGNER) signerTokens.push(id);
-    } catch {}
-    if (id % 100 === 0) process.stdout.write('\r  Scanned ' + id + '/6969 — found: ' + signerTokens.length + '/' + totalPrizes);
-    if (id % 10 === 0) await new Promise(function(r) { setTimeout(r, 50); });
+    var batch = [];
+    for (var i = start; i < start + BATCH && i <= 6969; i++) batch.push(i);
+
+    var results = await Promise.allSettled(
+      batch.map(function(id) {
+        return contract.ownerOf(id).then(function(owner) {
+          return { id: id, owner: owner.toLowerCase() };
+        });
+      })
+    );
+
+    results.forEach(function(r) {
+      if (r.status === 'fulfilled' && r.value.owner === SIGNER) {
+        signerTokens.push(r.value.id);
+      }
+    });
+
+    if (start % 100 < BATCH) {
+      console.log('  Scanned ' + Math.min(start + BATCH - 1, 6969) + '/6969 — found: ' + signerTokens.length + '/' + totalPrizes);
+    }
   }
 
   console.log('\nFound ' + signerTokens.length + ' signer tokens');
