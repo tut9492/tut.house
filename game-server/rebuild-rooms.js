@@ -21,46 +21,35 @@ const PUBLIC_PRIZES = parseInt(process.argv[3]) || 5;
 const CARDS_PER_ROOM = parseInt(process.argv[4]) || 150;
 
 const provider = new ethers.JsonRpcProvider(RPC, undefined, { staticNetwork: ethers.Network.from(4326) });
-const contract = new ethers.Contract(CONTRACT, ['function ownerOf(uint256) view returns (address)'], provider);
 
 async function scan() {
   var totalPrizes = BREADIO_PRIZES * 2 + PUBLIC_PRIZES * 2; // 4 rooms
-  console.log('Scanning for signer tokens (prizes)...');
+  console.log('Finding signer tokens via Transfer events...');
   console.log('Need ' + totalPrizes + ' prize tokens from signer\n');
 
-  var signerTokens = [];
-  var BATCH = 5;
+  // Query Transfer events — instant vs scanning 6969 ownerOf calls
+  var iface = new ethers.Interface(['event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)']);
+  var transferTopic = iface.getEvent('Transfer').topicHash;
+  var signerPadded = ethers.zeroPadValue('0xEdaA4c0e0056eD6A17A755493c283296Fe8202Bb', 32);
 
-  async function checkOwner(id) {
-    for (var attempt = 0; attempt < 3; attempt++) {
-      try {
-        var owner = (await contract.ownerOf(id)).toLowerCase();
-        return { id: id, owner: owner };
-      } catch (e) {
-        if (e.message && e.message.includes('reverted')) return null; // burned/nonexistent
-        if (attempt < 2) await new Promise(function(r) { setTimeout(r, 200 * (attempt + 1)); });
-      }
-    }
-    return null;
-  }
+  var logsTo = await provider.getLogs({
+    address: CONTRACT, topics: [transferTopic, null, signerPadded],
+    fromBlock: 0, toBlock: 'latest'
+  });
+  var logsFrom = await provider.getLogs({
+    address: CONTRACT, topics: [transferTopic, signerPadded, null],
+    fromBlock: 0, toBlock: 'latest'
+  });
 
-  for (var start = 1; start <= 6969; start += BATCH) {
-    if (signerTokens.length >= totalPrizes) break;
-    var batch = [];
-    for (var i = start; i < start + BATCH && i <= 6969; i++) batch.push(i);
+  console.log('Transfers in: ' + logsTo.length + ', out: ' + logsFrom.length);
 
-    var results = await Promise.all(batch.map(checkOwner));
+  var holdings = {};
+  logsTo.forEach(function(log) { holdings[parseInt(log.topics[3], 16)] = true; });
+  logsFrom.forEach(function(log) { delete holdings[parseInt(log.topics[3], 16)]; });
 
-    results.forEach(function(r) {
-      if (r && r.owner === SIGNER) signerTokens.push(r.id);
-    });
-
-    if (start % 100 < BATCH) {
-      console.log('  Scanned ' + Math.min(start + BATCH - 1, 6969) + '/6969 — found: ' + signerTokens.length + '/' + totalPrizes);
-    }
-  }
-
-  console.log('\nFound ' + signerTokens.length + ' signer tokens');
+  var signerTokens = Object.keys(holdings).map(Number).sort(function(a,b) { return a - b; });
+  console.log('Current holdings: ' + signerTokens.length + ' tokens');
+  console.log(signerTokens.join(', ') + '\n');
 
   if (signerTokens.length < totalPrizes) {
     console.error('Not enough signer tokens! Need ' + totalPrizes + ', have ' + signerTokens.length);
