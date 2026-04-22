@@ -161,6 +161,15 @@ const ROOM_CONFIG = {
     maxPrizes: 5,
 
   },
+  breadio3: {
+    name: 'BREADIO ROOM 3',
+    requiresHolding: true,
+    cooldown: 5000,
+    maxWins: 2,
+    maxPlayers: 10,
+    maxPrizes: 5,
+
+  },
   public: {
     name: 'PUBLIC ROOM 1',
     requiresHolding: false,
