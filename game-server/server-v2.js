@@ -163,7 +163,7 @@ const ROOM_CONFIG = {
   public: {
     name: 'PUBLIC ROOM 1',
     requiresHolding: false,
-    cooldown: 30000,
+    cooldown: 5000,
     maxWins: 1,
     maxPlayers: 10,
     maxPrizes: 5,
@@ -172,7 +172,7 @@ const ROOM_CONFIG = {
   public2: {
     name: 'PUBLIC ROOM 2',
     requiresHolding: false,
-    cooldown: 30000,
+    cooldown: 5000,
     maxWins: 1,
     maxPlayers: 10,
     maxPrizes: 5,
