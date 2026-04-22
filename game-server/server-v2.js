@@ -179,6 +179,15 @@ const ROOM_CONFIG = {
     maxPrizes: 5,
 
   },
+  test: {
+    name: 'TEST ROOM',
+    requiresHolding: false,
+    cooldown: 5000,
+    maxWins: 1,
+    maxPlayers: 10,
+    maxPrizes: 5,
+
+  },
 };
 
 // Per-room game state
