@@ -112,6 +112,7 @@ db.exec(`
     token_id INTEGER PRIMARY KEY,
     room TEXT NOT NULL,
     is_prize INTEGER DEFAULT 0,
+    is_real_burn INTEGER DEFAULT 0,
     status TEXT DEFAULT 'face_down',
     flipped_by TEXT,
     flipped_by_username TEXT,
@@ -208,20 +209,21 @@ function loadRoomData(roomId) {
   const data = JSON.parse(fs.readFileSync(dataFile, 'utf8'));
   const room = rooms[roomId];
   const prizeSet = new Set(data.prizes);
-  const allCards = [...data.prizes, ...data.burns];
+  const realBurnSet = new Set(data.realBurns || []);
+  const allCards = [...data.prizes, ...(data.realBurns || []), ...data.burns];
 
   // Init DB for this room if empty
   const count = db.prepare('SELECT COUNT(*) as c FROM cards WHERE room = ?').get(roomId).c;
   if (count === 0) {
     console.log(`[${roomId}] Initializing board...`);
-    const insert = db.prepare('INSERT OR IGNORE INTO cards (token_id, room, is_prize) VALUES (?, ?, ?)');
+    const insert = db.prepare('INSERT OR IGNORE INTO cards (token_id, room, is_prize, is_real_burn) VALUES (?, ?, ?, ?)');
     const tx = db.transaction(() => {
       for (const id of allCards) {
-        insert.run(id, roomId, prizeSet.has(id) ? 1 : 0);
+        insert.run(id, roomId, prizeSet.has(id) ? 1 : 0, realBurnSet.has(id) ? 1 : 0);
       }
     });
     tx();
-    console.log(`[${roomId}] Loaded ${allCards.length} cards (${data.prizes.length} prizes)`);
+    console.log(`[${roomId}] Loaded ${allCards.length} cards (${data.prizes.length} prizes, ${(data.realBurns || []).length} real burns)`);
   }
 
   // Override maxPrizes from actual game data
@@ -233,6 +235,7 @@ function loadRoomData(roomId) {
     room.cards[row.token_id] = {
       status: row.status,
       isPrize: row.is_prize === 1,
+      isRealBurn: row.is_real_burn === 1,
       flippedBy: row.flipped_by_username || row.flipped_by,
     };
   }
@@ -750,8 +753,54 @@ wss.on('connection', (ws) => {
                 .run(tokenId, capturedRoom, capturedAddress, capturedUsername, result);
             }
           });
+        } else if (card.isRealBurn) {
+          // Real burn: fire on-chain burn tx async
+          const capturedRoom = playerRoom;
+          const capturedAddress = playerAddress;
+          const capturedUsername = playerUsername;
+          enqueueTx(async () => {
+            try {
+              const iface = new ethers.Interface(ABI);
+              const txData = iface.encodeFunctionData('burn', [tokenId]);
+              const nonceBurn = getNextNonce();
+              console.log(`[${capturedRoom}] 🔥 BURN #${tokenId} on-chain (nonce: ${nonceBurn})`);
+
+              const txReq = {
+                to: CONTRACT, data: txData, gasLimit: 200000, nonce: nonceBurn,
+                chainId: 4326, maxFeePerGas: ethers.parseUnits('0.001', 'gwei'),
+                maxPriorityFeePerGas: 0, type: 2,
+              };
+              const signedTx = await wallet.signTransaction(txReq);
+
+              try {
+                const syncRes = await fetch(WRITE_RPC, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_sendRawTransactionSync', params: [signedTx], id: Date.now() }),
+                });
+                const syncData = await syncRes.json();
+                if (syncData.result?.transactionHash) {
+                  db.prepare('UPDATE cards SET tx_hash = ? WHERE token_id = ? AND room = ?').run(syncData.result.transactionHash, tokenId, capturedRoom);
+                  db.prepare('INSERT INTO flips (token_id, room, player_address, player_username, result, tx_hash) VALUES (?, ?, ?, ?, ?, ?)')
+                    .run(tokenId, capturedRoom, capturedAddress, capturedUsername, 'burn', syncData.result.transactionHash);
+                  console.log(`[${capturedRoom}] 🔥 #${tokenId} burned: ${syncData.result.transactionHash}`);
+                  return;
+                }
+              } catch {}
+
+              const txResponse = await writeProvider.broadcastTransaction(signedTx);
+              db.prepare('UPDATE cards SET tx_hash = ? WHERE token_id = ? AND room = ?').run(txResponse.hash, tokenId, capturedRoom);
+              db.prepare('INSERT INTO flips (token_id, room, player_address, player_username, result, tx_hash) VALUES (?, ?, ?, ?, ?, ?)')
+                .run(tokenId, capturedRoom, capturedAddress, capturedUsername, 'burn', txResponse.hash);
+              console.log(`[${capturedRoom}] 🔥 #${tokenId} sent: ${txResponse.hash}`);
+            } catch (err) {
+              console.error(`[${capturedRoom}] ERROR burn #${tokenId}: ${err.message.slice(0, 80)}`);
+              db.prepare('INSERT INTO flips (token_id, room, player_address, player_username, result) VALUES (?, ?, ?, ?, ?)')
+                .run(tokenId, capturedRoom, capturedAddress, capturedUsername, 'burn');
+            }
+          });
         } else {
-          // Burns: game-state only, just log to DB
+          // Fake burns: game-state only, just log to DB
           db.prepare('INSERT INTO flips (token_id, room, player_address, player_username, result) VALUES (?, ?, ?, ?, ?)')
             .run(tokenId, playerRoom, playerAddress, playerUsername, result);
           console.log(`[${playerRoom}] BURN #${tokenId} (game-state only)`);
