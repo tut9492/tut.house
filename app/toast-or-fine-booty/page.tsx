@@ -243,6 +243,7 @@ export default function ToastOrFineBooty() {
   const [adminAuthed, setAdminAuthed] = useState(false);
   const [adminToken, setAdminToken] = useState('');
   const [adminStatus, setAdminStatus] = useState<any>(null);
+  const [roundTimer, setRoundTimer] = useState<number | null>(null);
   const isAdmin = ADMIN_WALLETS.includes(walletAddress.toLowerCase());
   const wsRef = useRef<WebSocket | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
@@ -481,9 +482,11 @@ export default function ToastOrFineBooty() {
         setCursors(prev => ({ ...prev, [msg.address]: { username: msg.username, x: msg.x, y: msg.y } }));
         break;
       case 'player_joined': case 'player_left': break;
-      case 'game_over': case 'round_over': setGamePhase('gameover'); break;
-      case 'game_paused': setError('GAME PAUSED'); break;
-      case 'game_resumed': setError(''); break;
+      case 'timer': setRoundTimer(msg.seconds); break;
+      case 'game_over': setRoundTimer(null); setGamePhase('gameover'); break;
+      case 'round_over': setRoundTimer(null); setGamePhase('gameover'); break;
+      case 'game_paused': setRoundTimer(null); setError('GAME PAUSED'); break;
+      case 'game_resumed': setRoundTimer(msg.seconds || null); setError(''); break;
       case 'promoted':
         setRole('player'); setLobbyPosition(0);
         setError('YOUR TURN! START FLIPPING!'); setTimeout(() => setError(''), 3000);
@@ -716,6 +719,18 @@ export default function ToastOrFineBooty() {
           {roomName && (
             <div style={{ fontSize: '8px', color: '#FFD700', marginBottom: '6px', fontFamily: "'Press Start 2P'" }}>
               {roomName}
+            </div>
+          )}
+          {roundTimer !== null && roundTimer > 0 && (
+            <div style={{
+              fontSize: roundTimer <= 5 ? '28px' : '22px',
+              color: roundTimer <= 5 ? '#ff4444' : roundTimer <= 10 ? '#FFD700' : '#00ff88',
+              fontFamily: "'Press Start 2P'",
+              textShadow: roundTimer <= 5 ? '0 0 20px #ff4444' : '2px 2px #8B4513',
+              marginBottom: '6px',
+              animation: roundTimer <= 5 ? 'pulse 0.5s infinite' : 'none',
+            }}>
+              {roundTimer}
             </div>
           )}
           {stats && (
@@ -1014,8 +1029,21 @@ export default function ToastOrFineBooty() {
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
           height: '70vh', gap: '20px',
         }}>
-          <div style={{ fontSize: '16px', color: '#FFD700' }}>ALL BOOTY FOUND!</div>
-          <div style={{ fontSize: '10px', color: '#aaa' }}>GAME OVER</div>
+          <div style={{
+            fontSize: '32px', color: '#ff4444',
+            fontFamily: "'Press Start 2P'",
+            textShadow: '0 0 30px #ff4444, 0 0 60px #ff0000',
+            animation: 'pulse 1s infinite',
+          }}>GAME OVER</div>
+          <div style={{ fontSize: '10px', color: '#FFD700', fontFamily: "'Press Start 2P'" }}>ROTATING PLAYERS...</div>
+          <button
+            onClick={() => { wsRef.current?.close(); fetchRooms(); setGamePhase('rooms'); }}
+            style={{
+              marginTop: '20px', padding: '12px 24px', background: '#FFD700', color: '#000', border: 'none',
+              fontFamily: "'Press Start 2P'", fontSize: '10px', cursor: 'pointer',
+              boxShadow: '4px 4px 0 #8B4513',
+            }}
+          >BACK TO ROOMS</button>
         </div>
       )}
 
@@ -1028,6 +1056,7 @@ export default function ToastOrFineBooty() {
         }
         @keyframes notifIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
         @keyframes notifOut { from { opacity: 1; } to { opacity: 0; transform: translateX(20px); } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         div:hover { transition: all 0.1s; }
       `}</style>
     </div>

@@ -368,20 +368,43 @@ app.post('/api/game/admin/auth', (req, res) => {
 });
 
 // Round timer config
-const ROUND_DURATION = 30000; // 30 seconds
+const ROUND_DURATION = 30; // seconds
 const roundTimers = {};
+const countdownIntervals = {};
+
+function startCountdown(roomId) {
+  let remaining = ROUND_DURATION;
+  broadcastToRoom(roomId, { type: 'timer', seconds: remaining });
+
+  countdownIntervals[roomId] = setInterval(() => {
+    remaining--;
+    broadcastToRoom(roomId, { type: 'timer', seconds: remaining });
+    if (remaining <= 0) {
+      clearInterval(countdownIntervals[roomId]);
+      delete countdownIntervals[roomId];
+      endRound(roomId);
+    }
+  }, 1000);
+}
+
+function stopCountdown(roomId) {
+  if (countdownIntervals[roomId]) { clearInterval(countdownIntervals[roomId]); delete countdownIntervals[roomId]; }
+  if (roundTimers[roomId]) { clearTimeout(roundTimers[roomId]); delete roundTimers[roomId]; }
+}
 
 function endRound(roomId) {
   const room = rooms[roomId];
   if (!room) return;
   room.paused = true;
-  if (roundTimers[roomId]) { clearTimeout(roundTimers[roomId]); delete roundTimers[roomId]; }
+  stopCountdown(roomId);
+
+  // Broadcast GAME OVER
+  broadcastToRoom(roomId, { type: 'game_over', message: 'GAME OVER!' });
 
   // Kick all active players → back of lobby
   const kicked = [];
   for (const [addr, p] of Object.entries(room.players)) {
     if (p.ws?.readyState === 1) {
-      p.ws.send(JSON.stringify({ type: 'round_ended', message: 'ROUND OVER! ROTATING PLAYERS...' }));
       room.lobby.push({ address: addr, username: p.username, isHolder: p.isHolder, ws: p.ws });
     }
     kicked.push(p.username);
@@ -391,8 +414,7 @@ function endRound(roomId) {
   // Promote lobby into empty slots
   promoteFromLobby(roomId);
 
-  broadcastToRoom(roomId, { type: 'game_paused', message: 'WAITING FOR NEXT ROUND...' });
-  console.log(`[${roomId}] ROUND ENDED — kicked: ${kicked.join(', ')}`);
+  console.log(`[${roomId}] GAME OVER — kicked: ${kicked.join(', ')}`);
 }
 
 // Admin actions take a room parameter
@@ -402,14 +424,12 @@ app.post('/api/game/admin/start', (req, res) => {
   const room = rooms[roomId];
   if (!room) return res.status(404).json({ error: 'Room not found' });
   room.paused = false;
-
-  // Start round timer
-  if (roundTimers[roomId]) clearTimeout(roundTimers[roomId]);
-  roundTimers[roomId] = setTimeout(() => endRound(roomId), ROUND_DURATION);
+  stopCountdown(roomId);
+  startCountdown(roomId);
 
   broadcastToRoom(roomId, { type: 'game_resumed', message: 'GAME ON! 30 SECONDS — GO!' });
-  console.log(`[ADMIN] ${roomId} STARTED (30s timer)`);
-  res.json({ status: 'started', room: roomId, timer: ROUND_DURATION / 1000 });
+  console.log(`[ADMIN] ${roomId} STARTED (${ROUND_DURATION}s timer)`);
+  res.json({ status: 'started', room: roomId, timer: ROUND_DURATION });
 });
 
 app.post('/api/game/admin/pause', (req, res) => {
@@ -418,7 +438,7 @@ app.post('/api/game/admin/pause', (req, res) => {
   const room = rooms[roomId];
   if (!room) return res.status(404).json({ error: 'Room not found' });
   room.paused = true;
-  if (roundTimers[roomId]) { clearTimeout(roundTimers[roomId]); delete roundTimers[roomId]; }
+  stopCountdown(roomId);
   broadcastToRoom(roomId, { type: 'game_paused', message: 'GAME PAUSED' });
   console.log(`[ADMIN] ${roomId} PAUSED`);
   res.json({ status: 'paused', room: roomId });
@@ -429,19 +449,19 @@ app.post('/api/game/admin/startall', (req, res) => {
   if (!requireAdmin(req, res)) return;
   Object.entries(rooms).forEach(([id, room]) => {
     room.paused = false;
-    if (roundTimers[id]) clearTimeout(roundTimers[id]);
-    roundTimers[id] = setTimeout(() => endRound(id), ROUND_DURATION);
+    stopCountdown(id);
+    startCountdown(id);
     broadcastToRoom(id, { type: 'game_resumed', message: 'GAME ON! 30 SECONDS — GO!' });
   });
-  console.log('[ADMIN] ALL ROOMS STARTED (30s timers)');
-  res.json({ status: 'all started', timer: ROUND_DURATION / 1000 });
+  console.log(`[ADMIN] ALL ROOMS STARTED (${ROUND_DURATION}s timers)`);
+  res.json({ status: 'all started', timer: ROUND_DURATION });
 });
 
 app.post('/api/game/admin/pauseall', (req, res) => {
   if (!requireAdmin(req, res)) return;
   Object.entries(rooms).forEach(([id, room]) => {
     room.paused = true;
-    if (roundTimers[id]) { clearTimeout(roundTimers[id]); delete roundTimers[id]; }
+    stopCountdown(id);
     broadcastToRoom(id, { type: 'game_paused', message: 'GAME PAUSED' });
   });
   console.log('[ADMIN] ALL ROOMS PAUSED');
