@@ -224,6 +224,9 @@ function loadRoomData(roomId) {
     console.log(`[${roomId}] Loaded ${allCards.length} cards (${data.prizes.length} prizes)`);
   }
 
+  // Override maxPrizes from actual game data
+  room.config.maxPrizes = data.prizes.length;
+
   // Load into memory
   const rows = db.prepare('SELECT * FROM cards WHERE room = ?').all(roomId);
   for (const row of rows) {
