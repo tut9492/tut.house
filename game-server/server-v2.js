@@ -184,24 +184,6 @@ const ROOM_CONFIG = {
     maxPrizes: 5,
 
   },
-  public: {
-    name: 'PUBLIC ROOM 1',
-    requiresHolding: false,
-    cooldown: 5000,
-    maxWins: 1,
-    maxPlayers: 10,
-    maxPrizes: 5,
-
-  },
-  public2: {
-    name: 'PUBLIC ROOM 2',
-    requiresHolding: false,
-    cooldown: 5000,
-    maxWins: 1,
-    maxPlayers: 10,
-    maxPrizes: 5,
-
-  },
   test: {
     name: 'BREADIO ROOM 4',
     requiresHolding: true,
