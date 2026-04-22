@@ -248,6 +248,11 @@ export default function ToastOrFineBooty() {
   const wsRef = useRef<WebSocket | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
 
+  // Always fetch rooms on load
+  useEffect(() => {
+    fetchRooms();
+  }, []);
+
   // Auto-reconnect if returning player
   const hasAutoReconnected = useRef(false);
   useEffect(() => {
@@ -265,11 +270,7 @@ export default function ToastOrFineBooty() {
       setWalletAddress(savedWallet);
       setUsername(savedUsername);
       setOwnsNFT(savedOwns === '1');
-      // Go to room selection
-      fetch(`${GAME_API}/api/game/rooms`).then(r => r.json()).then(data => {
-        setRoomList(data);
-        setGamePhase('rooms');
-      }).catch(() => setGamePhase('verified'));
+      setGamePhase('rooms');
     }
   }, []);
 
@@ -820,8 +821,8 @@ export default function ToastOrFineBooty() {
         />
       )}
 
-      {/* Room Selection */}
-      {gamePhase === 'rooms' && (
+      {/* Room Selection — shown below wallet area AND as standalone */}
+      {(gamePhase === 'connect' || gamePhase === 'verified' || gamePhase === 'username' || gamePhase === 'rooms') && (
         <div style={{
           display: 'flex', flexDirection: 'column', alignItems: 'center',
           padding: '40px 20px', gap: '16px',
@@ -833,7 +834,8 @@ export default function ToastOrFineBooty() {
             {roomList.map((rm: any) => {
               const isFull = rm.players >= rm.maxPlayers;
               const isHolder = rm.requiresHolding;
-              const canJoin = !isHolder || ownsNFT;
+              const hasWallet = !!walletAddress && !!username.trim();
+              const canJoin = hasWallet && (!isHolder || ownsNFT);
               return (
                 <div key={rm.id} style={{
                   border: '2px solid ' + (rm.paused ? '#666' : isFull ? '#ff4444' : '#FFD700'),
@@ -848,7 +850,7 @@ export default function ToastOrFineBooty() {
                     PRIZES: {rm.prizesFound}/{rm.maxPrizes}<br/>
                     CARDS LEFT: {rm.cardsRemaining}<br/>
                     {rm.paused ? <span style={{color:'#ff4444'}}>PAUSED</span> : <span style={{color:'#00ff88'}}>LIVE</span>}
-                    {isHolder && !ownsNFT && <><br/><span style={{color:'#ff4444'}}>HOLDERS ONLY</span></>}
+                    {isHolder && hasWallet && !ownsNFT && <><br/><span style={{color:'#ff4444'}}>HOLDERS ONLY</span></>}
                   </div>
                   <button
                     onClick={() => canJoin && joinRoom(rm.id)}
@@ -861,7 +863,7 @@ export default function ToastOrFineBooty() {
                       boxShadow: canJoin ? '3px 3px 0 #8B4513' : 'none',
                     }}
                   >
-                    {!canJoin ? 'NEED BREADIO' : isFull ? 'JOIN LOBBY' : 'ENTER'}
+                    {!hasWallet ? 'CONNECT FIRST' : !canJoin ? 'NEED BREADIO' : isFull ? 'JOIN LOBBY' : 'ENTER'}
                   </button>
                 </div>
               );
