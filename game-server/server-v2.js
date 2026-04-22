@@ -483,6 +483,10 @@ app.get('/api/game/admin/status', (req, res) => {
       address: addr, short: addr.slice(0, 6) + '...' + addr.slice(-4),
       username: p.username, isHolder: p.isHolder,
     })),
+    lobbyPlayers: room.lobby.map(l => ({
+      address: l.address, short: l.address.slice(0, 6) + '...' + l.address.slice(-4),
+      username: l.username,
+    })),
   }));
   res.json(status);
 });
