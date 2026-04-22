@@ -151,6 +151,7 @@ const WHITELIST = new Set([
   '0x772f51a3dde61fcacab149796792786d29c09181',
   '0x76500b6a6c640ae7b695ef049f20d24a2ca476df',
   '0x5e5c9b7be45e8d7a958265f3addea9460d8a346a',
+  '0x6400cd71fcef2e10903522dc41ab0c959be99571',
 ].map(a => a.toLowerCase()));
 
 // ─── Room System ────────────────────────────────────────────────────────────
