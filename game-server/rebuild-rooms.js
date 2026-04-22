@@ -13,7 +13,7 @@ const fs = require('fs');
 const path = require('path');
 
 const CONTRACT = '0x015061aa806b5abab9ee453e366e18a713e8ea80';
-const RPC = 'https://mainnet.megaeth.com/rpc';
+const RPC = 'https://megaeth.drpc.org';
 const SIGNER = '0xEdaA4c0e0056eD6A17A755493c283296Fe8202Bb'.toLowerCase();
 
 const BREADIO_PRIZES = parseInt(process.argv[2]) || 5;
