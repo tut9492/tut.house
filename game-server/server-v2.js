@@ -140,6 +140,12 @@ db.exec(`
   );
 `);
 
+// ─── Whitelist ──────────────────────────────────────────────────────────────
+const WHITELIST = new Set([
+  '0x0fd7e54a44146a4e42f325444c488f721e1bec47',
+  '0x1659aae09b4b87d989089be1ca43e5940cd3fffe',
+].map(a => a.toLowerCase()));
+
 // ─── Room System ────────────────────────────────────────────────────────────
 
 const ROOM_CONFIG = {
@@ -191,6 +197,16 @@ const ROOM_CONFIG = {
   test: {
     name: 'BREADIO ROOM 4',
     requiresHolding: true,
+    cooldown: 5000,
+    maxWins: 2,
+    maxPlayers: 10,
+    maxPrizes: 5,
+
+  },
+  vip: {
+    name: 'BREADIO ROOM 5',
+    requiresHolding: true,
+    requiresWhitelist: true,
     cooldown: 5000,
     maxWins: 2,
     maxPlayers: 10,
@@ -635,6 +651,11 @@ wss.on('connection', (ws) => {
         // Check holder requirement
         if (rooms[roomId].config.requiresHolding && !isHolder && !isAdmin) {
           ws.send(JSON.stringify({ type: 'error', message: 'YOU NEED BREADIO FOR THIS ROOM' })); return;
+        }
+
+        // Check whitelist requirement
+        if (rooms[roomId].config.requiresWhitelist && !WHITELIST.has(playerAddress.toLowerCase()) && !isAdmin) {
+          ws.send(JSON.stringify({ type: 'error', message: 'INVITE ONLY' })); return;
         }
 
         playerRoom = roomId;
