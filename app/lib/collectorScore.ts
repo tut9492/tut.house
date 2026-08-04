@@ -16,7 +16,7 @@ export const TUT_COLLECTIONS = [
   {
     slug: 'kingtut-genesis',
     name: 'Tut Genesis',
-    weight: 10000,
+    weight: 25000,
     kind: 'Genesis',
     chain: 'ethereum',
     contract: '0x208e95f17312b7b348b44aad217387c5999edc04',
@@ -32,7 +32,7 @@ export const TUT_COLLECTIONS = [
   {
     slug: 'obsessive-cycles-of-fiber',
     name: 'OCF',
-    weight: 3000,
+    weight: 1000,
     kind: '1/1',
     chain: 'ethereum',
     contract: '0x65b40270ae0ace41221b30d92f449822ac066a7f',
@@ -40,7 +40,7 @@ export const TUT_COLLECTIONS = [
   {
     slug: 'breadio',
     name: 'Breadio',
-    weight: 1500,
+    weight: 500,
     kind: 'MegaETH',
     chain: 'megaeth',
     contract: '0x015061aa806b5abab9ee453e366e18a713e8ea80',
@@ -48,7 +48,7 @@ export const TUT_COLLECTIONS = [
   {
     slug: 'tut-loudio',
     name: 'Tut Loudio',
-    weight: 750,
+    weight: 100,
     kind: 'Edition',
     chain: 'ethereum',
     contract: '0x3bea26866fce3596e7e994e45a0a65b74e16947e',
@@ -56,7 +56,7 @@ export const TUT_COLLECTIONS = [
   {
     slug: 'tut-editions',
     name: 'tut™ Editions',
-    weight: 250,
+    weight: 50,
     kind: 'Edition',
     chain: 'ethereum',
     contract: '0x6d4ecf5c26b2a6537cb9b290fc46a3f6439e4dfc',

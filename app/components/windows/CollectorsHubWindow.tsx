@@ -722,12 +722,12 @@ export default function CollectorsHubWindow({ title, onClose, isActive, onClick,
               <div className="text-[11px] tracking-[0.24em] uppercase text-gray-500 mb-3">Equation</div>
               <h2 className="text-3xl font-black leading-none mb-4">The Math</h2>
               <div className="space-y-2 text-sm text-gray-700">
-                <p>Tut Genesis: 10,000 points each.</p>
+                <p>Tut Genesis: 25,000 points each.</p>
                 <p>Abstractions: 5,000 points each.</p>
-                <p>OCF: 3,000 points each.</p>
-                <p>Breadio on MegaETH: 1,500 points each.</p>
-                <p>Tut Loudio: 750 points each.</p>
-                <p>tut™ Editions: 250 points each.</p>
+                <p>OCF: 1,000 points each.</p>
+                <p>Breadio on MegaETH: 500 points each.</p>
+                <p>Tut Loudio: 100 points each.</p>
+                <p>tut™ Editions: 50 points each.</p>
                 <p>Breadth bonus: unique collections squared * 250.</p>
                 <p>Depth bonus: +500 at 3 assets, +1,500 at 5, +5,000 at 10, +15,000 at 25.</p>
               </div>
