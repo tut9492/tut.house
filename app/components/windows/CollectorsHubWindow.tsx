@@ -43,25 +43,25 @@ type LeaderboardEntry = {
   rank: string;
 };
 
-type ScorePartner = {
-  id: string;
+type ScoreCollection = {
+  slug: string;
   name: string;
+  kind: string;
+  weight: number;
   count: number;
-  multiplier: number;
-  held: boolean;
+  score: number;
+  artworks: OwnedArtwork[];
 };
 
 type ScoreBreakdown = {
-  deadbitCount: number;
-  regularCount: number;
+  assetCount: number;
   oneOfOneCount: number;
   base: number;
-  milestoneBonus: number;
-  multiplier: number;
+  breadthBonus: number;
+  depthBonus: number;
   calculatedScore: number;
-  onChainScore: number;
   rank: string;
-  partners: ScorePartner[];
+  collections: ScoreCollection[];
   formula: string;
 };
 
@@ -70,6 +70,9 @@ type OwnedArtwork = {
   title: string;
   image: string;
   permalink: string;
+  collection: string;
+  collectionSlug: string;
+  weight: number;
 };
 
 type CollectorDashboard = {
@@ -78,12 +81,12 @@ type CollectorDashboard = {
   rank: string;
   breakdown: ScoreBreakdown;
   holdings: {
-    deadbits: {
+    assets: {
       count: number;
       shown: number;
       artworks: OwnedArtwork[];
     };
-    partners: ScorePartner[];
+    collections: ScoreCollection[];
   };
   updatedAt: string;
 };
@@ -476,16 +479,18 @@ export default function CollectorsHubWindow({ title, onClose, isActive, onClick,
             {dashboard && (
               <div className="grid grid-cols-3 gap-2 mb-5">
                 <div className="border border-gray-200 p-3">
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-gray-400 mb-1">Deadbits</div>
-                  <div className="text-xl font-black text-black">{dashboard.breakdown.deadbitCount}</div>
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-gray-400 mb-1">Assets</div>
+                  <div className="text-xl font-black text-black">{dashboard.breakdown.assetCount}</div>
                 </div>
                 <div className="border border-gray-200 p-3">
                   <div className="text-[10px] uppercase tracking-[0.18em] text-gray-400 mb-1">1/1s</div>
                   <div className="text-xl font-black text-black">{dashboard.breakdown.oneOfOneCount}</div>
                 </div>
                 <div className="border border-gray-200 p-3">
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-gray-400 mb-1">Boost</div>
-                  <div className="text-xl font-black text-black">{dashboard.breakdown.multiplier.toFixed(1)}x</div>
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-gray-400 mb-1">Collections</div>
+                  <div className="text-xl font-black text-black">
+                    {dashboard.breakdown.collections.filter((collection) => collection.count > 0).length}
+                  </div>
                 </div>
               </div>
             )}
@@ -553,7 +558,7 @@ export default function CollectorsHubWindow({ title, onClose, isActive, onClick,
                     <div className="grid grid-cols-2 gap-3">
                       <div className="border border-gray-200 p-3">
                         <div className="text-[10px] uppercase tracking-[0.18em] text-gray-400 mb-1">Amount</div>
-                        <div className="text-3xl font-black">{dashboard.holdings.deadbits.count}</div>
+                        <div className="text-3xl font-black">{dashboard.holdings.assets.count}</div>
                       </div>
                       <div className="border border-gray-200 p-3">
                         <div className="text-[10px] uppercase tracking-[0.18em] text-gray-400 mb-1">Score</div>
@@ -564,35 +569,35 @@ export default function CollectorsHubWindow({ title, onClose, isActive, onClick,
                         <div className="text-lg font-black">{dashboard.rank}</div>
                       </div>
                       <div className="border border-gray-200 p-3">
-                        <div className="text-[10px] uppercase tracking-[0.18em] text-gray-400 mb-1">Multiplier</div>
-                        <div className="text-lg font-black">{dashboard.breakdown.multiplier.toFixed(1)}x</div>
+                        <div className="text-[10px] uppercase tracking-[0.18em] text-gray-400 mb-1">1/1s</div>
+                        <div className="text-lg font-black">{dashboard.breakdown.oneOfOneCount}</div>
                       </div>
                     </div>
 
                     <div className="mt-5 border-2 border-black bg-black text-white p-4">
-                      <div className="font-mono text-sm mb-3">score = floor((base + milestones) * multiplier)</div>
+                      <div className="font-mono text-sm mb-3">score = weighted tut™ assets + breadth bonus + depth bonus</div>
                       <div className="grid grid-cols-2 gap-2 text-xs">
-                        <div className="text-gray-400">base</div>
-                        <div className="text-right">{dashboard.breakdown.deadbitCount} * 100 = {dashboard.breakdown.base.toLocaleString()}</div>
-                        <div className="text-gray-400">milestones</div>
-                        <div className="text-right">+{dashboard.breakdown.milestoneBonus.toLocaleString()}</div>
-                        <div className="text-gray-400">multiplier</div>
-                        <div className="text-right">{dashboard.breakdown.multiplier.toFixed(1)}x</div>
+                        <div className="text-gray-400">weighted assets</div>
+                        <div className="text-right">{dashboard.breakdown.base.toLocaleString()}</div>
+                        <div className="text-gray-400">breadth bonus</div>
+                        <div className="text-right">+{dashboard.breakdown.breadthBonus.toLocaleString()}</div>
+                        <div className="text-gray-400">depth bonus</div>
+                        <div className="text-right">+{dashboard.breakdown.depthBonus.toLocaleString()}</div>
                         <div className="text-gray-400">calculated</div>
                         <div className="text-right">{dashboard.breakdown.calculatedScore.toLocaleString()}</div>
-                        <div className="text-gray-400">on-chain score</div>
-                        <div className="text-right">{dashboard.breakdown.onChainScore.toLocaleString()}</div>
                       </div>
                     </div>
 
                     <div className="mt-5">
-                      <div className="text-[10px] uppercase tracking-[0.18em] text-gray-400 mb-2">Partner Boosts</div>
+                      <div className="text-[10px] uppercase tracking-[0.18em] text-gray-400 mb-2">Collection Weights</div>
                       <div className="space-y-2">
-                        {dashboard.holdings.partners.map((partner) => (
-                          <div key={partner.id} className="flex items-center justify-between border border-gray-200 px-3 py-2 text-sm">
-                            <span className={partner.held ? 'text-black font-bold' : 'text-gray-500'}>{partner.name}</span>
+                        {dashboard.holdings.collections.map((collection) => (
+                          <div key={collection.slug} className="flex items-center justify-between border border-gray-200 px-3 py-2 text-sm">
+                            <span className={collection.count > 0 ? 'text-black font-bold' : 'text-gray-500'}>{collection.name}</span>
                             <span className="font-mono text-xs">
-                              {partner.held ? `${partner.count} held / +${partner.multiplier.toFixed(1)}x` : 'not held'}
+                              {collection.count > 0
+                                ? `${collection.count} * ${collection.weight.toLocaleString()} = ${collection.score.toLocaleString()}`
+                                : `${collection.weight.toLocaleString()} each`}
                             </span>
                           </div>
                         ))}
@@ -611,16 +616,16 @@ export default function CollectorsHubWindow({ title, onClose, isActive, onClick,
                 {!dashboard && (
                   <div className="text-sm text-gray-500">Connect and verify a wallet to load owned art.</div>
                 )}
-                {dashboard && dashboard.holdings.deadbits.artworks.length === 0 && (
+                {dashboard && dashboard.holdings.assets.artworks.length === 0 && (
                   <div className="text-sm text-gray-500">
-                    No owned art thumbnails returned. Score counts are still read from chain.
+                    No owned tut™ assets returned for this wallet.
                   </div>
                 )}
-                {dashboard && dashboard.holdings.deadbits.artworks.length > 0 && (
+                {dashboard && dashboard.holdings.assets.artworks.length > 0 && (
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    {dashboard.holdings.deadbits.artworks.map((art) => (
+                    {dashboard.holdings.assets.artworks.map((art) => (
                       <a
-                        key={art.tokenId}
+                        key={`${art.collectionSlug}-${art.tokenId}`}
                         href={art.permalink || undefined}
                         target="_blank"
                         rel="noreferrer"
@@ -640,7 +645,7 @@ export default function CollectorsHubWindow({ title, onClose, isActive, onClick,
                         </div>
                         <div className="p-2">
                           <div className="truncate text-xs font-bold">{art.title}</div>
-                          <div className="text-[10px] text-gray-500">#{art.tokenId}</div>
+                          <div className="text-[10px] text-gray-500">{art.collection} · #{art.tokenId}</div>
                         </div>
                       </a>
                     ))}
@@ -654,10 +659,10 @@ export default function CollectorsHubWindow({ title, onClose, isActive, onClick,
         {activeTab === 'leaderboard' && (
           <div className="grid lg:grid-cols-[0.8fr_1.2fr] gap-5 pt-3">
             <div className="border-2 border-black bg-white p-5 shadow-[6px_6px_0_#111]">
-              <div className="text-[11px] tracking-[0.24em] uppercase text-gray-500 mb-3">On-chain Scores</div>
+              <div className="text-[11px] tracking-[0.24em] uppercase text-gray-500 mb-3">tut™ Scores</div>
               <h2 className="text-4xl font-black leading-none mb-4">Collector Leaderboard</h2>
               <p className="text-sm text-gray-700 leading-relaxed">
-                Scores are read from the existing MegaETH collector leaderboard. Connect your wallet on the Verify tab to see your score and claim the matching Discord role.
+                Wallet dashboards are live now. A public leaderboard needs a tut™ asset snapshot/indexer so every collector can be ranked from the same collection-only score model.
               </p>
               <div className="mt-5 grid grid-cols-2 gap-3">
                 <div className="border border-gray-200 p-3">
@@ -679,8 +684,12 @@ export default function CollectorsHubWindow({ title, onClose, isActive, onClick,
                 <div className="p-3 text-right">Rank</div>
               </div>
               <div className="max-h-[430px] overflow-auto">
-                {leaderboardLoading && <div className="p-5 text-sm text-gray-500">Loading leaderboard...</div>}
-                {!leaderboardLoading && leaderboard.length === 0 && <div className="p-5 text-sm text-gray-500">No scores found.</div>}
+                {leaderboardLoading && <div className="p-5 text-sm text-gray-500">Checking leaderboard...</div>}
+                {!leaderboardLoading && leaderboard.length === 0 && (
+                  <div className="p-5 text-sm text-gray-500">
+                    tut™ collector leaderboard is not indexed yet. Verify a wallet and use Holdings for the live personal score.
+                  </div>
+                )}
                 {!leaderboardLoading && leaderboard.map((entry, index) => (
                   <div
                     key={`${entry.wallet}-${index}`}
@@ -703,20 +712,23 @@ export default function CollectorsHubWindow({ title, onClose, isActive, onClick,
               <div className="text-[11px] tracking-[0.24em] uppercase text-gray-500 mb-3">Score</div>
               <h2 className="text-3xl font-black leading-none mb-4">What Counts</h2>
               <p className="text-sm text-gray-700 leading-relaxed">
-                Collector Score comes from the existing MegaETH leaderboard used by ThePledge. Deadbits create the base, 1/1s and hold thresholds add milestones, and partner collections add boosts.
+                Collector Score is calculated from tut™ assets shown on this site. Higher-weight 1/1s and genesis works create the base, with small bonuses for collecting across multiple tut™ collections and holding more works.
               </p>
               <div className="mt-4 border-2 border-black bg-black text-white p-3 font-mono text-xs">
-                score = floor((base + milestones) * multiplier)
+                score = weighted tut™ assets + breadth bonus + depth bonus
               </div>
             </div>
             <div className="border-2 border-black bg-white p-5">
               <div className="text-[11px] tracking-[0.24em] uppercase text-gray-500 mb-3">Equation</div>
               <h2 className="text-3xl font-black leading-none mb-4">The Math</h2>
               <div className="space-y-2 text-sm text-gray-700">
-                <p>Base: Deadbits held * 100.</p>
-                <p>Milestones: +500 at 5, +2,000 at 10, +10,000 at 25, +25,000 at 50, +100,000 at 100.</p>
-                <p>1/1s: +10,000 each.</p>
-                <p>Multiplier: starts at 1.0x, partner boosts add up, capped at 2.4x.</p>
+                <p>1/1 collections: 10,000 points each.</p>
+                <p>King Tut Genesis: 5,000 points each.</p>
+                <p>Abstractions: 1,500 points each.</p>
+                <p>tut™ Editions: 1,000 points each.</p>
+                <p>Tut Loudio: 750 points each.</p>
+                <p>Breadth bonus: unique collections squared * 250.</p>
+                <p>Depth bonus: +500 at 3 assets, +1,500 at 5, +5,000 at 10, +15,000 at 25.</p>
               </div>
             </div>
             <div className="border-2 border-black bg-white p-5">

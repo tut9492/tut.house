@@ -1,17 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getCollectorLeaderboard } from '@/app/lib/collectorScore';
+import { NextResponse } from 'next/server';
 
-export async function GET(request: NextRequest) {
-  try {
-    const limit = Number(request.nextUrl.searchParams.get('limit') || 50);
-    const leaderboard = await getCollectorLeaderboard(limit);
-    return NextResponse.json({
-      leaderboard,
-      total: leaderboard.length,
-      updatedAt: new Date().toISOString(),
-    });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Leaderboard lookup failed';
-    return NextResponse.json({ error: message }, { status: 500 });
-  }
+export async function GET() {
+  return NextResponse.json({
+    leaderboard: [],
+    total: 0,
+    status: 'needs_tut_asset_indexer',
+    message: 'The public leaderboard is paused until tut™ asset scores are indexed across all collectors.',
+    updatedAt: new Date().toISOString(),
+  });
 }

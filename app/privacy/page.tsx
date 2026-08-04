@@ -13,8 +13,8 @@ export default function PrivacyPage() {
         <section className="mt-6 space-y-3 text-gray-800">
           <h2 className="text-xl font-bold">Information used</h2>
           <p>Your public wallet address and wallet signature.</p>
-          <p>Your public Collector Score read from the MegaETH leaderboard contract.</p>
-          <p>Your public NFT holdings and artwork metadata used to display the collector dashboard.</p>
+          <p>Your public Collector Score calculated from tut™ NFT holdings.</p>
+          <p>Your public artwork metadata used to display the collector dashboard.</p>
           <p>Your Discord user id and username returned by Discord OAuth.</p>
         </section>
         <section className="mt-6 space-y-3 text-gray-800">

@@ -1,34 +1,6 @@
-import { createPublicClient, http, parseAbi, verifyMessage } from 'viem';
+import { verifyMessage } from 'viem';
 
-export const MEGAETH_RPC = process.env.MEGAETH_RPC || 'https://mainnet.megaeth.com/rpc';
-export const ETH_RPC = process.env.ETH_RPC || 'https://eth.llamarpc.com';
-export const LEADERBOARD_ADDRESS =
-  (process.env.COLLECTOR_LEADERBOARD_ADDRESS || '0xd84Cbba8D0Cd43Aa09E315faFa462bE66Df35E9f') as `0x${string}`;
-export const DEADBIT_CONTRACT = '0x8a01e97adc0a1883255ead1cd166629b983c80bf' as `0x${string}`;
-export const DEADBIT_COLLECTION_SLUG = 'deadbit-nation-777112182';
-
-const megaeth = {
-  id: 4326,
-  name: 'MegaETH',
-  nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
-  rpcUrls: { default: { http: [MEGAETH_RPC] } },
-};
-
-const ethereum = {
-  id: 1,
-  name: 'Ethereum',
-  nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
-  rpcUrls: { default: { http: [ETH_RPC] } },
-};
-
-const leaderboardAbi = parseAbi([
-  'function getScore(address addr) view returns (uint256)',
-  'function getAllScores() view returns (address[] addrs, uint256[] scores)',
-]);
-const erc721Abi = parseAbi([
-  'function balanceOf(address owner) view returns (uint256)',
-  'function ownerOf(uint256 tokenId) view returns (address)',
-]);
+const OPENSEA_API = 'https://api.opensea.io/api/v2';
 
 export const SCORE_MESSAGE_PREFIX = 'Verify tut.house collector access';
 export const DISCORD_VERIFY_MESSAGE_PREFIX = 'Verify tut.house Discord collector role';
@@ -40,51 +12,51 @@ export type CollectorProof = {
   signature: `0x${string}`;
 };
 
-export const REGULAR_POINTS = 100;
-export const ONE_OF_ONE_POINTS = 10000;
-export const MAX_MULTIPLIER = 2.4;
-export const REGULAR_MILESTONES = [
-  { min: 5, bonus: 500 },
-  { min: 10, bonus: 2000 },
-  { min: 25, bonus: 10000 },
-  { min: 50, bonus: 25000 },
-  { min: 100, bonus: 100000 },
-] as const;
-export const ONE_OF_ONE_IDS = [
-  3144, 307, 1195, 346, 235, 2792, 2660, 932, 2891, 1641,
-  1906, 876, 2109, 1527, 1661, 387, 1786, 1094, 931, 1790,
-  2160, 2162, 2763, 2334, 3312, 2548, 2974, 303, 2238, 1880,
-  1554, 2955, 2799, 2680, 1185, 3071, 621, 2972, 791, 214,
+export const TUT_COLLECTIONS = [
+  { slug: 'obsessive-cycles-of-fiber', name: 'Obsessive Cycles of Fiber', weight: 10000, kind: '1/1' },
+  { slug: 'tut-1-1', name: 'tut™ 1/1', weight: 10000, kind: '1/1' },
+  { slug: 'kingtut-genesis', name: 'King Tut Genesis', weight: 5000, kind: 'Genesis' },
+  { slug: 'abstractions', name: 'Abstractions', weight: 1500, kind: 'Series' },
+  { slug: 'tut-editions', name: 'tut™ Editions', weight: 1000, kind: 'Edition' },
+  { slug: 'tut-loudio', name: 'Tut Loudio', weight: 750, kind: 'Edition' },
 ] as const;
 
-export const PARTNER_COLLECTIONS = [
-  { id: 'panks', name: 'PANKS', contract: '0x95995a9beaf89265de51104936c6ad9ee961cc88' as `0x${string}`, multiplier: 0.2, chain: 'ethereum' },
-  { id: 'breadio', name: 'Breadio', contract: '0x015061aa806b5abab9ee453e366e18a713e8ea80' as `0x${string}`, multiplier: 0.2, chain: 'megaeth' },
-  { id: 'nacci', name: 'Nacci Cartel', contract: '0x2e5902a40115bf36739949d9875be0bcd2384c05' as `0x${string}`, multiplier: 0.3, chain: 'megaeth' },
-  { id: 'betman', name: 'Betman Genesis', contract: '0xa3a4EbF5AD43625A1F87F46491D5760EDC921E33' as `0x${string}`, multiplier: 0.5, chain: 'megaeth' },
-  { id: 'digitrabbits', name: 'Digit Rabbits', contract: '0x509022b7038ba8f3e79799fc7ea3232f15811cc7' as `0x${string}`, multiplier: 0.1, chain: 'megaeth' },
-  { id: 'badlydrawnbarry', name: 'Badly Drawn Barry', contract: '0xa7911e22b9bba3af9d43bbae3491aa50396cc453' as `0x${string}`, multiplier: 0.1, chain: 'megaeth' },
+export const TUT_DEPTH_BONUSES = [
+  { min: 3, bonus: 500 },
+  { min: 5, bonus: 1500 },
+  { min: 10, bonus: 5000 },
+  { min: 25, bonus: 15000 },
 ] as const;
 
-export type ScorePartner = {
-  id: string;
+export type OwnedArtwork = {
+  tokenId: string;
+  title: string;
+  image: string;
+  permalink: string;
+  collection: string;
+  collectionSlug: string;
+  weight: number;
+};
+
+export type ScoreCollection = {
+  slug: string;
   name: string;
+  kind: string;
+  weight: number;
   count: number;
-  multiplier: number;
-  held: boolean;
+  score: number;
+  artworks: OwnedArtwork[];
 };
 
 export type ScoreBreakdown = {
-  deadbitCount: number;
-  regularCount: number;
+  assetCount: number;
   oneOfOneCount: number;
   base: number;
-  milestoneBonus: number;
-  multiplier: number;
+  breadthBonus: number;
+  depthBonus: number;
   calculatedScore: number;
-  onChainScore: number;
   rank: string;
-  partners: ScorePartner[];
+  collections: ScoreCollection[];
   formula: string;
 };
 
@@ -167,161 +139,105 @@ export async function verifyDiscordWalletProof({
 }
 
 export async function getCollectorScore(wallet: string): Promise<number> {
-  const normalized = normalizeWallet(wallet);
-  const client = createPublicClient({
-    chain: megaeth,
-    transport: http(MEGAETH_RPC),
-  });
-
-  try {
-    const score = await client.readContract({
-      address: LEADERBOARD_ADDRESS,
-      abi: leaderboardAbi,
-      functionName: 'getScore',
-      args: [normalized],
-    });
-    return Number(score);
-  } catch {
-    const [addrs, scores] = await client.readContract({
-      address: LEADERBOARD_ADDRESS,
-      abi: leaderboardAbi,
-      functionName: 'getAllScores',
-    });
-
-    const idx = addrs.findIndex((addr) => addr.toLowerCase() === normalized);
-    return idx >= 0 ? Number(scores[idx]) : 0;
-  }
+  return (await getCollectorScoreBreakdown(wallet)).calculatedScore;
 }
 
-export async function getCollectorLeaderboard(limit = 50): Promise<Array<{ wallet: `0x${string}`; score: number; rank: string }>> {
-  const client = createPublicClient({
-    chain: megaeth,
-    transport: http(MEGAETH_RPC),
-  });
-
-  const [addrs, scores] = await client.readContract({
-    address: LEADERBOARD_ADDRESS,
-    abi: leaderboardAbi,
-    functionName: 'getAllScores',
-  });
-
-  return addrs
-    .map((wallet, index) => {
-      const score = Number(scores[index] ?? 0);
-      return {
-        wallet: wallet.toLowerCase() as `0x${string}`,
-        score,
-        rank: scoreRank(score),
-      };
-    })
-    .filter((entry) => entry.score > 0)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, Math.max(1, Math.min(200, limit)));
-}
-
-async function erc721Balance(
-  client: ReturnType<typeof createPublicClient>,
-  contract: `0x${string}`,
-  wallet: `0x${string}`,
-): Promise<number> {
-  try {
-    const balance = await client.readContract({
-      address: contract,
-      abi: erc721Abi,
-      functionName: 'balanceOf',
-      args: [wallet],
-    });
-    return Number(balance);
-  } catch {
-    return 0;
+function normalizeIpfsUrl(url: string): string {
+  if (!url) return url;
+  if (url.startsWith('ipfs://')) {
+    const path = url.replace('ipfs://', '').replace(/^ipfs\//, '');
+    return `https://ipfs.io/ipfs/${path}`;
   }
+  return url;
 }
 
 export function calculateScoreBreakdown({
-  deadbitCount,
-  oneOfOneCount,
-  partners,
-  onChainScore = 0,
+  collections,
 }: {
-  deadbitCount: number;
-  oneOfOneCount: number;
-  partners: ScorePartner[];
-  onChainScore?: number;
+  collections: ScoreCollection[];
 }): ScoreBreakdown {
-  const regularCount = Math.max(0, deadbitCount - oneOfOneCount);
-  const base = deadbitCount * REGULAR_POINTS;
-  const milestoneBonus =
-    oneOfOneCount * ONE_OF_ONE_POINTS +
-    REGULAR_MILESTONES.reduce((sum, milestone) => (
-      deadbitCount >= milestone.min ? sum + milestone.bonus : sum
-    ), 0);
-  const rawMultiplier = 1 + partners
-    .filter((partner) => partner.held)
-    .reduce((sum, partner) => sum + partner.multiplier, 0);
-  const multiplier = deadbitCount > 0 ? Math.min(rawMultiplier, MAX_MULTIPLIER) : 1;
-  const calculatedScore = Math.floor((base + milestoneBonus) * multiplier);
-  const score = Math.max(onChainScore, calculatedScore);
+  const assetCount = collections.reduce((sum, collection) => sum + collection.count, 0);
+  const oneOfOneCount = collections
+    .filter((collection) => collection.kind === '1/1')
+    .reduce((sum, collection) => sum + collection.count, 0);
+  const base = collections.reduce((sum, collection) => sum + collection.score, 0);
+  const uniqueCollections = collections.filter((collection) => collection.count > 0).length;
+  const breadthBonus = uniqueCollections > 1 ? uniqueCollections * uniqueCollections * 250 : 0;
+  const depthBonus = TUT_DEPTH_BONUSES.reduce((sum, milestone) => (
+    assetCount >= milestone.min ? sum + milestone.bonus : sum
+  ), 0);
+  const calculatedScore = base + breadthBonus + depthBonus;
 
   return {
-    deadbitCount,
-    regularCount,
+    assetCount,
     oneOfOneCount,
     base,
-    milestoneBonus,
-    multiplier,
+    breadthBonus,
+    depthBonus,
     calculatedScore,
-    onChainScore,
-    rank: scoreRank(score),
-    partners,
-    formula: 'score = floor((base + milestones) * multiplier)',
+    rank: scoreRank(calculatedScore),
+    collections,
+    formula: 'score = weighted tut™ assets + breadth bonus + depth bonus',
   };
 }
 
-export async function getCollectorScoreBreakdown(wallet: string): Promise<ScoreBreakdown> {
+export async function getTutCollectionHoldings(wallet: string, maxPerCollection = 100): Promise<ScoreCollection[]> {
   const normalized = normalizeWallet(wallet);
-  const megaClient = createPublicClient({
-    chain: megaeth,
-    transport: http(MEGAETH_RPC),
-  });
-  const ethClient = createPublicClient({
-    chain: ethereum,
-    transport: http(ETH_RPC),
-  });
+  const apiKey = process.env.OPENSEA_API_KEY;
 
-  const [deadbitCount, oneOfOneOwners, partners, onChainScore] = await Promise.all([
-    erc721Balance(megaClient, DEADBIT_CONTRACT, normalized),
-    Promise.all(ONE_OF_ONE_IDS.map(async (tokenId) => {
-      try {
-        const owner = await megaClient.readContract({
-          address: DEADBIT_CONTRACT,
-          abi: erc721Abi,
-          functionName: 'ownerOf',
-          args: [BigInt(tokenId)],
+  return Promise.all(TUT_COLLECTIONS.map(async (collection) => {
+    const artworks: OwnedArtwork[] = [];
+    let next: string | null = null;
+
+    if (apiKey) {
+      while (artworks.length < maxPerCollection) {
+        const url = new URL(`${OPENSEA_API}/chain/ethereum/account/${normalized}/nfts`);
+        url.searchParams.set('collection', collection.slug);
+        url.searchParams.set('limit', String(Math.min(50, maxPerCollection - artworks.length)));
+        if (next) url.searchParams.set('next', next);
+
+        const res = await fetch(url, {
+          headers: {
+            Accept: 'application/json',
+            'X-API-KEY': apiKey,
+          },
         });
-        return owner.toLowerCase() === normalized;
-      } catch {
-        return false;
-      }
-    })),
-    Promise.all(PARTNER_COLLECTIONS.map(async (partner) => {
-      const client = partner.chain === 'ethereum' ? ethClient : megaClient;
-      const count = await erc721Balance(client, partner.contract, normalized);
-      return {
-        id: partner.id,
-        name: partner.name,
-        count,
-        multiplier: partner.multiplier,
-        held: count > 0,
-      };
-    })),
-    getCollectorScore(normalized),
-  ]);
+        if (!res.ok) break;
 
+        const data = await res.json();
+        for (const nft of data?.nfts || []) {
+          const tokenId = String(nft.identifier || nft.token_id || '');
+          artworks.push({
+            tokenId,
+            title: nft.name || `${collection.name} #${tokenId || '?'}`,
+            image: normalizeIpfsUrl(nft.image_url || nft.display_image_url || nft.original_image_url || ''),
+            permalink: nft.opensea_url || (tokenId ? `https://opensea.io/assets/ethereum/${nft.contract}/${tokenId}` : ''),
+            collection: collection.name,
+            collectionSlug: collection.slug,
+            weight: collection.weight,
+          });
+        }
+
+        next = data?.next || null;
+        if (!next) break;
+      }
+    }
+
+    return {
+      slug: collection.slug,
+      name: collection.name,
+      kind: collection.kind,
+      weight: collection.weight,
+      count: artworks.length,
+      score: artworks.length * collection.weight,
+      artworks,
+    };
+  }));
+}
+
+export async function getCollectorScoreBreakdown(wallet: string): Promise<ScoreBreakdown> {
   return calculateScoreBreakdown({
-    deadbitCount,
-    oneOfOneCount: oneOfOneOwners.filter(Boolean).length,
-    partners,
-    onChainScore,
+    collections: await getTutCollectionHoldings(wallet),
   });
 }
 
