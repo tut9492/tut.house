@@ -56,6 +56,37 @@ npm install
 npm run dev
 ```
 
+### Collectors Hub + Discord Verification
+
+The Collectors Hub window verifies an EVM wallet signature, reads the wallet's Collector Score from the existing MegaETH leaderboard, then sends the user through Discord OAuth and assigns configured TU Discord roles.
+
+Required Vercel environment variables:
+
+```bash
+MEGAETH_RPC=https://mainnet.megaeth.com/rpc
+COLLECTOR_LEADERBOARD_ADDRESS=0xd84Cbba8D0Cd43Aa09E315faFa462bE66Df35E9f
+NEXT_PUBLIC_SITE_URL=https://tut.house
+
+DISCORD_CLIENT_ID=...
+DISCORD_CLIENT_SECRET=...
+DISCORD_BOT_TOKEN=...
+DISCORD_GUILD_ID=...
+DISCORD_ROLE_ID=...
+DISCORD_STATE_SECRET=...
+```
+
+Optional score-tier roles:
+
+```bash
+DISCORD_ROLE_TIERS='[{"minScore":5000,"roleId":"...","name":"Collector"},{"minScore":25000,"roleId":"...","name":"Whale"}]'
+```
+
+The Discord application redirect URL must include:
+
+```text
+https://tut.house/api/discord/callback
+```
+
 ### Game Server
 
 ```bash
