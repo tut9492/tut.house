@@ -13,11 +13,11 @@ export type CollectorProof = {
 };
 
 export const TUT_COLLECTIONS = [
-  { slug: 'obsessive-cycles-of-fiber', name: 'OCF', weight: 10000, kind: '1/1', chain: 'ethereum' },
-  { slug: 'kingtut-genesis', name: 'Tut Genesis', weight: 5000, kind: 'Genesis', chain: 'ethereum' },
-  { slug: 'abstractions', name: 'Abstractions', weight: 1500, kind: 'Series', chain: 'ethereum' },
+  { slug: 'kingtut-genesis', name: 'Tut Genesis', weight: 10000, kind: 'Genesis', chain: 'ethereum' },
+  { slug: 'abstractions', name: 'Abstractions', weight: 5000, kind: 'Series', chain: 'ethereum' },
+  { slug: 'obsessive-cycles-of-fiber', name: 'OCF', weight: 3000, kind: '1/1', chain: 'ethereum' },
+  { slug: 'breadio', name: 'Breadio', weight: 1500, kind: 'MegaETH', chain: 'megaeth' },
   { slug: 'tut-loudio', name: 'Tut Loudio', weight: 750, kind: 'Edition', chain: 'ethereum' },
-  { slug: 'breadio', name: 'Breadio', weight: 750, kind: 'MegaETH', chain: 'megaeth' },
 ] as const;
 
 export const TUT_DEPTH_BONUSES = [
