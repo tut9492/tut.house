@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.tut.house"),
   title: "tut.house",
-  description: "Tut's official art, collector, and Discord verification site.",
+  description: "tut™ official art, collector, and Discord verification site.",
 };
 
 export default function RootLayout({

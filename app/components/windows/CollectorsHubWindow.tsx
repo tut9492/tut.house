@@ -322,9 +322,9 @@ export default function CollectorsHubWindow({ title, onClose, isActive, onClick,
         <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-5 pt-3">
           <div className="border-2 border-black bg-white p-5 shadow-[6px_6px_0_#111]">
             <div className="text-[11px] tracking-[0.24em] uppercase text-gray-500 mb-3">Collector Score</div>
-            <h2 className="text-3xl md:text-5xl leading-none font-black text-black mb-4">TU Holder Verification</h2>
+            <h2 className="text-3xl md:text-5xl leading-none font-black text-black mb-4">tut™ Holder Verification</h2>
             <p className="text-sm md:text-base text-gray-700 leading-relaxed mb-6 max-w-xl">
-              Connect the wallet that holds your collector score, link Discord, then sign once to receive your TU role.
+              Connect the wallet that holds your collector score, link Discord, then sign once to receive your tut™ role.
             </p>
             <div className="border-2 border-[#2c7a3f] bg-green-50 text-green-900 p-3 text-sm leading-relaxed mb-5">
               This verifier never asks for a seed phrase or private key, never downloads software, and never sends a blockchain transaction. Wallet signatures only prove address ownership for a Discord role.

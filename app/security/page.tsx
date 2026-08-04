@@ -7,9 +7,9 @@ export default function SecurityPage() {
         <Link href="/" className="text-sm underline">Back to tut.house</Link>
         <h1 className="mt-6 text-4xl font-black">Security</h1>
         <p className="mt-4 text-gray-700 leading-relaxed">
-          tut.house is the official website for Tut&apos;s art and collector tools. The Collectors Hub
+          tut.house is the official website for tut™ art and collector tools. The Collectors Hub
           verifies wallet ownership and Discord identity so eligible collectors can receive roles in
-          the TU Discord.
+          the tut™ Discord.
         </p>
         <section className="mt-6 space-y-3 text-gray-800">
           <h2 className="text-xl font-bold">What the verifier does</h2>

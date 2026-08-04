@@ -23,7 +23,7 @@ export default function PrivacyPage() {
         </section>
         <section className="mt-6 space-y-3 text-gray-800">
           <h2 className="text-xl font-bold">Contact</h2>
-          <p>For safety or verification questions, contact Tut through the official TU community channels.</p>
+          <p>For safety or verification questions, contact tut™ through the official community channels.</p>
         </section>
       </div>
     </main>

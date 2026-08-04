@@ -7,7 +7,7 @@ export default function TermsPage() {
         <Link href="/" className="text-sm underline">Back to tut.house</Link>
         <h1 className="mt-6 text-4xl font-black">Terms</h1>
         <p className="mt-4 text-gray-700 leading-relaxed">
-          tut.house provides art, collector tools, and Discord role verification for the TU community.
+          tut.house provides art, collector tools, and Discord role verification for the tut™ community.
         </p>
         <section className="mt-6 space-y-3 text-gray-800">
           <h2 className="text-xl font-bold">Collector verification</h2>
