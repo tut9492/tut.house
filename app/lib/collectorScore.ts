@@ -21,7 +21,14 @@ export const TUT_COLLECTIONS = [
     chain: 'ethereum',
     contract: '0x208e95f17312b7b348b44aad217387c5999edc04',
   },
-  { slug: 'abstractions', name: 'Abstractions', weight: 5000, kind: 'Series', chain: 'ethereum' },
+  {
+    slug: 'abstractions',
+    name: 'Abstractions',
+    weight: 5000,
+    kind: 'Series',
+    chain: 'abstract',
+    contract: '0xc469c6dbfd7a48d0bfe1556935074fe3a4f3c96c',
+  },
   {
     slug: 'obsessive-cycles-of-fiber',
     name: 'OCF',
