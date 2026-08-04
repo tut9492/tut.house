@@ -17,7 +17,14 @@ export const TUT_COLLECTIONS = [
   { slug: 'abstractions', name: 'Abstractions', weight: 5000, kind: 'Series', chain: 'ethereum' },
   { slug: 'obsessive-cycles-of-fiber', name: 'OCF', weight: 3000, kind: '1/1', chain: 'ethereum' },
   { slug: 'breadio', name: 'Breadio', weight: 1500, kind: 'MegaETH', chain: 'megaeth' },
-  { slug: 'tut-loudio', name: 'Tut Loudio', weight: 750, kind: 'Edition', chain: 'ethereum' },
+  {
+    slug: 'tut-loudio',
+    name: 'Tut Loudio',
+    weight: 750,
+    kind: 'Edition',
+    chain: 'ethereum',
+    contract: '0x3bea26866fce3596e7e994e45a0a65b74e16947e',
+  },
 ] as const;
 
 export const TUT_DEPTH_BONUSES = [
@@ -42,6 +49,7 @@ export type ScoreCollection = {
   name: string;
   kind: string;
   chain: string;
+  contract?: string;
   weight: number;
   count: number;
   score: number;
@@ -228,6 +236,7 @@ export async function getTutCollectionHoldings(wallet: string, maxPerCollection 
       name: collection.name,
       kind: collection.kind,
       chain: collection.chain,
+      contract: 'contract' in collection ? collection.contract : undefined,
       weight: collection.weight,
       count: artworks.length,
       score: artworks.length * collection.weight,
