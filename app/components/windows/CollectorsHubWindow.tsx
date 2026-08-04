@@ -35,12 +35,57 @@ type DiscordConnection = {
   discordUsername: string;
 };
 
-type HubTab = 'verify' | 'leaderboard' | 'guide';
+type HubTab = 'verify' | 'holdings' | 'leaderboard' | 'guide';
 
 type LeaderboardEntry = {
   wallet: string;
   score: number;
   rank: string;
+};
+
+type ScorePartner = {
+  id: string;
+  name: string;
+  count: number;
+  multiplier: number;
+  held: boolean;
+};
+
+type ScoreBreakdown = {
+  deadbitCount: number;
+  regularCount: number;
+  oneOfOneCount: number;
+  base: number;
+  milestoneBonus: number;
+  multiplier: number;
+  calculatedScore: number;
+  onChainScore: number;
+  rank: string;
+  partners: ScorePartner[];
+  formula: string;
+};
+
+type OwnedArtwork = {
+  tokenId: string;
+  title: string;
+  image: string;
+  permalink: string;
+};
+
+type CollectorDashboard = {
+  wallet: string;
+  score: number;
+  rank: string;
+  breakdown: ScoreBreakdown;
+  holdings: {
+    deadbits: {
+      count: number;
+      shown: number;
+      artworks: OwnedArtwork[];
+    };
+    partners: ScorePartner[];
+  };
+  updatedAt: string;
 };
 
 declare global {
@@ -94,6 +139,8 @@ export default function CollectorsHubWindow({ title, onClose, isActive, onClick,
   const [activeTab, setActiveTab] = useState<HubTab>('verify');
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+  const [dashboard, setDashboard] = useState<CollectorDashboard | null>(null);
+  const [dashboardLoading, setDashboardLoading] = useState(false);
   const windowRef = useRef<HTMLDivElement>(null);
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -184,10 +231,27 @@ export default function CollectorsHubWindow({ title, onClose, isActive, onClick,
     };
   }, []);
 
+  const loadCollectorDashboard = async (selectedWallet: string) => {
+    setDashboardLoading(true);
+    try {
+      const res = await fetch(`/api/collectors/holdings?wallet=${encodeURIComponent(selectedWallet)}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || 'Could not load collector holdings.');
+      setDashboard(data);
+      setSession((prev) => prev ? { ...prev, score: data.score, rank: data.rank } : prev);
+    } catch (err) {
+      setDashboard(null);
+      setError(err instanceof Error ? err.message : 'Could not load collector holdings.');
+    } finally {
+      setDashboardLoading(false);
+    }
+  };
+
   const connectAndVerify = async () => {
     setError('');
     setDiscordResult(null);
     setDiscordConnection(null);
+    setDashboard(null);
     try {
       if (!window.ethereum) {
         setError('No wallet found. Open this with MetaMask, Rabby, or another EVM wallet.');
@@ -217,6 +281,7 @@ export default function CollectorsHubWindow({ title, onClose, isActive, onClick,
 
       setSession(data);
       setStatus('verified');
+      await loadCollectorDashboard(selected);
     } catch (err) {
       setStatus('idle');
       setError(err instanceof Error ? err.message : 'Wallet verification failed.');
@@ -303,6 +368,7 @@ export default function CollectorsHubWindow({ title, onClose, isActive, onClick,
         <div className="flex flex-wrap gap-2 pt-5 pb-2">
           {([
             ['verify', 'Verify'],
+            ['holdings', 'Holdings'],
             ['leaderboard', 'Leaderboard'],
             ['guide', 'Guide'],
           ] as Array<[HubTab, string]>).map(([tab, label]) => (
@@ -401,6 +467,29 @@ export default function CollectorsHubWindow({ title, onClose, isActive, onClick,
               <div className="text-5xl font-black leading-none">{session ? session.score.toLocaleString() : '0'}</div>
             </div>
 
+            {dashboardLoading && (
+              <div className="border border-gray-200 bg-gray-50 p-3 text-sm text-gray-500 mb-5">
+                Loading holdings and score breakdown...
+              </div>
+            )}
+
+            {dashboard && (
+              <div className="grid grid-cols-3 gap-2 mb-5">
+                <div className="border border-gray-200 p-3">
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-gray-400 mb-1">Deadbits</div>
+                  <div className="text-xl font-black text-black">{dashboard.breakdown.deadbitCount}</div>
+                </div>
+                <div className="border border-gray-200 p-3">
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-gray-400 mb-1">1/1s</div>
+                  <div className="text-xl font-black text-black">{dashboard.breakdown.oneOfOneCount}</div>
+                </div>
+                <div className="border border-gray-200 p-3">
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-gray-400 mb-1">Boost</div>
+                  <div className="text-xl font-black text-black">{dashboard.breakdown.multiplier.toFixed(1)}x</div>
+                </div>
+              </div>
+            )}
+
             <div className="space-y-3 text-sm text-gray-700">
               <div className="flex items-center justify-between border-b border-gray-200 pb-2">
                 <span>Wallet signed</span>
@@ -438,6 +527,128 @@ export default function CollectorsHubWindow({ title, onClose, isActive, onClick,
             </div>
           </div>
         </div>
+        )}
+
+        {activeTab === 'holdings' && (
+          <div className="grid lg:grid-cols-[0.9fr_1.1fr] gap-5 pt-3">
+            <div className="space-y-5">
+              <div className="border-2 border-black bg-white p-5 shadow-[6px_6px_0_#111]">
+                <div className="text-[11px] tracking-[0.24em] uppercase text-gray-500 mb-3">Your Holdings</div>
+                <h2 className="text-4xl font-black leading-none mb-4">Collector Readout</h2>
+                {!wallet && (
+                  <p className="text-sm text-gray-700 leading-relaxed">
+                    Connect your wallet on the Verify tab to see your art, amount held, and score equation.
+                  </p>
+                )}
+                {wallet && dashboardLoading && (
+                  <p className="text-sm text-gray-500">Loading holdings...</p>
+                )}
+                {wallet && !dashboardLoading && !dashboard && (
+                  <p className="text-sm text-gray-700 leading-relaxed">
+                    Holdings will appear here after wallet verification.
+                  </p>
+                )}
+                {dashboard && (
+                  <>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="border border-gray-200 p-3">
+                        <div className="text-[10px] uppercase tracking-[0.18em] text-gray-400 mb-1">Amount</div>
+                        <div className="text-3xl font-black">{dashboard.holdings.deadbits.count}</div>
+                      </div>
+                      <div className="border border-gray-200 p-3">
+                        <div className="text-[10px] uppercase tracking-[0.18em] text-gray-400 mb-1">Score</div>
+                        <div className="text-3xl font-black">{dashboard.score.toLocaleString()}</div>
+                      </div>
+                      <div className="border border-gray-200 p-3">
+                        <div className="text-[10px] uppercase tracking-[0.18em] text-gray-400 mb-1">Rank</div>
+                        <div className="text-lg font-black">{dashboard.rank}</div>
+                      </div>
+                      <div className="border border-gray-200 p-3">
+                        <div className="text-[10px] uppercase tracking-[0.18em] text-gray-400 mb-1">Multiplier</div>
+                        <div className="text-lg font-black">{dashboard.breakdown.multiplier.toFixed(1)}x</div>
+                      </div>
+                    </div>
+
+                    <div className="mt-5 border-2 border-black bg-black text-white p-4">
+                      <div className="font-mono text-sm mb-3">score = floor((base + milestones) * multiplier)</div>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="text-gray-400">base</div>
+                        <div className="text-right">{dashboard.breakdown.deadbitCount} * 100 = {dashboard.breakdown.base.toLocaleString()}</div>
+                        <div className="text-gray-400">milestones</div>
+                        <div className="text-right">+{dashboard.breakdown.milestoneBonus.toLocaleString()}</div>
+                        <div className="text-gray-400">multiplier</div>
+                        <div className="text-right">{dashboard.breakdown.multiplier.toFixed(1)}x</div>
+                        <div className="text-gray-400">calculated</div>
+                        <div className="text-right">{dashboard.breakdown.calculatedScore.toLocaleString()}</div>
+                        <div className="text-gray-400">on-chain score</div>
+                        <div className="text-right">{dashboard.breakdown.onChainScore.toLocaleString()}</div>
+                      </div>
+                    </div>
+
+                    <div className="mt-5">
+                      <div className="text-[10px] uppercase tracking-[0.18em] text-gray-400 mb-2">Partner Boosts</div>
+                      <div className="space-y-2">
+                        {dashboard.holdings.partners.map((partner) => (
+                          <div key={partner.id} className="flex items-center justify-between border border-gray-200 px-3 py-2 text-sm">
+                            <span className={partner.held ? 'text-black font-bold' : 'text-gray-500'}>{partner.name}</span>
+                            <span className="font-mono text-xs">
+                              {partner.held ? `${partner.count} held / +${partner.multiplier.toFixed(1)}x` : 'not held'}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <div className="border-2 border-black bg-white overflow-hidden">
+              <div className="border-b-2 border-black bg-black text-white p-3 text-[10px] uppercase tracking-[0.16em]">
+                Owned Art
+              </div>
+              <div className="max-h-[520px] overflow-auto p-4">
+                {!dashboard && (
+                  <div className="text-sm text-gray-500">Connect and verify a wallet to load owned art.</div>
+                )}
+                {dashboard && dashboard.holdings.deadbits.artworks.length === 0 && (
+                  <div className="text-sm text-gray-500">
+                    No owned art thumbnails returned. Score counts are still read from chain.
+                  </div>
+                )}
+                {dashboard && dashboard.holdings.deadbits.artworks.length > 0 && (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {dashboard.holdings.deadbits.artworks.map((art) => (
+                      <a
+                        key={art.tokenId}
+                        href={art.permalink || undefined}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="border border-gray-200 bg-white text-black hover:border-black"
+                      >
+                        <div className="aspect-square bg-gray-100 overflow-hidden">
+                          {art.image ? (
+                            <div
+                              aria-label={art.title}
+                              className="h-full w-full bg-cover bg-center"
+                              role="img"
+                              style={{ backgroundImage: `url(${art.image})` }}
+                            />
+                          ) : (
+                            <div className="grid h-full place-items-center text-xs text-gray-400">No image</div>
+                          )}
+                        </div>
+                        <div className="p-2">
+                          <div className="truncate text-xs font-bold">{art.title}</div>
+                          <div className="text-[10px] text-gray-500">#{art.tokenId}</div>
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         )}
 
         {activeTab === 'leaderboard' && (
@@ -492,18 +703,24 @@ export default function CollectorsHubWindow({ title, onClose, isActive, onClick,
               <div className="text-[11px] tracking-[0.24em] uppercase text-gray-500 mb-3">Score</div>
               <h2 className="text-3xl font-black leading-none mb-4">What Counts</h2>
               <p className="text-sm text-gray-700 leading-relaxed">
-                Collector Score comes from the existing MegaETH leaderboard used by ThePledge. It reflects your public collector status and bonus tiers.
+                Collector Score comes from the existing MegaETH leaderboard used by ThePledge. Deadbits create the base, 1/1s and hold thresholds add milestones, and partner collections add boosts.
               </p>
+              <div className="mt-4 border-2 border-black bg-black text-white p-3 font-mono text-xs">
+                score = floor((base + milestones) * multiplier)
+              </div>
+            </div>
+            <div className="border-2 border-black bg-white p-5">
+              <div className="text-[11px] tracking-[0.24em] uppercase text-gray-500 mb-3">Equation</div>
+              <h2 className="text-3xl font-black leading-none mb-4">The Math</h2>
+              <div className="space-y-2 text-sm text-gray-700">
+                <p>Base: Deadbits held * 100.</p>
+                <p>Milestones: +500 at 5, +2,000 at 10, +10,000 at 25, +25,000 at 50, +100,000 at 100.</p>
+                <p>1/1s: +10,000 each.</p>
+                <p>Multiplier: starts at 1.0x, partner boosts add up, capped at 2.4x.</p>
+              </div>
             </div>
             <div className="border-2 border-black bg-white p-5">
               <div className="text-[11px] tracking-[0.24em] uppercase text-gray-500 mb-3">Discord</div>
-              <h2 className="text-3xl font-black leading-none mb-4">How Roles Work</h2>
-              <p className="text-sm text-gray-700 leading-relaxed">
-                Discord OAuth identifies your Discord account. Your final wallet signature binds that account to the wallet with the collector score before a role is assigned.
-              </p>
-            </div>
-            <div className="border-2 border-black bg-white p-5">
-              <div className="text-[11px] tracking-[0.24em] uppercase text-gray-500 mb-3">Safety</div>
               <h2 className="text-3xl font-black leading-none mb-4">No Transactions</h2>
               <p className="text-sm text-gray-700 leading-relaxed">
                 The hub only uses read-only score checks, Discord identify, and wallet message signatures. It does not ask for approvals, payments, passwords, or private keys.

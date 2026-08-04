@@ -58,7 +58,7 @@ npm run dev
 
 ### Collectors Hub + Discord Verification
 
-The Collectors Hub window verifies an EVM wallet signature, reads the wallet's Collector Score from the existing MegaETH leaderboard, sends the user through Discord OAuth, then requires a Discord-specific wallet signature before assigning configured tut™ Discord roles.
+The Collectors Hub window verifies an EVM wallet signature, reads the wallet's Collector Score from the existing MegaETH leaderboard, shows the collector's public holdings/artwork and score equation, sends the user through Discord OAuth, then requires a Discord-specific wallet signature before assigning configured tut™ Discord roles.
 
 Required Vercel environment variables:
 

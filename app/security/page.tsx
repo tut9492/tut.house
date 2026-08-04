@@ -15,6 +15,7 @@ export default function SecurityPage() {
           <h2 className="text-xl font-bold">What the verifier does</h2>
           <p>It asks your wallet to sign a human-readable message proving that you control an address.</p>
           <p>It reads your public Collector Score from the MegaETH leaderboard contract.</p>
+          <p>It can read public NFT holdings and artwork metadata so collectors can see their score breakdown.</p>
           <p>It uses Discord OAuth with the identify scope to confirm which Discord account should receive the role.</p>
         </section>
         <section className="mt-6 space-y-3 text-gray-800">
