@@ -131,6 +131,32 @@ export async function getCollectorScore(wallet: string): Promise<number> {
   }
 }
 
+export async function getCollectorLeaderboard(limit = 50): Promise<Array<{ wallet: `0x${string}`; score: number; rank: string }>> {
+  const client = createPublicClient({
+    chain: megaeth,
+    transport: http(MEGAETH_RPC),
+  });
+
+  const [addrs, scores] = await client.readContract({
+    address: LEADERBOARD_ADDRESS,
+    abi: leaderboardAbi,
+    functionName: 'getAllScores',
+  });
+
+  return addrs
+    .map((wallet, index) => {
+      const score = Number(scores[index] ?? 0);
+      return {
+        wallet: wallet.toLowerCase() as `0x${string}`,
+        score,
+        rank: scoreRank(score),
+      };
+    })
+    .filter((entry) => entry.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, Math.max(1, Math.min(200, limit)));
+}
+
 export function scoreRank(score: number): string {
   if (score >= 100000) return 'Legend';
   if (score >= 25000) return 'Whale';

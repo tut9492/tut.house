@@ -35,6 +35,14 @@ type DiscordConnection = {
   discordUsername: string;
 };
 
+type HubTab = 'verify' | 'leaderboard' | 'guide';
+
+type LeaderboardEntry = {
+  wallet: string;
+  score: number;
+  rank: string;
+};
+
 declare global {
   interface Window {
     ethereum?: {
@@ -83,6 +91,9 @@ export default function CollectorsHubWindow({ title, onClose, isActive, onClick,
   const [discordResult, setDiscordResult] = useState<DiscordResult | null>(null);
   const [status, setStatus] = useState<'idle' | 'connecting' | 'signing' | 'verified' | 'discord_connected' | 'assigning' | 'discord'>('idle');
   const [error, setError] = useState('');
+  const [activeTab, setActiveTab] = useState<HubTab>('verify');
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(false);
   const windowRef = useRef<HTMLDivElement>(null);
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -148,6 +159,29 @@ export default function CollectorsHubWindow({ title, onClose, isActive, onClick,
     };
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadLeaderboard = async () => {
+      setLeaderboardLoading(true);
+      try {
+        const res = await fetch('/api/collectors/leaderboard?limit=50');
+        if (!res.ok) return;
+        const data = (await res.json()) as { leaderboard?: LeaderboardEntry[] };
+        if (!cancelled) setLeaderboard(data.leaderboard || []);
+      } catch {
+        if (!cancelled) setLeaderboard([]);
+      } finally {
+        if (!cancelled) setLeaderboardLoading(false);
+      }
+    };
+
+    void loadLeaderboard();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const connectAndVerify = async () => {
@@ -266,7 +300,26 @@ export default function CollectorsHubWindow({ title, onClose, isActive, onClick,
       </div>
 
       <div className="px-6 pb-6 h-full bg-[#f7f2e8] overflow-auto">
-        <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-5 pt-6">
+        <div className="flex flex-wrap gap-2 pt-5 pb-2">
+          {([
+            ['verify', 'Verify'],
+            ['leaderboard', 'Leaderboard'],
+            ['guide', 'Guide'],
+          ] as Array<[HubTab, string]>).map(([tab, label]) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`border-2 border-black px-4 py-2 text-xs font-bold uppercase ${
+                activeTab === tab ? 'bg-black text-white' : 'bg-white text-black'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {activeTab === 'verify' && (
+        <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-5 pt-3">
           <div className="border-2 border-black bg-white p-5 shadow-[6px_6px_0_#111]">
             <div className="text-[11px] tracking-[0.24em] uppercase text-gray-500 mb-3">Collector Score</div>
             <h2 className="text-3xl md:text-5xl leading-none font-black text-black mb-4">TU Holder Verification</h2>
@@ -364,8 +417,100 @@ export default function CollectorsHubWindow({ title, onClose, isActive, onClick,
                 </span>
               </div>
             </div>
+
+            <div className="mt-6 border-t border-gray-200 pt-5">
+              <div className="text-[10px] uppercase tracking-[0.18em] text-gray-400 mb-3">Progress</div>
+              <div className="space-y-2 text-sm">
+                {[
+                  ['1', 'Connect wallet', !!wallet],
+                  ['2', 'Read collector score', !!session],
+                  ['3', 'Connect Discord', !!discordConnection || !!discordResult?.ok],
+                  ['4', 'Sign role proof', !!discordResult?.ok],
+                ].map(([n, label, done]) => (
+                  <div key={String(n)} className="flex items-center gap-3">
+                    <span className={`grid h-6 w-6 place-items-center border border-black text-xs font-bold ${done ? 'bg-black text-white' : 'bg-white text-black'}`}>
+                      {n}
+                    </span>
+                    <span className={done ? 'text-black' : 'text-gray-500'}>{label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
+        )}
+
+        {activeTab === 'leaderboard' && (
+          <div className="grid lg:grid-cols-[0.8fr_1.2fr] gap-5 pt-3">
+            <div className="border-2 border-black bg-white p-5 shadow-[6px_6px_0_#111]">
+              <div className="text-[11px] tracking-[0.24em] uppercase text-gray-500 mb-3">On-chain Scores</div>
+              <h2 className="text-4xl font-black leading-none mb-4">Collector Leaderboard</h2>
+              <p className="text-sm text-gray-700 leading-relaxed">
+                Scores are read from the existing MegaETH collector leaderboard. Connect your wallet on the Verify tab to see your score and claim the matching Discord role.
+              </p>
+              <div className="mt-5 grid grid-cols-2 gap-3">
+                <div className="border border-gray-200 p-3">
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-gray-400 mb-1">Shown</div>
+                  <div className="text-2xl font-black">{leaderboard.length}</div>
+                </div>
+                <div className="border border-gray-200 p-3">
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-gray-400 mb-1">Top Score</div>
+                  <div className="text-2xl font-black">{leaderboard[0]?.score.toLocaleString() || '0'}</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="border-2 border-black bg-white overflow-hidden">
+              <div className="grid grid-cols-[56px_1fr_110px_90px] border-b-2 border-black bg-black text-white text-[10px] uppercase tracking-[0.16em]">
+                <div className="p-3">#</div>
+                <div className="p-3">Wallet</div>
+                <div className="p-3 text-right">Score</div>
+                <div className="p-3 text-right">Rank</div>
+              </div>
+              <div className="max-h-[430px] overflow-auto">
+                {leaderboardLoading && <div className="p-5 text-sm text-gray-500">Loading leaderboard...</div>}
+                {!leaderboardLoading && leaderboard.length === 0 && <div className="p-5 text-sm text-gray-500">No scores found.</div>}
+                {!leaderboardLoading && leaderboard.map((entry, index) => (
+                  <div
+                    key={`${entry.wallet}-${index}`}
+                    className="grid grid-cols-[56px_1fr_110px_90px] border-b border-gray-200 text-sm items-center"
+                  >
+                    <div className="p-3 font-bold">{index + 1}</div>
+                    <div className="p-3 font-mono truncate">{shortWallet(entry.wallet)}</div>
+                    <div className="p-3 text-right font-bold">{entry.score.toLocaleString()}</div>
+                    <div className="p-3 text-right text-xs uppercase">{entry.rank}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'guide' && (
+          <div className="grid lg:grid-cols-3 gap-5 pt-3">
+            <div className="border-2 border-black bg-white p-5 shadow-[6px_6px_0_#111]">
+              <div className="text-[11px] tracking-[0.24em] uppercase text-gray-500 mb-3">Score</div>
+              <h2 className="text-3xl font-black leading-none mb-4">What Counts</h2>
+              <p className="text-sm text-gray-700 leading-relaxed">
+                Collector Score comes from the existing MegaETH leaderboard used by ThePledge. It reflects your public collector status and bonus tiers.
+              </p>
+            </div>
+            <div className="border-2 border-black bg-white p-5">
+              <div className="text-[11px] tracking-[0.24em] uppercase text-gray-500 mb-3">Discord</div>
+              <h2 className="text-3xl font-black leading-none mb-4">How Roles Work</h2>
+              <p className="text-sm text-gray-700 leading-relaxed">
+                Discord OAuth identifies your Discord account. Your final wallet signature binds that account to the wallet with the collector score before a role is assigned.
+              </p>
+            </div>
+            <div className="border-2 border-black bg-white p-5">
+              <div className="text-[11px] tracking-[0.24em] uppercase text-gray-500 mb-3">Safety</div>
+              <h2 className="text-3xl font-black leading-none mb-4">No Transactions</h2>
+              <p className="text-sm text-gray-700 leading-relaxed">
+                The hub only uses read-only score checks, Discord identify, and wallet message signatures. It does not ask for approvals, payments, passwords, or private keys.
+              </p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
