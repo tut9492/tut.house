@@ -13,7 +13,14 @@ export type CollectorProof = {
 };
 
 export const TUT_COLLECTIONS = [
-  { slug: 'kingtut-genesis', name: 'Tut Genesis', weight: 10000, kind: 'Genesis', chain: 'ethereum' },
+  {
+    slug: 'kingtut-genesis',
+    name: 'Tut Genesis',
+    weight: 10000,
+    kind: 'Genesis',
+    chain: 'ethereum',
+    contract: '0x208e95f17312b7b348b44aad217387c5999edc04',
+  },
   { slug: 'abstractions', name: 'Abstractions', weight: 5000, kind: 'Series', chain: 'ethereum' },
   { slug: 'obsessive-cycles-of-fiber', name: 'OCF', weight: 3000, kind: '1/1', chain: 'ethereum' },
   {
