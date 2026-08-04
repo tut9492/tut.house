@@ -1,6 +1,16 @@
 import { verifyMessage } from 'viem';
 
-const OPENSEA_API = 'https://api.opensea.io/api/v2';
+// Holdings are read from Alchemy. Each collection's `chain` maps to an Alchemy subdomain.
+// Ethereum + Abstract expose the NFT API (metadata + images). MegaETH has RPC only, so
+// Breadio is counted via an on-chain balanceOf and carries no artwork thumbnails.
+const ALCHEMY_SUBDOMAIN: Record<string, string> = {
+  ethereum: 'eth-mainnet',
+  abstract: 'abstract-mainnet',
+  megaeth: 'megaeth-mainnet',
+};
+const ALCHEMY_NFT_API_CHAINS = new Set(['ethereum', 'abstract']);
+// Chains OpenSea can build a marketplace permalink for (MegaETH has no OpenSea presence).
+const OPENSEA_PERMALINK_CHAINS = new Set(['ethereum', 'abstract']);
 
 export const SCORE_MESSAGE_PREFIX = 'Verify tut.house collector access';
 export const DISCORD_VERIFY_MESSAGE_PREFIX = 'Verify tut.house Discord collector role';
@@ -225,45 +235,116 @@ export function calculateScoreBreakdown({
   };
 }
 
+type CollectionConfig = (typeof TUT_COLLECTIONS)[number];
+
+// Alchemy NFT API (Ethereum + Abstract): returns owned NFTs with metadata + resolved images.
+async function fetchHoldingsViaNftApi(
+  subdomain: string,
+  apiKey: string,
+  wallet: `0x${string}`,
+  collection: CollectionConfig,
+  maxPerCollection: number,
+): Promise<{ count: number; artworks: OwnedArtwork[] }> {
+  const artworks: OwnedArtwork[] = [];
+  let count = 0;
+  let pageKey: string | null = null;
+
+  do {
+    const url = new URL(`https://${subdomain}.g.alchemy.com/nft/v3/${apiKey}/getNFTsForOwner`);
+    url.searchParams.set('owner', wallet);
+    url.searchParams.append('contractAddresses[]', collection.contract);
+    url.searchParams.set('withMetadata', 'true');
+    url.searchParams.set('pageSize', '100');
+    if (pageKey) url.searchParams.set('pageKey', pageKey);
+
+    const res = await fetch(url, { headers: { Accept: 'application/json' }, cache: 'no-store' });
+    if (!res.ok) break;
+
+    const data = await res.json();
+    // totalCount reflects the full filtered set; trust it over paginated artwork length.
+    if (typeof data?.totalCount === 'number') count = data.totalCount;
+
+    for (const nft of data?.ownedNfts || []) {
+      if (artworks.length >= maxPerCollection) break;
+      const tokenId = String(nft?.tokenId ?? '');
+      const image = normalizeIpfsUrl(
+        nft?.image?.cachedUrl || nft?.image?.originalUrl || nft?.image?.pngUrl || nft?.raw?.metadata?.image || '',
+      );
+      artworks.push({
+        tokenId,
+        title: nft?.name || `${collection.name} #${tokenId || '?'}`,
+        image,
+        permalink: OPENSEA_PERMALINK_CHAINS.has(collection.chain) && tokenId
+          ? `https://opensea.io/assets/${collection.chain}/${collection.contract}/${tokenId}`
+          : '',
+        collection: collection.name,
+        collectionSlug: collection.slug,
+        weight: collection.weight,
+      });
+    }
+
+    pageKey = data?.pageKey || null;
+  } while (pageKey && artworks.length < maxPerCollection);
+
+  if (count === 0 && artworks.length > 0) count = artworks.length;
+  return { count, artworks };
+}
+
+// MegaETH has no Alchemy NFT API — count Breadio via on-chain ERC721 balanceOf(owner).
+async function fetchCountViaRpc(
+  subdomain: string,
+  apiKey: string,
+  wallet: `0x${string}`,
+  collection: CollectionConfig,
+): Promise<number> {
+  const data = `0x70a08231${wallet.slice(2).toLowerCase().padStart(64, '0')}`;
+  const res = await fetch(`https://${subdomain}.g.alchemy.com/v2/${apiKey}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    cache: 'no-store',
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'eth_call',
+      params: [{ to: collection.contract, data }, 'latest'],
+    }),
+  });
+  if (!res.ok) return 0;
+  const json = await res.json();
+  if (json?.error || !json?.result || json.result === '0x') return 0;
+  try {
+    return Number(BigInt(json.result));
+  } catch {
+    return 0;
+  }
+}
+
 export async function getTutCollectionHoldings(wallet: string, maxPerCollection = 100): Promise<ScoreCollection[]> {
   const normalized = normalizeWallet(wallet);
-  const apiKey = process.env.OPENSEA_API_KEY;
+  const apiKey = process.env.ALCHEMY_API_KEY;
+  if (!apiKey) {
+    // Without a key every collection would silently return count 0, which reads as a
+    // legitimate score of 0. Fail loudly instead so the UI shows a config error, not a wrong score.
+    throw new Error('Collector scoring is temporarily unavailable (ALCHEMY_API_KEY not configured).');
+  }
 
   return Promise.all(TUT_COLLECTIONS.map(async (collection) => {
-    const artworks: OwnedArtwork[] = [];
-    let next: string | null = null;
+    const subdomain = ALCHEMY_SUBDOMAIN[collection.chain];
+    let count = 0;
+    let artworks: OwnedArtwork[] = [];
 
-    if (apiKey) {
-      while (artworks.length < maxPerCollection) {
-        const url = new URL(`${OPENSEA_API}/chain/${collection.chain}/account/${normalized}/nfts`);
-        url.searchParams.set('collection', collection.slug);
-        url.searchParams.set('limit', String(Math.min(50, maxPerCollection - artworks.length)));
-        if (next) url.searchParams.set('next', next);
-
-        const res = await fetch(url, {
-          headers: {
-            Accept: 'application/json',
-            'X-API-KEY': apiKey,
-          },
-        });
-        if (!res.ok) break;
-
-        const data = await res.json();
-        for (const nft of data?.nfts || []) {
-          const tokenId = String(nft.identifier || nft.token_id || '');
-          artworks.push({
-            tokenId,
-            title: nft.name || `${collection.name} #${tokenId || '?'}`,
-            image: normalizeIpfsUrl(nft.image_url || nft.display_image_url || nft.original_image_url || ''),
-            permalink: nft.opensea_url || (tokenId ? `https://opensea.io/assets/${collection.chain}/${nft.contract}/${tokenId}` : ''),
-            collection: collection.name,
-            collectionSlug: collection.slug,
-            weight: collection.weight,
-          });
+    if (subdomain) {
+      try {
+        if (ALCHEMY_NFT_API_CHAINS.has(collection.chain)) {
+          ({ count, artworks } = await fetchHoldingsViaNftApi(subdomain, apiKey, normalized, collection, maxPerCollection));
+        } else {
+          count = await fetchCountViaRpc(subdomain, apiKey, normalized, collection);
         }
-
-        next = data?.next || null;
-        if (!next) break;
+      } catch {
+        // A single collection's read failing (e.g. a chain not enabled on the Alchemy app)
+        // must not zero out the whole score — leave this collection at 0 and continue.
+        count = 0;
+        artworks = [];
       }
     }
 
@@ -274,8 +355,8 @@ export async function getTutCollectionHoldings(wallet: string, maxPerCollection 
       chain: collection.chain,
       contract: 'contract' in collection ? collection.contract : undefined,
       weight: collection.weight,
-      count: artworks.length,
-      score: artworks.length * collection.weight,
+      count,
+      score: count * collection.weight,
       artworks,
     };
   }));
