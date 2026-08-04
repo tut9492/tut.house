@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createDiscordState } from '@/app/lib/discordVerify';
 import { getCollectorScore, scoreRank, verifyCollectorProof } from '@/app/lib/collectorScore';
 
 type Body = {
@@ -21,13 +20,12 @@ export async function POST(request: NextRequest) {
       signature: body.signature,
     });
     const score = await getCollectorScore(wallet);
-    const state = createDiscordState(wallet, score);
 
     return NextResponse.json({
       wallet,
       score,
       rank: scoreRank(score),
-      discordLink: `/api/discord/link?state=${encodeURIComponent(state)}`,
+      discordLink: '/api/discord/link',
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Verification failed';

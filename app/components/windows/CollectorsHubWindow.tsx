@@ -27,6 +27,14 @@ type DiscordResult = {
   error?: string;
 };
 
+type DiscordConnection = {
+  type: 'tut_discord_connected';
+  ok: boolean;
+  code: string;
+  discordUserId: string;
+  discordUsername: string;
+};
+
 declare global {
   interface Window {
     ethereum?: {
@@ -52,6 +60,15 @@ function buildMessage(wallet: string) {
   ].join('\n');
 }
 
+function buildDiscordMessage(wallet: string, discordUserId: string, timestamp: number) {
+  return [
+    'Verify tut.house Discord collector role',
+    `Wallet: ${wallet.toLowerCase()}`,
+    `Discord User: ${discordUserId}`,
+    `Timestamp: ${timestamp}`,
+  ].join('\n');
+}
+
 export default function CollectorsHubWindow({ title, onClose, isActive, onClick, zIndex }: CollectorsHubWindowProps) {
   const isCompact = useIsMobile(1024);
   const [position, setPosition] = useState(() => ({
@@ -62,8 +79,9 @@ export default function CollectorsHubWindow({ title, onClose, isActive, onClick,
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [wallet, setWallet] = useState('');
   const [session, setSession] = useState<CollectorSession | null>(null);
+  const [discordConnection, setDiscordConnection] = useState<DiscordConnection | null>(null);
   const [discordResult, setDiscordResult] = useState<DiscordResult | null>(null);
-  const [status, setStatus] = useState<'idle' | 'connecting' | 'signing' | 'verified' | 'discord'>('idle');
+  const [status, setStatus] = useState<'idle' | 'connecting' | 'signing' | 'verified' | 'discord_connected' | 'assigning' | 'discord'>('idle');
   const [error, setError] = useState('');
   const windowRef = useRef<HTMLDivElement>(null);
 
@@ -111,14 +129,21 @@ export default function CollectorsHubWindow({ title, onClose, isActive, onClick,
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return;
-      const data = event.data as DiscordResult;
-      if (data?.type !== 'tut_discord_verified') return;
-      setDiscordResult(data);
-      if (data.ok) {
-        setStatus('discord');
+      const data = event.data as DiscordResult | DiscordConnection;
+      if (data?.type === 'tut_discord_connected') {
+        setDiscordConnection(data);
+        setStatus('discord_connected');
         setError('');
-      } else {
-        setError(data.error || 'Discord linked, but role assignment needs attention.');
+        return;
+      }
+      if (data?.type === 'tut_discord_verified') {
+        setDiscordResult(data);
+        if (data.ok) {
+          setStatus('discord');
+          setError('');
+        } else {
+          setError(data.error || 'Discord linked, but role assignment needs attention.');
+        }
       }
     };
     window.addEventListener('message', onMessage);
@@ -128,6 +153,7 @@ export default function CollectorsHubWindow({ title, onClose, isActive, onClick,
   const connectAndVerify = async () => {
     setError('');
     setDiscordResult(null);
+    setDiscordConnection(null);
     try {
       if (!window.ethereum) {
         setError('No wallet found. Open this with MetaMask, Rabby, or another EVM wallet.');
@@ -172,6 +198,41 @@ export default function CollectorsHubWindow({ title, onClose, isActive, onClick,
     }
   };
 
+  const signAndAssignRole = async () => {
+    if (!wallet || !discordConnection?.code || !discordConnection.discordUserId) return;
+    setError('');
+    setStatus('assigning');
+
+    try {
+      if (!window.ethereum) throw new Error('No wallet found.');
+      const timestamp = Date.now();
+      const message = buildDiscordMessage(wallet, discordConnection.discordUserId, timestamp);
+      const signature = (await window.ethereum.request({
+        method: 'personal_sign',
+        params: [message, wallet],
+      })) as `0x${string}`;
+
+      const res = await fetch('/api/discord/complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          wallet,
+          signature,
+          timestamp,
+          discord_code: discordConnection.code,
+        }),
+      });
+      const data = await res.json();
+      setDiscordResult({ type: 'tut_discord_verified', ...data });
+      if (!res.ok || !data.ok) throw new Error(data?.error || 'Discord role assignment needs attention.');
+      setSession((prev) => prev ? { ...prev, score: data.score, rank: data.rank } : prev);
+      setStatus('discord');
+    } catch (err) {
+      setStatus('discord_connected');
+      setError(err instanceof Error ? err.message : 'Could not assign Discord role.');
+    }
+  };
+
   return (
     <div
       ref={windowRef}
@@ -210,7 +271,7 @@ export default function CollectorsHubWindow({ title, onClose, isActive, onClick,
             <div className="text-[11px] tracking-[0.24em] uppercase text-gray-500 mb-3">Collector Score</div>
             <h2 className="text-3xl md:text-5xl leading-none font-black text-black mb-4">TU Holder Verification</h2>
             <p className="text-sm md:text-base text-gray-700 leading-relaxed mb-6 max-w-xl">
-              Connect the wallet that holds your collector score, sign once, then link Discord to receive your TU role.
+              Connect the wallet that holds your collector score, link Discord, then sign once to receive your TU role.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3">
@@ -229,10 +290,17 @@ export default function CollectorsHubWindow({ title, onClose, isActive, onClick,
               </button>
               <button
                 onClick={linkDiscord}
-                disabled={!session || status === 'discord'}
+                disabled={!session || status === 'discord' || status === 'assigning'}
                 className="border-2 border-black bg-[#5865F2] text-white px-4 py-3 text-sm font-bold uppercase disabled:opacity-40"
               >
-                {status === 'discord' ? 'Discord Verified' : 'Verify Discord'}
+                {discordConnection ? 'Discord Connected' : 'Connect Discord'}
+              </button>
+              <button
+                onClick={signAndAssignRole}
+                disabled={!discordConnection || status === 'assigning' || status === 'discord'}
+                className="border-2 border-black bg-[#2c7a3f] text-white px-4 py-3 text-sm font-bold uppercase disabled:opacity-40"
+              >
+                {status === 'assigning' ? 'Assigning...' : status === 'discord' ? 'Role Assigned' : 'Sign & Verify'}
               </button>
             </div>
 
@@ -244,6 +312,11 @@ export default function CollectorsHubWindow({ title, onClose, isActive, onClick,
             {discordResult?.ok && (
               <div className="mt-5 border-2 border-green-600 bg-green-50 text-green-800 p-3 text-sm">
                 Discord verified. Your collector role is live.
+              </div>
+            )}
+            {discordConnection && !discordResult?.ok && (
+              <div className="mt-5 border-2 border-[#5865F2] bg-blue-50 text-blue-800 p-3 text-sm">
+                Discord connected as {discordConnection.discordUsername}. Sign once to assign your role.
               </div>
             )}
           </div>
@@ -273,7 +346,7 @@ export default function CollectorsHubWindow({ title, onClose, isActive, onClick,
               </div>
               <div className="flex items-center justify-between border-b border-gray-200 pb-2">
                 <span>Discord linked</span>
-                <span className="font-bold text-black">{discordResult?.ok ? 'Yes' : 'No'}</span>
+                <span className="font-bold text-black">{discordConnection || discordResult?.ok ? 'Yes' : 'No'}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span>Role status</span>

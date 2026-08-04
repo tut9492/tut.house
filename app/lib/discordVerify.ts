@@ -1,9 +1,15 @@
 import crypto from 'crypto';
 
 type DiscordStatePayload = {
-  wallet: string;
-  score: number;
   iat: number;
+};
+
+export type DiscordTokenData = {
+  access_token: string;
+  discord_user_id: string;
+  discord_username: string;
+  discord_avatar: string;
+  created: number;
 };
 
 export type DiscordRoleResult = {
@@ -21,6 +27,7 @@ type RoleTier = {
 };
 
 const STATE_TTL_MS = 10 * 60 * 1000;
+const TOKEN_TTL_MS = 60 * 1000;
 
 function base64url(input: Buffer | string): string {
   return Buffer.from(input).toString('base64url');
@@ -39,8 +46,8 @@ function sign(payload: string): string {
   return crypto.createHmac('sha256', stateSecret()).update(payload).digest('base64url');
 }
 
-export function createDiscordState(wallet: string, score: number): string {
-  const payload = base64url(JSON.stringify({ wallet, score, iat: Date.now() } satisfies DiscordStatePayload));
+export function createDiscordState(): string {
+  const payload = base64url(JSON.stringify({ iat: Date.now() } satisfies DiscordStatePayload));
   return `${payload}.${sign(payload)}`;
 }
 
@@ -49,11 +56,40 @@ export function readDiscordState(state: string): DiscordStatePayload {
   if (!payload || !mac || sign(payload) !== mac) throw new Error('Invalid state');
 
   const parsed = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')) as DiscordStatePayload;
-  if (!parsed.wallet || !Number.isFinite(parsed.score) || !Number.isFinite(parsed.iat)) {
-    throw new Error('Malformed state');
-  }
+  if (!Number.isFinite(parsed.iat)) throw new Error('Malformed state');
   if (Date.now() - parsed.iat > STATE_TTL_MS) throw new Error('Expired state');
   return parsed;
+}
+
+export function storeDiscordToken(data: Omit<DiscordTokenData, 'created'>): string {
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv('aes-256-gcm', crypto.createHash('sha256').update(stateSecret()).digest(), iv);
+  const plaintext = JSON.stringify({ ...data, created: Date.now() } satisfies DiscordTokenData);
+  const encrypted = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  return [iv, tag, encrypted].map((part) => part.toString('base64url')).join('.');
+}
+
+export function takeDiscordToken(code: string): DiscordTokenData | null {
+  try {
+    const [ivRaw, tagRaw, encryptedRaw] = String(code || '').split('.');
+    if (!ivRaw || !tagRaw || !encryptedRaw) return null;
+    const decipher = crypto.createDecipheriv(
+      'aes-256-gcm',
+      crypto.createHash('sha256').update(stateSecret()).digest(),
+      Buffer.from(ivRaw, 'base64url')
+    );
+    decipher.setAuthTag(Buffer.from(tagRaw, 'base64url'));
+    const plaintext = Buffer.concat([
+      decipher.update(Buffer.from(encryptedRaw, 'base64url')),
+      decipher.final(),
+    ]).toString('utf8');
+    const entry = JSON.parse(plaintext) as DiscordTokenData;
+    if (!entry.created || Date.now() - entry.created > TOKEN_TTL_MS) return null;
+    return entry;
+  } catch {
+    return null;
+  }
 }
 
 export function getBaseUrl(requestUrl: string): string {

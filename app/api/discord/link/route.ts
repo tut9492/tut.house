@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { discordRedirectUri, readDiscordState } from '@/app/lib/discordVerify';
+import { createDiscordState, discordRedirectUri } from '@/app/lib/discordVerify';
 
 export async function GET(request: NextRequest) {
   try {
-    const state = request.nextUrl.searchParams.get('state') || '';
-    readDiscordState(state);
-
     const clientId = process.env.DISCORD_CLIENT_ID;
     if (!clientId) throw new Error('Missing DISCORD_CLIENT_ID');
 
@@ -14,7 +11,7 @@ export async function GET(request: NextRequest) {
     authUrl.searchParams.set('redirect_uri', discordRedirectUri(request.url));
     authUrl.searchParams.set('response_type', 'code');
     authUrl.searchParams.set('scope', 'identify');
-    authUrl.searchParams.set('state', state);
+    authUrl.searchParams.set('state', createDiscordState());
 
     return NextResponse.redirect(authUrl);
   } catch (error) {

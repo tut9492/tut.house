@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCollectorScore, scoreRank } from '@/app/lib/collectorScore';
 import {
-  assignDiscordRoles,
   discordRedirectUri,
   fetchDiscordUser,
   getBaseUrl,
   readDiscordState,
+  storeDiscordToken,
 } from '@/app/lib/discordVerify';
 
 function html(body: string, status = 200) {
@@ -51,7 +50,7 @@ export async function GET(request: NextRequest) {
   if (!code) return html('Missing Discord code', 400);
 
   try {
-    const stateData = readDiscordState(state);
+    readDiscordState(state);
     const clientId = process.env.DISCORD_CLIENT_ID;
     const clientSecret = process.env.DISCORD_CLIENT_SECRET;
     if (!clientId || !clientSecret) throw new Error('Missing Discord OAuth config');
@@ -72,38 +71,25 @@ export async function GET(request: NextRequest) {
 
     const tokenData = (await tokenRes.json()) as { access_token: string };
     const discordUser = await fetchDiscordUser(tokenData.access_token);
-    const score = await getCollectorScore(stateData.wallet);
-    const roles = await assignDiscordRoles(discordUser.id, score);
-    const failedRoles = roles.filter((role) => !role.ok);
     const targetOrigin = getBaseUrl(request.url);
-
-    if (score <= 0) {
-      return html(
-        resultPage(
-          { type: 'tut_discord_verified', ok: false, wallet: stateData.wallet, score, rank: scoreRank(score), roles },
-          'No Score Yet',
-          'Your wallet verified, but it does not have a collector score yet.',
-          targetOrigin
-        )
-      );
-    }
-
-    if (failedRoles.length > 0) {
-      return html(
-        resultPage(
-          { type: 'tut_discord_verified', ok: false, wallet: stateData.wallet, score, rank: scoreRank(score), roles },
-          'Linked, Role Pending',
-          'Discord linked your account, but at least one role could not be assigned. Make sure you are already in the TU Discord.',
-          targetOrigin
-        )
-      );
-    }
+    const opaqueCode = storeDiscordToken({
+      access_token: tokenData.access_token,
+      discord_user_id: discordUser.id,
+      discord_username: discordUser.global_name || discordUser.username,
+      discord_avatar: '',
+    });
 
     return html(
       resultPage(
-        { type: 'tut_discord_verified', ok: true, wallet: stateData.wallet, score, rank: scoreRank(score), roles },
-        'Verified',
-        `Discord linked for ${discordUser.global_name || discordUser.username}. Your collector score is ${score.toLocaleString()}.`,
+        {
+          type: 'tut_discord_connected',
+          ok: true,
+          code: opaqueCode,
+          discordUserId: discordUser.id,
+          discordUsername: discordUser.global_name || discordUser.username,
+        },
+        'Discord Connected',
+        `Discord connected for ${discordUser.global_name || discordUser.username}. Return to tut.house and sign once to receive your role.`,
         targetOrigin
       )
     );

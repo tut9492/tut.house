@@ -17,6 +17,7 @@ const leaderboardAbi = parseAbi([
 ]);
 
 export const SCORE_MESSAGE_PREFIX = 'Verify tut.house collector access';
+export const DISCORD_VERIFY_MESSAGE_PREFIX = 'Verify tut.house Discord collector role';
 const MESSAGE_TTL_MS = 5 * 60 * 1000;
 
 export type CollectorProof = {
@@ -70,6 +71,37 @@ export async function verifyCollectorProof(proof: CollectorProof): Promise<`0x${
   if (!valid) throw new Error('Invalid signature');
 
   return parsed.wallet;
+}
+
+export function buildDiscordVerifyMessage(wallet: string, discordUserId: string, timestamp: number): string {
+  return [
+    DISCORD_VERIFY_MESSAGE_PREFIX,
+    `Wallet: ${normalizeWallet(wallet)}`,
+    `Discord User: ${String(discordUserId || '').trim()}`,
+    `Timestamp: ${timestamp}`,
+  ].join('\n');
+}
+
+export async function verifyDiscordWalletProof({
+  wallet,
+  discordUserId,
+  timestamp,
+  signature,
+}: {
+  wallet: string;
+  discordUserId: string;
+  timestamp: number;
+  signature: `0x${string}`;
+}): Promise<`0x${string}`> {
+  const normalized = normalizeWallet(wallet);
+  if (!discordUserId || !/^\d{5,32}$/.test(discordUserId)) throw new Error('Invalid Discord user');
+  if (!Number.isFinite(timestamp)) throw new Error('Invalid timestamp');
+  if (Math.abs(Date.now() - timestamp) > MESSAGE_TTL_MS) throw new Error('Signature expired');
+
+  const message = buildDiscordVerifyMessage(normalized, discordUserId, timestamp);
+  const valid = await verifyMessage({ address: normalized, message, signature });
+  if (!valid) throw new Error('Invalid signature');
+  return normalized;
 }
 
 export async function getCollectorScore(wallet: string): Promise<number> {
