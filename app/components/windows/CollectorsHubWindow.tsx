@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { useIsMobile } from '../hooks/useIsMobile';
+import { useState, useEffect } from 'react';
 
 interface CollectorsHubWindowProps {
   id: string;
@@ -125,30 +124,7 @@ function buildDiscordMessage(wallet: string, discordUserId: string, timestamp: n
   ].join('\n');
 }
 
-const DESKTOP_WINDOW_WIDTH = 1120;
-const DESKTOP_WINDOW_HEIGHT = 720;
-const DESKTOP_WINDOW_MARGIN = 16;
-
-function clampWindowPosition(x: number, y: number) {
-  if (typeof window === 'undefined') return { x, y };
-  const maxX = Math.max(DESKTOP_WINDOW_MARGIN, window.innerWidth - DESKTOP_WINDOW_WIDTH - DESKTOP_WINDOW_MARGIN);
-  const maxY = Math.max(DESKTOP_WINDOW_MARGIN, window.innerHeight - DESKTOP_WINDOW_HEIGHT - 80);
-  return {
-    x: Math.min(Math.max(DESKTOP_WINDOW_MARGIN, x), maxX),
-    y: Math.min(Math.max(DESKTOP_WINDOW_MARGIN, y), maxY),
-  };
-}
-
-export default function CollectorsHubWindow({ title, onClose, isActive, onClick, zIndex }: CollectorsHubWindowProps) {
-  const isCompact = useIsMobile(1024);
-  const [position, setPosition] = useState(() =>
-    clampWindowPosition(
-      Math.floor(Math.random() * Math.max(1, window.innerWidth - DESKTOP_WINDOW_WIDTH - DESKTOP_WINDOW_MARGIN * 2)) + DESKTOP_WINDOW_MARGIN,
-      Math.floor(Math.random() * Math.max(1, window.innerHeight - DESKTOP_WINDOW_HEIGHT - 96)) + DESKTOP_WINDOW_MARGIN,
-    ),
-  );
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+export default function CollectorsHubWindow({ title, onClose, onClick, zIndex }: CollectorsHubWindowProps) {
   const [wallet, setWallet] = useState('');
   const [session, setSession] = useState<CollectorSession | null>(null);
   const [discordConnection, setDiscordConnection] = useState<DiscordConnection | null>(null);
@@ -160,45 +136,6 @@ export default function CollectorsHubWindow({ title, onClose, isActive, onClick,
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
   const [dashboard, setDashboard] = useState<CollectorDashboard | null>(null);
   const [dashboardLoading, setDashboardLoading] = useState(false);
-  const windowRef = useRef<HTMLDivElement>(null);
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).closest('.window-controls')) return;
-    if (isCompact) return;
-
-    onClick();
-    setIsDragging(true);
-    const rect = windowRef.current?.getBoundingClientRect();
-    if (rect) {
-      setDragOffset({
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top,
-      });
-    }
-  };
-
-  useEffect(() => {
-    if (isCompact) return;
-    const handleMouseMove = (e: MouseEvent) => {
-      if (isDragging) {
-        setPosition(clampWindowPosition(e.clientX - dragOffset.x, e.clientY - dragOffset.y));
-      }
-    };
-
-    const handleMouseUp = () => {
-      setIsDragging(false);
-    };
-
-    if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-    }
-
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isDragging, dragOffset, isCompact]);
 
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
@@ -362,28 +299,8 @@ export default function CollectorsHubWindow({ title, onClose, isActive, onClick,
 
   return (
     <div
-      ref={windowRef}
-      className={`${isCompact ? 'fixed' : 'absolute'} bg-white rounded-2xl shadow-2xl overflow-hidden transition-shadow ${
-        isActive ? 'shadow-2xl' : 'opacity-95'
-      }`}
-      style={
-        isCompact
-          ? {
-              top: '12px',
-              left: '12px',
-              right: '12px',
-              bottom: '60px',
-              zIndex,
-            }
-          : {
-              top: position.y,
-              left: position.x,
-              width: `${DESKTOP_WINDOW_WIDTH}px`,
-              maxWidth: `calc(100vw - ${DESKTOP_WINDOW_MARGIN * 2}px)`,
-              height: `${DESKTOP_WINDOW_HEIGHT}px`,
-              zIndex,
-            }
-      }
+      className="fixed bg-white overflow-hidden transition-shadow"
+      style={{ top: 0, left: 0, right: 0, bottom: '48px', zIndex }}
       onClick={onClick}
     >
       <button
@@ -392,37 +309,36 @@ export default function CollectorsHubWindow({ title, onClose, isActive, onClick,
       />
 
       <div
-        className="px-6 py-4 cursor-move select-none"
-        onMouseDown={handleMouseDown}
+        className="px-6 py-4 select-none bg-white"
         style={{ borderBottom: '1px solid #F3F4F6' }}
       >
         <span className="text-gray-600 text-sm font-normal">{title}</span>
       </div>
 
-      <div className="h-full bg-[#f7f2e8] overflow-auto">
-        <div className="border-b-2 border-black bg-black px-6 py-5 text-white">
+      <div className="h-[calc(100%-57px)] bg-white overflow-auto">
+        <div className="border-b border-gray-100 bg-white px-6 py-8 lg:px-10 lg:py-10 text-gray-800">
           <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-end">
             <div>
-              <div className="text-[11px] uppercase tracking-[0.28em] text-[#d6c7a4]">Collectors Hub</div>
-              <h2 className="mt-2 text-4xl md:text-6xl font-black leading-none">
+              <div className="text-[11px] uppercase tracking-[0.28em] text-gray-400">Collectors Hub</div>
+              <h2 className="mt-3 text-5xl md:text-7xl font-medium leading-none tracking-normal text-gray-800">
                 tut<span className="align-super text-[0.38em]">™</span> Collector Score
               </h2>
-              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-gray-300">
+              <p className="mt-5 max-w-3xl text-sm md:text-base leading-relaxed text-gray-500">
                 Sign in with the wallet that holds your tut™ work to see your score, owned art, and Discord role status.
               </p>
             </div>
             <button
               onClick={connectAndVerify}
               disabled={status === 'connecting' || status === 'signing'}
-              className="border-2 border-white bg-white px-5 py-3 text-sm font-black uppercase text-black disabled:opacity-60"
+              className="rounded-lg bg-slate-800 hover:bg-slate-900 px-8 py-3 text-sm font-medium text-white transition-colors disabled:opacity-60"
             >
               {walletActionLabel}
             </button>
           </div>
         </div>
 
-        <div className="px-6 pb-6">
-        <div className="flex flex-wrap gap-2 pt-5 pb-2">
+        <div className="px-6 pb-10 lg:px-10">
+        <div className="flex flex-wrap gap-2 pt-6 pb-4">
           {([
             ['verify', 'Dashboard'],
             ['holdings', 'Art'],
@@ -431,8 +347,8 @@ export default function CollectorsHubWindow({ title, onClose, isActive, onClick,
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`border-2 border-black px-4 py-2 text-xs font-bold uppercase ${
-                activeTab === tab ? 'bg-black text-white' : 'bg-white text-black'
+              className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                activeTab === tab ? 'bg-slate-800 text-white' : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
               }`}
             >
               {label}
@@ -442,52 +358,52 @@ export default function CollectorsHubWindow({ title, onClose, isActive, onClick,
 
         {activeTab === 'verify' && (
           <div className="grid gap-5 pt-3 lg:grid-cols-[1.15fr_0.85fr]">
-            <div className="border-2 border-black bg-white shadow-[6px_6px_0_#111]">
+            <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
               {topArt ? (
-                <div className="h-56 border-b-2 border-black bg-gray-100 bg-cover bg-center" style={{ backgroundImage: `url(${topArt.image})` }} />
+                <div className="h-72 border-b border-gray-100 bg-gray-100 bg-cover bg-center" style={{ backgroundImage: `url(${topArt.image})` }} />
               ) : (
-                <div className="grid h-56 place-items-center border-b-2 border-black bg-[#eadfc8]">
+                <div className="grid h-72 place-items-center border-b border-gray-100 bg-gray-50">
                   <div className="text-center">
-                    <div className="text-[11px] uppercase tracking-[0.28em] text-gray-500">Wallet Required</div>
-                    <div className="mt-2 text-3xl font-black">Sign in to reveal holdings</div>
+                    <div className="text-[11px] uppercase tracking-[0.28em] text-gray-400">Wallet Required</div>
+                    <div className="mt-3 text-3xl font-medium text-gray-800">Sign in to reveal holdings</div>
                   </div>
                 </div>
               )}
 
-              <div className="p-5">
+              <div className="p-5 lg:p-6">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>
-                    <div className="text-[11px] uppercase tracking-[0.24em] text-gray-500">Score</div>
-                    <div className="mt-1 text-6xl font-black leading-none">{session ? session.score.toLocaleString() : '0'}</div>
+                    <div className="text-[11px] uppercase tracking-[0.24em] text-gray-400">Score</div>
+                    <div className="mt-1 text-6xl font-medium leading-none text-gray-800">{session ? session.score.toLocaleString() : '0'}</div>
                   </div>
-                  <div className="border-2 border-black px-4 py-3 text-right">
-                    <div className="text-[10px] uppercase tracking-[0.18em] text-gray-500">Rank</div>
-                    <div className="text-xl font-black">{session?.rank || 'Unsigned'}</div>
+                  <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 text-right">
+                    <div className="text-[10px] uppercase tracking-[0.18em] text-gray-400">Rank</div>
+                    <div className="text-xl font-medium text-gray-700">{session?.rank || 'Unsigned'}</div>
                   </div>
                 </div>
 
                 <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                  <div className="border border-gray-200 p-3">
+                  <div className="rounded-xl border border-gray-100 p-3">
                     <div className="text-[10px] uppercase tracking-[0.18em] text-gray-400">Assets</div>
-                    <div className="mt-1 text-2xl font-black">{dashboard?.breakdown.assetCount || 0}</div>
+                    <div className="mt-1 text-2xl font-medium text-gray-800">{dashboard?.breakdown.assetCount || 0}</div>
                   </div>
-                  <div className="border border-gray-200 p-3">
+                  <div className="rounded-xl border border-gray-100 p-3">
                     <div className="text-[10px] uppercase tracking-[0.18em] text-gray-400">Collections</div>
-                    <div className="mt-1 text-2xl font-black">{connectedCollections.length}</div>
+                    <div className="mt-1 text-2xl font-medium text-gray-800">{connectedCollections.length}</div>
                   </div>
-                  <div className="border border-gray-200 p-3">
+                  <div className="rounded-xl border border-gray-100 p-3">
                     <div className="text-[10px] uppercase tracking-[0.18em] text-gray-400">Wallet</div>
-                    <div className="mt-2 font-mono text-xs">{wallet ? shortWallet(wallet) : 'Not signed'}</div>
+                    <div className="mt-2 font-mono text-xs text-gray-600">{wallet ? shortWallet(wallet) : 'Not signed'}</div>
                   </div>
                 </div>
 
                 {dashboardLoading && (
-                  <div className="mt-5 border border-gray-200 bg-gray-50 p-3 text-sm text-gray-500">
+                  <div className="mt-5 rounded-xl border border-gray-100 bg-gray-50 p-3 text-sm text-gray-500">
                     Loading holdings and score breakdown...
                   </div>
                 )}
                 {error && (
-                  <div className="mt-5 border-2 border-red-500 bg-red-50 p-3 text-sm text-red-700">
+                  <div className="mt-5 rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-700">
                     {error}
                   </div>
                 )}
@@ -495,43 +411,43 @@ export default function CollectorsHubWindow({ title, onClose, isActive, onClick,
             </div>
 
             <div className="space-y-5">
-              <div className="border-2 border-black bg-white p-5">
-                <div className="text-[11px] uppercase tracking-[0.24em] text-gray-500">Sign In</div>
-                <h3 className="mt-2 text-3xl font-black leading-none">Connect your collector wallet</h3>
-                <p className="mt-3 text-sm leading-relaxed text-gray-700">
+              <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+                <div className="text-[11px] uppercase tracking-[0.24em] text-gray-400">Sign In</div>
+                <h3 className="mt-2 text-3xl font-medium leading-none text-gray-800">Connect your collector wallet</h3>
+                <p className="mt-3 text-sm leading-relaxed text-gray-500">
                   A wallet signature proves address ownership. It is not a transaction and cannot move assets.
                 </p>
                 <button
                   onClick={connectAndVerify}
                   disabled={status === 'connecting' || status === 'signing'}
-                  className="mt-5 w-full border-2 border-black bg-black px-4 py-3 text-sm font-black uppercase text-white disabled:opacity-60"
+                  className="mt-5 w-full rounded-lg bg-slate-800 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-slate-900 disabled:opacity-60"
                 >
                   {walletActionLabel}
                 </button>
               </div>
 
-              <div className="border-2 border-black bg-white p-5">
-                <div className="text-[11px] uppercase tracking-[0.24em] text-gray-500">Discord</div>
-                <h3 className="mt-2 text-2xl font-black leading-none">Claim collector role</h3>
+              <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+                <div className="text-[11px] uppercase tracking-[0.24em] text-gray-400">Discord</div>
+                <h3 className="mt-2 text-2xl font-medium leading-none text-gray-800">Claim collector role</h3>
                 <div className="mt-4 grid grid-cols-2 gap-2">
                   <button
                     onClick={linkDiscord}
                     disabled={!session || status === 'discord' || status === 'assigning'}
-                    className="border-2 border-black bg-[#5865F2] px-3 py-3 text-xs font-black uppercase text-white disabled:opacity-40"
+                    className="rounded-lg bg-[#5865F2] px-3 py-3 text-xs font-medium text-white transition-colors hover:brightness-95 disabled:opacity-40"
                   >
                     {discordConnection ? 'Connected' : 'Connect Discord'}
                   </button>
                   <button
                     onClick={signAndAssignRole}
                     disabled={!discordConnection || status === 'assigning' || status === 'discord'}
-                    className="border-2 border-black bg-[#2c7a3f] px-3 py-3 text-xs font-black uppercase text-white disabled:opacity-40"
+                    className="rounded-lg bg-slate-800 px-3 py-3 text-xs font-medium text-white transition-colors hover:bg-slate-900 disabled:opacity-40"
                   >
                     {status === 'assigning' ? 'Assigning...' : status === 'discord' ? 'Assigned' : 'Sign Role'}
                   </button>
                 </div>
-                {discordResult?.ok && <div className="mt-4 border border-green-600 bg-green-50 p-3 text-sm text-green-800">Discord verified. Your collector role is live.</div>}
+                {discordResult?.ok && <div className="mt-4 rounded-xl border border-green-100 bg-green-50 p-3 text-sm text-green-800">Discord verified. Your collector role is live.</div>}
                 {discordConnection && !discordResult?.ok && (
-                  <div className="mt-4 border border-[#5865F2] bg-blue-50 p-3 text-sm text-blue-800">
+                  <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50 p-3 text-sm text-blue-800">
                     Connected as {discordConnection.discordUsername}. Sign once to assign your role.
                   </div>
                 )}
@@ -544,7 +460,7 @@ export default function CollectorsHubWindow({ title, onClose, isActive, onClick,
                   ['Discord', !!discordConnection || !!discordResult?.ok],
                   ['Role', !!discordResult?.ok],
                 ].map(([label, done]) => (
-                  <div key={String(label)} className={`border-2 border-black p-3 text-sm font-bold ${done ? 'bg-black text-white' : 'bg-white text-black'}`}>
+                  <div key={String(label)} className={`rounded-xl border p-3 text-sm font-medium ${done ? 'border-slate-800 bg-slate-800 text-white' : 'border-gray-100 bg-white text-gray-500'}`}>
                     {label}
                   </div>
                 ))}
@@ -562,11 +478,11 @@ export default function CollectorsHubWindow({ title, onClose, isActive, onClick,
         {activeTab === 'holdings' && (
           <div className="grid lg:grid-cols-[0.9fr_1.1fr] gap-5 pt-3">
             <div className="space-y-5">
-              <div className="border-2 border-black bg-white p-5 shadow-[6px_6px_0_#111]">
-                <div className="text-[11px] tracking-[0.24em] uppercase text-gray-500 mb-3">Your Art</div>
-                <h2 className="text-4xl font-black leading-none mb-4">Holdings Gallery</h2>
+              <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+                <div className="text-[11px] tracking-[0.24em] uppercase text-gray-400 mb-3">Your Art</div>
+                <h2 className="text-4xl font-medium leading-none mb-4 text-gray-800">Holdings Gallery</h2>
                 {!wallet && (
-                  <p className="text-sm text-gray-700 leading-relaxed">
+                  <p className="text-sm text-gray-500 leading-relaxed">
                     Sign in with your wallet on the Dashboard tab to load your tut™ holdings.
                   </p>
                 )}
@@ -574,28 +490,28 @@ export default function CollectorsHubWindow({ title, onClose, isActive, onClick,
                   <p className="text-sm text-gray-500">Loading holdings...</p>
                 )}
                 {wallet && !dashboardLoading && !dashboard && (
-                  <p className="text-sm text-gray-700 leading-relaxed">
+                  <p className="text-sm text-gray-500 leading-relaxed">
                     Holdings will appear here after wallet verification.
                   </p>
                 )}
                 {dashboard && (
                   <>
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="border border-gray-200 p-3">
+                      <div className="rounded-xl border border-gray-100 p-3">
                         <div className="text-[10px] uppercase tracking-[0.18em] text-gray-400 mb-1">Amount</div>
-                        <div className="text-3xl font-black">{dashboard.holdings.assets.count}</div>
+                        <div className="text-3xl font-medium text-gray-800">{dashboard.holdings.assets.count}</div>
                       </div>
-                      <div className="border border-gray-200 p-3">
+                      <div className="rounded-xl border border-gray-100 p-3">
                         <div className="text-[10px] uppercase tracking-[0.18em] text-gray-400 mb-1">Score</div>
-                        <div className="text-3xl font-black">{dashboard.score.toLocaleString()}</div>
+                        <div className="text-3xl font-medium text-gray-800">{dashboard.score.toLocaleString()}</div>
                       </div>
-                      <div className="border border-gray-200 p-3">
+                      <div className="rounded-xl border border-gray-100 p-3">
                         <div className="text-[10px] uppercase tracking-[0.18em] text-gray-400 mb-1">Rank</div>
-                        <div className="text-lg font-black">{dashboard.rank}</div>
+                        <div className="text-lg font-medium text-gray-800">{dashboard.rank}</div>
                       </div>
-                      <div className="border border-gray-200 p-3">
+                      <div className="rounded-xl border border-gray-100 p-3">
                         <div className="text-[10px] uppercase tracking-[0.18em] text-gray-400 mb-1">1/1s</div>
-                        <div className="text-lg font-black">{dashboard.breakdown.oneOfOneCount}</div>
+                        <div className="text-lg font-medium text-gray-800">{dashboard.breakdown.oneOfOneCount}</div>
                       </div>
                     </div>
 
@@ -603,9 +519,9 @@ export default function CollectorsHubWindow({ title, onClose, isActive, onClick,
                       <div className="text-[10px] uppercase tracking-[0.18em] text-gray-400 mb-2">Collections</div>
                       <div className="space-y-2">
                         {dashboard.holdings.collections.map((collection) => (
-                          <div key={collection.slug} className="flex items-center justify-between border border-gray-200 px-3 py-2 text-sm">
-                            <span className={collection.count > 0 ? 'text-black font-bold' : 'text-gray-500'}>{collection.name}</span>
-                            <span className="font-mono text-xs">
+                          <div key={collection.slug} className="flex items-center justify-between rounded-xl border border-gray-100 px-3 py-2 text-sm">
+                            <span className={collection.count > 0 ? 'text-gray-800 font-medium' : 'text-gray-400'}>{collection.name}</span>
+                            <span className="font-mono text-xs text-gray-500">
                               {collection.count > 0
                                 ? `${collection.count} * ${collection.weight.toLocaleString()} = ${collection.score.toLocaleString()}`
                                 : `${collection.weight.toLocaleString()} each`}
@@ -619,15 +535,15 @@ export default function CollectorsHubWindow({ title, onClose, isActive, onClick,
               </div>
             </div>
 
-            <div className="border-2 border-black bg-white overflow-hidden">
-              <div className="border-b-2 border-black bg-black text-white p-3 text-[10px] uppercase tracking-[0.16em]">
+            <div className="rounded-2xl border border-gray-100 bg-white overflow-hidden shadow-sm">
+              <div className="border-b border-gray-100 bg-gray-50 text-gray-500 p-3 text-[10px] uppercase tracking-[0.16em]">
                 Owned Works
               </div>
               <div className="max-h-[520px] overflow-auto p-4">
                 {!dashboard && (
                   <div className="grid min-h-[360px] place-items-center text-center text-sm text-gray-500">
                     <div>
-                      <div className="text-2xl font-black text-black">No wallet signed in</div>
+                      <div className="text-2xl font-medium text-gray-800">No wallet signed in</div>
                       <p className="mt-2">Use Dashboard to sign in and reveal owned works.</p>
                     </div>
                   </div>
@@ -645,7 +561,7 @@ export default function CollectorsHubWindow({ title, onClose, isActive, onClick,
                         href={art.permalink || undefined}
                         target="_blank"
                         rel="noreferrer"
-                        className="border border-gray-200 bg-white text-black hover:border-black"
+                        className="rounded-xl border border-gray-100 bg-white text-gray-800 overflow-hidden transition-all hover:border-gray-200 hover:shadow-sm"
                       >
                         <div className="aspect-square bg-gray-100 overflow-hidden">
                           {art.image ? (
@@ -660,7 +576,7 @@ export default function CollectorsHubWindow({ title, onClose, isActive, onClick,
                           )}
                         </div>
                         <div className="p-2">
-                          <div className="truncate text-xs font-bold">{art.title}</div>
+                          <div className="truncate text-xs font-medium">{art.title}</div>
                           <div className="text-[10px] text-gray-500">{art.collection} · #{art.tokenId}</div>
                         </div>
                       </a>
@@ -674,26 +590,26 @@ export default function CollectorsHubWindow({ title, onClose, isActive, onClick,
 
         {activeTab === 'leaderboard' && (
           <div className="grid lg:grid-cols-[0.8fr_1.2fr] gap-5 pt-3">
-            <div className="border-2 border-black bg-white p-5 shadow-[6px_6px_0_#111]">
-              <div className="text-[11px] tracking-[0.24em] uppercase text-gray-500 mb-3">tut™ Scores</div>
-              <h2 className="text-4xl font-black leading-none mb-4">Collector Leaderboard</h2>
-              <p className="text-sm text-gray-700 leading-relaxed">
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+              <div className="text-[11px] tracking-[0.24em] uppercase text-gray-400 mb-3">tut™ Scores</div>
+              <h2 className="text-4xl font-medium leading-none mb-4 text-gray-800">Collector Leaderboard</h2>
+              <p className="text-sm text-gray-500 leading-relaxed">
                 Wallet dashboards are live now. A public leaderboard needs a tut™ asset snapshot/indexer so every collector can be ranked from the same collection-only score model.
               </p>
               <div className="mt-5 grid grid-cols-2 gap-3">
-                <div className="border border-gray-200 p-3">
+                <div className="rounded-xl border border-gray-100 p-3">
                   <div className="text-[10px] uppercase tracking-[0.18em] text-gray-400 mb-1">Shown</div>
-                  <div className="text-2xl font-black">{leaderboard.length}</div>
+                  <div className="text-2xl font-medium text-gray-800">{leaderboard.length}</div>
                 </div>
-                <div className="border border-gray-200 p-3">
+                <div className="rounded-xl border border-gray-100 p-3">
                   <div className="text-[10px] uppercase tracking-[0.18em] text-gray-400 mb-1">Top Score</div>
-                  <div className="text-2xl font-black">{leaderboard[0]?.score.toLocaleString() || '0'}</div>
+                  <div className="text-2xl font-medium text-gray-800">{leaderboard[0]?.score.toLocaleString() || '0'}</div>
                 </div>
               </div>
             </div>
 
-            <div className="border-2 border-black bg-white overflow-hidden">
-              <div className="grid grid-cols-[56px_1fr_110px_90px] border-b-2 border-black bg-black text-white text-[10px] uppercase tracking-[0.16em]">
+            <div className="rounded-2xl border border-gray-100 bg-white overflow-hidden shadow-sm">
+              <div className="grid grid-cols-[56px_1fr_110px_90px] border-b border-gray-100 bg-gray-50 text-gray-500 text-[10px] uppercase tracking-[0.16em]">
                 <div className="p-3">#</div>
                 <div className="p-3">Wallet</div>
                 <div className="p-3 text-right">Score</div>
@@ -709,11 +625,11 @@ export default function CollectorsHubWindow({ title, onClose, isActive, onClick,
                 {!leaderboardLoading && leaderboard.map((entry, index) => (
                   <div
                     key={`${entry.wallet}-${index}`}
-                    className="grid grid-cols-[56px_1fr_110px_90px] border-b border-gray-200 text-sm items-center"
+                    className="grid grid-cols-[56px_1fr_110px_90px] border-b border-gray-100 text-sm items-center text-gray-700"
                   >
-                    <div className="p-3 font-bold">{index + 1}</div>
+                    <div className="p-3 font-medium">{index + 1}</div>
                     <div className="p-3 font-mono truncate">{shortWallet(entry.wallet)}</div>
-                    <div className="p-3 text-right font-bold">{entry.score.toLocaleString()}</div>
+                    <div className="p-3 text-right font-medium">{entry.score.toLocaleString()}</div>
                     <div className="p-3 text-right text-xs uppercase">{entry.rank}</div>
                   </div>
                 ))}
@@ -724,35 +640,35 @@ export default function CollectorsHubWindow({ title, onClose, isActive, onClick,
 
         {activeTab === 'guide' && (
           <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-5 pt-3">
-            <div className="border-2 border-black bg-white p-5 shadow-[6px_6px_0_#111]">
-              <div className="text-[11px] tracking-[0.24em] uppercase text-gray-500 mb-3">Score</div>
-              <h2 className="text-3xl font-black leading-none mb-4">What Counts</h2>
-              <p className="text-sm text-gray-700 leading-relaxed">
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+              <div className="text-[11px] tracking-[0.24em] uppercase text-gray-400 mb-3">Score</div>
+              <h2 className="text-3xl font-medium leading-none mb-4 text-gray-800">What Counts</h2>
+              <p className="text-sm text-gray-500 leading-relaxed">
                 Collector Score is calculated from tut™ assets shown on this site. Higher-weight 1/1s and genesis works create the base, with small bonuses for collecting across multiple tut™ collections and holding more works.
               </p>
-              <div className="mt-4 border-2 border-black bg-black text-white p-3 font-mono text-xs">
+              <div className="mt-4 rounded-xl bg-gray-50 text-gray-600 p-3 font-mono text-xs">
                 score = weighted tut™ assets + breadth bonus + depth bonus
               </div>
               {dashboard && (
-                <div className="mt-5 border-2 border-black bg-white p-4">
+                <div className="mt-5 rounded-xl border border-gray-100 bg-white p-4">
                   <div className="text-[10px] uppercase tracking-[0.18em] text-gray-400 mb-3">Your Breakdown</div>
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <div className="text-gray-500">Weighted assets</div>
-                    <div className="text-right font-bold">{dashboard.breakdown.base.toLocaleString()}</div>
+                    <div className="text-right font-medium text-gray-800">{dashboard.breakdown.base.toLocaleString()}</div>
                     <div className="text-gray-500">Breadth bonus</div>
-                    <div className="text-right font-bold">+{dashboard.breakdown.breadthBonus.toLocaleString()}</div>
+                    <div className="text-right font-medium text-gray-800">+{dashboard.breakdown.breadthBonus.toLocaleString()}</div>
                     <div className="text-gray-500">Depth bonus</div>
-                    <div className="text-right font-bold">+{dashboard.breakdown.depthBonus.toLocaleString()}</div>
-                    <div className="border-t border-gray-200 pt-2 font-black">Total</div>
-                    <div className="border-t border-gray-200 pt-2 text-right font-black">{dashboard.breakdown.calculatedScore.toLocaleString()}</div>
+                    <div className="text-right font-medium text-gray-800">+{dashboard.breakdown.depthBonus.toLocaleString()}</div>
+                    <div className="border-t border-gray-100 pt-2 font-medium text-gray-800">Total</div>
+                    <div className="border-t border-gray-100 pt-2 text-right font-medium text-gray-800">{dashboard.breakdown.calculatedScore.toLocaleString()}</div>
                   </div>
                 </div>
               )}
             </div>
-            <div className="border-2 border-black bg-white p-5">
-              <div className="text-[11px] tracking-[0.24em] uppercase text-gray-500 mb-3">Equation</div>
-              <h2 className="text-3xl font-black leading-none mb-4">The Math</h2>
-              <div className="space-y-2 text-sm text-gray-700">
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+              <div className="text-[11px] tracking-[0.24em] uppercase text-gray-400 mb-3">Equation</div>
+              <h2 className="text-3xl font-medium leading-none mb-4 text-gray-800">The Math</h2>
+              <div className="space-y-2 text-sm text-gray-500">
                 <p>Tut Genesis: 25,000 points each.</p>
                 <p>Abstractions: 5,000 points each.</p>
                 <p>OCF: 1,000 points each.</p>
@@ -762,7 +678,7 @@ export default function CollectorsHubWindow({ title, onClose, isActive, onClick,
                 <p>Breadth bonus: unique collections squared * 250.</p>
                 <p>Depth bonus: +500 at 3 assets, +1,500 at 5, +5,000 at 10, +15,000 at 25.</p>
               </div>
-              <div className="mt-5 border-2 border-[#2c7a3f] bg-green-50 p-3 text-sm leading-relaxed text-green-900">
+              <div className="mt-5 rounded-xl border border-green-100 bg-green-50 p-3 text-sm leading-relaxed text-green-800">
                 The hub uses read-only score checks, Discord identify, and wallet message signatures. No approvals, payments, passwords, or private keys.
               </div>
             </div>
