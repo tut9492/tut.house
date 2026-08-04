@@ -13,12 +13,11 @@ export type CollectorProof = {
 };
 
 export const TUT_COLLECTIONS = [
-  { slug: 'obsessive-cycles-of-fiber', name: 'Obsessive Cycles of Fiber', weight: 10000, kind: '1/1' },
-  { slug: 'tut-1-1', name: 'tut™ 1/1', weight: 10000, kind: '1/1' },
-  { slug: 'kingtut-genesis', name: 'King Tut Genesis', weight: 5000, kind: 'Genesis' },
-  { slug: 'abstractions', name: 'Abstractions', weight: 1500, kind: 'Series' },
-  { slug: 'tut-editions', name: 'tut™ Editions', weight: 1000, kind: 'Edition' },
-  { slug: 'tut-loudio', name: 'Tut Loudio', weight: 750, kind: 'Edition' },
+  { slug: 'obsessive-cycles-of-fiber', name: 'OCF', weight: 10000, kind: '1/1', chain: 'ethereum' },
+  { slug: 'kingtut-genesis', name: 'Tut Genesis', weight: 5000, kind: 'Genesis', chain: 'ethereum' },
+  { slug: 'abstractions', name: 'Abstractions', weight: 1500, kind: 'Series', chain: 'ethereum' },
+  { slug: 'tut-loudio', name: 'Tut Loudio', weight: 750, kind: 'Edition', chain: 'ethereum' },
+  { slug: 'breadio', name: 'Breadio', weight: 750, kind: 'MegaETH', chain: 'megaeth' },
 ] as const;
 
 export const TUT_DEPTH_BONUSES = [
@@ -42,6 +41,7 @@ export type ScoreCollection = {
   slug: string;
   name: string;
   kind: string;
+  chain: string;
   weight: number;
   count: number;
   score: number;
@@ -191,7 +191,7 @@ export async function getTutCollectionHoldings(wallet: string, maxPerCollection 
 
     if (apiKey) {
       while (artworks.length < maxPerCollection) {
-        const url = new URL(`${OPENSEA_API}/chain/ethereum/account/${normalized}/nfts`);
+        const url = new URL(`${OPENSEA_API}/chain/${collection.chain}/account/${normalized}/nfts`);
         url.searchParams.set('collection', collection.slug);
         url.searchParams.set('limit', String(Math.min(50, maxPerCollection - artworks.length)));
         if (next) url.searchParams.set('next', next);
@@ -211,7 +211,7 @@ export async function getTutCollectionHoldings(wallet: string, maxPerCollection 
             tokenId,
             title: nft.name || `${collection.name} #${tokenId || '?'}`,
             image: normalizeIpfsUrl(nft.image_url || nft.display_image_url || nft.original_image_url || ''),
-            permalink: nft.opensea_url || (tokenId ? `https://opensea.io/assets/ethereum/${nft.contract}/${tokenId}` : ''),
+            permalink: nft.opensea_url || (tokenId ? `https://opensea.io/assets/${collection.chain}/${nft.contract}/${tokenId}` : ''),
             collection: collection.name,
             collectionSlug: collection.slug,
             weight: collection.weight,
@@ -227,6 +227,7 @@ export async function getTutCollectionHoldings(wallet: string, maxPerCollection 
       slug: collection.slug,
       name: collection.name,
       kind: collection.kind,
+      chain: collection.chain,
       weight: collection.weight,
       count: artworks.length,
       score: artworks.length * collection.weight,

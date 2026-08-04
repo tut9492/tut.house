@@ -60,6 +60,8 @@ npm run dev
 
 The Collectors Hub window verifies an EVM wallet signature, calculates the wallet's Collector Score from tut™ OpenSea collection holdings, shows the collector's public holdings/artwork and score equation, sends the user through Discord OAuth, then requires a Discord-specific wallet signature before assigning configured tut™ Discord roles.
 
+Scored collections: Abstractions, Tut Genesis, OCF, Tut Loudio, and Breadio on MegaETH.
+
 Required Vercel environment variables:
 
 ```bash
