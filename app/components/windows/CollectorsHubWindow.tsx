@@ -273,6 +273,9 @@ export default function CollectorsHubWindow({ title, onClose, isActive, onClick,
             <p className="text-sm md:text-base text-gray-700 leading-relaxed mb-6 max-w-xl">
               Connect the wallet that holds your collector score, link Discord, then sign once to receive your TU role.
             </p>
+            <div className="border-2 border-[#2c7a3f] bg-green-50 text-green-900 p-3 text-sm leading-relaxed mb-5">
+              This verifier never asks for a seed phrase or private key, never downloads software, and never sends a blockchain transaction. Wallet signatures only prove address ownership for a Discord role.
+            </div>
 
             <div className="flex flex-col sm:flex-row gap-3">
               <button
@@ -319,6 +322,12 @@ export default function CollectorsHubWindow({ title, onClose, isActive, onClick,
                 Discord connected as {discordConnection.discordUsername}. Sign once to assign your role.
               </div>
             )}
+            <div className="mt-5 flex flex-wrap gap-3 text-xs text-gray-600">
+              <a href="/security" target="_blank" rel="noreferrer" className="underline">Security</a>
+              <a href="/privacy" target="_blank" rel="noreferrer" className="underline">Privacy</a>
+              <a href="/terms" target="_blank" rel="noreferrer" className="underline">Terms</a>
+              <a href="https://github.com/tut9492/tut.house" target="_blank" rel="noreferrer" className="underline">Source</a>
+            </div>
           </div>
 
           <div className="border-2 border-black bg-white p-5">
