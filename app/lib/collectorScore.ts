@@ -32,6 +32,14 @@ export const TUT_COLLECTIONS = [
     chain: 'ethereum',
     contract: '0x3bea26866fce3596e7e994e45a0a65b74e16947e',
   },
+  {
+    slug: 'tut-editions',
+    name: 'tut™ Editions',
+    weight: 250,
+    kind: 'Edition',
+    chain: 'ethereum',
+    contract: '0x6d4ecf5c26b2a6537cb9b290fc46a3f6439e4dfc',
+  },
 ] as const;
 
 export const TUT_DEPTH_BONUSES = [

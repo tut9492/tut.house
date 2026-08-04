@@ -727,6 +727,7 @@ export default function CollectorsHubWindow({ title, onClose, isActive, onClick,
                 <p>OCF: 3,000 points each.</p>
                 <p>Breadio on MegaETH: 1,500 points each.</p>
                 <p>Tut Loudio: 750 points each.</p>
+                <p>tut™ Editions: 250 points each.</p>
                 <p>Breadth bonus: unique collections squared * 250.</p>
                 <p>Depth bonus: +500 at 3 assets, +1,500 at 5, +5,000 at 10, +15,000 at 25.</p>
               </div>
