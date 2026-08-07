@@ -270,6 +270,25 @@ const HUB_CSS = `
 /* sealed / signed-out muting of the personal windows */
 #collectors-hub.sealed .mute { filter:grayscale(1) brightness(.98); opacity:.55; }
 
+/* Scoring + Ranks share their own row */
+#collectors-hub .pair { display:grid; grid-template-columns:1fr 1fr; gap:22px; }
+@media (max-width:880px){ #collectors-hub .pair { grid-template-columns:1fr; } }
+
+/* Discord as a small icon under the pfp (no full card) */
+#collectors-hub .fm-discord { display:flex; flex-direction:column; align-items:center; gap:6px; margin-top:2px; }
+#collectors-hub .disc-ico { width:42px; height:42px; border:2.5px solid #000; border-radius:11px; background:var(--blurple); display:grid; place-items:center; cursor:pointer; box-shadow:2px 2px 0 0 rgba(20,16,30,.24); padding:0; transition:filter .15s; }
+#collectors-hub .disc-ico:hover { filter:brightness(1.06); }
+#collectors-hub .disc-ico:disabled { cursor:default; }
+#collectors-hub .disc-ico svg { width:25px; height:25px; fill:#fff; }
+#collectors-hub .disc-ico.done { background:#3a6b40; }
+#collectors-hub .disc-cap { font:600 10.5px/1.35 var(--sans); color:var(--label); letter-spacing:.02em; text-align:center; max-width:26ch; }
+#collectors-hub .disc-cap.err { color:#9a3b3b; }
+
+/* legal footer */
+#collectors-hub .hub-footer { display:flex; justify-content:center; gap:16px; max-width:1180px; margin:26px auto 0; font-size:11px; }
+#collectors-hub .hub-footer a { color:#6a6a72; text-decoration:none; border-bottom:1px solid rgba(0,0,0,.16); }
+#collectors-hub .hub-footer a:hover { color:#161616; }
+
 @media (prefers-reduced-motion:reduce){ #collectors-hub * { transition-duration:.001ms !important; } }
 `;
 
@@ -464,14 +483,18 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
   const walletActionLabel =
     status === 'connecting' ? 'Connecting…' : status === 'signing' ? 'Check wallet…' : 'Sign in with wallet';
 
-  const steps: Array<[string, string, boolean]> = [
-    ['01', 'Wallet', !!wallet || signedIn],
-    ['02', 'Score', signedIn],
-    ['03', 'Discord', !!discordConnection || !!discordResult?.ok],
-    ['04', 'Role', !!discordResult?.ok],
-  ];
-
   const goldStars = signedIn ? displayScore.toLocaleString() : '—';
+
+  // Discord affordance (now a single icon under the pfp, no full card).
+  const discordDone = !!discordResult?.ok || status === 'discord';
+  const discordAction = discordConnection ? signAndAssignRole : linkDiscord;
+  const discordCap = discordDone
+    ? 'Role active'
+    : status === 'assigning'
+      ? 'Signing…'
+      : discordConnection
+        ? 'Sign to assign role'
+        : 'Connect Discord';
 
   return (
     <div id="collectors-hub" className={signedIn ? '' : 'sealed'} style={{ zIndex }} onClick={onClick}>
@@ -494,6 +517,18 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
                 <>
                   <div className="ch-avatar" style={{ backgroundImage: 'url(/assets/images/aboutProfilePicture.png)' }} />
                   <div className="fm-name">{shortWallet(wallet)}</div>
+                  <div className="fm-discord">
+                    <button
+                      className={`disc-ico${discordDone ? ' done' : ''}`}
+                      onClick={discordAction}
+                      disabled={discordDone || status === 'assigning'}
+                      title={discordCap}
+                      aria-label={discordCap}
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.317 4.369a19.79 19.79 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.211.375-.445.865-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.6 12.6 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.1 13.1 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.126-.094.252-.192.371-.291a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.009c.12.099.245.198.372.292a.077.077 0 0 1-.006.127 12.3 12.3 0 0 1-1.873.891.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.84 19.84 0 0 0 6.002-3.03.077.077 0 0 0 .032-.055c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.331c-1.183 0-2.157-1.086-2.157-2.419 0-1.333.955-2.42 2.157-2.42 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.955 2.419-2.157 2.419zm7.975 0c-1.183 0-2.157-1.086-2.157-2.419 0-1.333.955-2.42 2.157-2.42 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.419-2.157 2.419z" /></svg>
+                    </button>
+                    <div className={`disc-cap${error ? ' err' : ''}`}>{error || discordCap}</div>
+                  </div>
                 </>
               ) : (
                 <div className="fm-signin">
@@ -593,42 +628,8 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
           </div>
         </div>
 
-        {/* ================= TRIO: DISCORD / SCORING / RANKS ================= */}
-        <div className="full trio">
-
-          {/* DISCORD */}
-          <div className="win w-blurple">
-            <div className="bar"><span className="t">Discord Role</span><span className="ctl"><b>X</b><b>_</b></span></div>
-            <div className="disc-body">
-              <p className="disc-lede">Claim your standing in the family Discord — connect, then sign once to assign your role.</p>
-              <div className="disc-btns">
-                <button className="btn blur" onClick={linkDiscord} disabled={!session || status === 'discord' || status === 'assigning'}>
-                  {discordConnection ? 'Connected' : 'Connect Discord'}
-                </button>
-                <button className="btn navy" onClick={signAndAssignRole} disabled={!discordConnection || status === 'assigning' || status === 'discord'}>
-                  {status === 'assigning' ? 'Assigning…' : status === 'discord' ? 'Assigned' : 'Sign role'}
-                </button>
-              </div>
-              {discordResult?.ok && <div className="note ok">Discord verified — your collector role is live.</div>}
-              {discordConnection && !discordResult?.ok && (
-                <div className="note info">Connected as {discordConnection.discordUsername}. Sign once to assign your role.</div>
-              )}
-              {signedIn && error && <div className="note err">{error}</div>}
-              <div className="steps">
-                {steps.map(([n, t, done]) => (
-                  <div key={t} className={`step${done ? ' done' : ''}`}>
-                    <div className="n">{n}</div>
-                    <div className="l">{t}{done ? ' ✓' : ''}</div>
-                  </div>
-                ))}
-              </div>
-              <div className="legal">
-                <a href="/security" target="_blank" rel="noreferrer">Security</a>
-                <a href="/privacy" target="_blank" rel="noreferrer">Privacy</a>
-                <a href="/terms" target="_blank" rel="noreferrer">Terms</a>
-              </div>
-            </div>
-          </div>
+        {/* ================= PAIR: SCORING / RANKS ================= */}
+        <div className="full pair">
 
           {/* SCORING */}
           <div className="win w-lime">
@@ -665,6 +666,12 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="hub-footer">
+        <a href="/security" target="_blank" rel="noreferrer">Security</a>
+        <a href="/privacy" target="_blank" rel="noreferrer">Privacy</a>
+        <a href="/terms" target="_blank" rel="noreferrer">Terms</a>
       </div>
     </div>
   );
