@@ -12,6 +12,7 @@ import TextViewerWindow from './windows/TextViewerWindow';
 import AboutWindow from './windows/AboutWindow';
 import DesignAgencyWindow from './windows/DesignAgencyWindow';
 import Taskbar from './Taskbar';
+import AudioPlayer from './AudioPlayer';
 import Menu from './Menu';
 
 interface OpenImage {
@@ -195,6 +196,9 @@ export default function Desktop() {
         className="absolute inset-0 pointer-events-none"
         style={{ background: 'url(/assets/images/hubPink.jpg) center/cover no-repeat', opacity: 0.6, mixBlendMode: 'multiply' }}
       />
+
+      {/* music: play / stop, top-right */}
+      <AudioPlayer />
 
       {/* small black tut wordmark, top-left (matches the Hub) */}
       <div className="absolute top-6 left-6 lg:top-8 lg:left-8 z-10">
