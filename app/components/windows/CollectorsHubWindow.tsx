@@ -151,14 +151,14 @@ const HUB_CSS = `
   --label:#8a8a93; --hair:#ececec; --hair2:#e0e0e0;
   --shadow:4px 5px 0 0 rgba(20,16,30,.26), 0 16px 30px -12px rgba(30,20,45,.5);
   position:fixed; top:0; left:0; right:0; bottom:48px; overflow:hidden;
-  padding:16px; color:var(--ink);
+  padding:0; color:var(--ink);
   font-family:var(--sans); -webkit-font-smoothing:antialiased;
   background:#c3b8cb url(/assets/images/hubClouds.jpg) center/cover fixed no-repeat;
 }
 /* pink gradient layered ABOVE the clouds for the dusk effect */
 #collectors-hub::before { content:""; position:fixed; top:0; left:0; right:0; bottom:48px; background:url(/assets/images/hubPink.jpg) center/cover no-repeat; opacity:.6; mix-blend-mode:multiply; pointer-events:none; z-index:0; }
 /* the whole Hub, framed as one window on the dusk desktop */
-#collectors-hub .ch-frame { position:relative; z-index:1; height:100%; display:flex; flex-direction:column; border:3px solid #000; border-radius:14px; box-shadow:5px 6px 0 0 rgba(20,16,30,.26), 0 20px 40px -14px rgba(30,20,45,.5); overflow:hidden; }
+#collectors-hub .ch-frame { position:absolute; top:16px; left:16px; right:16px; bottom:16px; z-index:1; display:flex; flex-direction:column; border:3px solid #000; border-radius:14px; box-shadow:5px 6px 0 0 rgba(20,16,30,.26), 0 20px 40px -14px rgba(30,20,45,.5); overflow:hidden; }
 #collectors-hub .ch-titlebar { flex:none; display:flex; align-items:center; gap:12px; padding:11px 18px; border-bottom:3px solid #000; background:#fff; }
 #collectors-hub .ch-wm-sm { width:44px; height:20px; background:url(/assets/images/tutLogo.png) left center/contain no-repeat; filter:brightness(0); flex:none; }
 #collectors-hub .ch-winttl { font:700 14.5px/1 var(--mono); letter-spacing:.12em; text-transform:uppercase; color:#161616; }
