@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useLayoutEffect } from 'react';
-import { useIsMobile } from '../hooks/useIsMobile';
+import { useEffect, useState } from 'react';
 
 interface ArtworkItem {
   id: string;
@@ -26,56 +25,57 @@ interface CollectionWindowProps {
   onArtworksLoaded?: (slug: string, artworks: ArtworkItem[]) => void;
 }
 
-export default function CollectionWindow({ 
-  id,
-  title, 
-  onClose, 
-  isActive, 
-  onClick, 
+const CW_CSS = `
+.collection-window {
+  --mono:ui-monospace,"SF Mono","Cascadia Code",Menlo,Consolas,monospace;
+  --sans:"Segoe UI",-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;
+  position:fixed; top:0; left:0; right:0; bottom:48px; padding:18px;
+  background:#c3b8cb url(/assets/images/hubClouds.jpg) center/cover fixed no-repeat;
+  font-family:var(--sans); -webkit-font-smoothing:antialiased;
+}
+.collection-window::before { content:""; position:fixed; top:0; left:0; right:0; bottom:48px; background:url(/assets/images/hubPink.jpg) center/cover no-repeat; opacity:.6; mix-blend-mode:multiply; pointer-events:none; }
+.collection-window .cw-frame { position:relative; z-index:1; height:100%; display:flex; flex-direction:column; border:3px solid #000; border-radius:13px; background:#fff; box-shadow:5px 6px 0 0 rgba(20,16,30,.26), 0 20px 40px -14px rgba(30,20,45,.5); overflow:hidden; }
+.collection-window .cw-bar { display:flex; align-items:center; gap:12px; padding:11px 16px; border-bottom:3px solid #000; background:#cbf000; }
+.collection-window .cw-t { font:700 15.5px/1 var(--mono); letter-spacing:.11em; color:#000; text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.collection-window .cw-ct { font:700 10.5px/1 var(--mono); letter-spacing:.06em; color:#2b3a00; border:1.5px solid rgba(0,0,0,.35); border-radius:20px; padding:4px 10px; font-variant-numeric:tabular-nums; flex:none; }
+.collection-window .cw-ctl { margin-left:auto; display:flex; gap:5px; flex:none; }
+.collection-window .cw-chip { width:26px; height:22px; border:2.5px solid #000; border-radius:5px; background:#ededed; font:700 12px/1 var(--mono); display:grid; place-items:center; color:#000; padding:0; cursor:pointer; }
+.collection-window .cw-chip:hover { filter:brightness(.94); }
+.collection-window .cw-stage { flex:1; position:relative; display:grid; place-items:center; padding:40px; min-height:0; background:linear-gradient(#fbfbfa,#f4f2ee); }
+.collection-window .cw-mat { background:#fff; padding:22px; border-radius:4px; box-shadow:0 26px 54px -22px rgba(0,0,0,.5), 0 0 0 1px #eee; max-height:100%; display:flex; }
+.collection-window .cw-art { display:block; max-height:min(70vh,760px); max-width:80vw; width:auto; height:auto; object-fit:contain; border-radius:2px; cursor:pointer; }
+.collection-window .cw-nav { position:absolute; top:50%; transform:translateY(-50%); width:52px; height:52px; border:3px solid #000; border-radius:12px; background:rgba(255,255,255,.92); display:grid; place-items:center; cursor:pointer; box-shadow:3px 3px 0 0 rgba(20,16,30,.24); font:700 22px/1 var(--sans); color:#000; padding:0; }
+.collection-window .cw-nav:hover { background:#fff; }
+.collection-window .cw-nav.prev { left:26px; }
+.collection-window .cw-nav.next { right:26px; }
+.collection-window .cw-cap { position:absolute; left:0; right:0; bottom:16px; text-align:center; font:600 12.5px/1 var(--mono); letter-spacing:.04em; color:#6a6a72; padding:0 80px; }
+.collection-window .cw-msg { color:#8a8a93; font:400 14px/1.5 var(--sans); }
+.collection-window .cw-spin { width:34px; height:34px; border:3px solid #d8d8d8; border-bottom-color:#333; border-radius:50%; animation:cw-spin .8s linear infinite; }
+@keyframes cw-spin { to { transform:rotate(360deg); } }
+@media (prefers-reduced-motion:reduce){ .collection-window .cw-spin { animation-duration:1.6s; } }
+`;
+
+export default function CollectionWindow({
+  title,
+  onClose,
+  onClick,
   zIndex,
   openseaSlug,
   limit,
   prefetchedArtworks,
-  onArtworksLoaded
+  onArtworksLoaded,
 }: CollectionWindowProps) {
-  const isCompact = useIsMobile(1024);
-  const [position, setPosition] = useState<{ x: number; y: number } | null>(() => ({ x: 200, y: 150 }));
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const [isMaximized, setIsMaximized] = useState(true);
-  const [prevPosition, setPrevPosition] = useState({ x: 200, y: 150 });
-  const windowRef = useRef<HTMLDivElement>(null);
-  
   const [artworks, setArtworks] = useState<ArtworkItem[]>(prefetchedArtworks ?? []);
-  const [selectedArtwork, setSelectedArtwork] = useState<ArtworkItem | null>(prefetchedArtworks?.[0] ?? null);
+  const [index, setIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(!(prefetchedArtworks && prefetchedArtworks.length > 0));
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (prefetchedArtworks && prefetchedArtworks.length > 0) {
       setArtworks(prefetchedArtworks);
-      setSelectedArtwork((prev) => prev ?? prefetchedArtworks[0]);
       setIsLoading(false);
     }
   }, [prefetchedArtworks]);
-
-  useLayoutEffect(() => {
-    if (isCompact) return;
-    const WINDOW_W = 1000;
-    const WINDOW_H = 700;
-    const margin = 50;
-
-    const maxX = Math.max(1, window.innerWidth - WINDOW_W - margin * 2);
-    const maxY = Math.max(1, window.innerHeight - WINDOW_H - margin * 2);
-
-    const nextPos = {
-      x: Math.floor(Math.random() * maxX) + margin,
-      y: Math.floor(Math.random() * maxY) + margin,
-    };
-
-    setPosition(nextPos);
-    setPrevPosition(nextPos);
-  }, [isCompact]);
 
   useEffect(() => {
     const fetchArtworks = async () => {
@@ -93,10 +93,10 @@ export default function CollectionWindow({
       try {
         setIsLoading(true);
         setError(null);
-        
+
         const url = `/api/opensea/collection?slug=${openseaSlug}${limit != null ? `&limit=${limit}` : ''}`;
         const response = await fetch(url);
-        
+
         if (!response.ok) {
           throw new Error('Failed to fetch collection');
         }
@@ -104,7 +104,7 @@ export default function CollectionWindow({
         const data = await response.json();
         if (data.artworks && data.artworks.length > 0) {
           setArtworks(data.artworks);
-          setSelectedArtwork(data.artworks[0]);
+          setIndex(0);
           if (openseaSlug) onArtworksLoaded?.(openseaSlug, data.artworks);
         }
       } catch (err) {
@@ -119,238 +119,63 @@ export default function CollectionWindow({
     // Intentionally omit prefetchedArtworks so we only fetch once per slug/limit.
     // Re-running when prefetchedArtworks changed caused a second request that could fail (e.g. rate limit)
     // and was making NFTs disappear for Abstractions and Tut Loudio.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openseaSlug, limit]);
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).closest('.window-controls')) return;
-    if (isCompact) return;
+  const total = artworks.length;
+  const current = total > 0 ? artworks[Math.min(index, total - 1)] : null;
+  const go = (delta: number) => setIndex((i) => (i + delta + total) % total);
 
-    onClick();
-    setIsDragging(true);
-    const rect = windowRef.current?.getBoundingClientRect();
-    if (rect) {
-      setDragOffset({
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top,
-      });
-    }
-  };
-
-  useEffect(() => {
-    if (isCompact) return;
-    const handleMouseMove = (e: MouseEvent) => {
-      if (isDragging && !isMaximized) {
-        setPosition({
-          x: e.clientX - dragOffset.x,
-          y: e.clientY - dragOffset.y,
-        });
-      }
-    };
-
-    const handleMouseUp = () => {
-      setIsDragging(false);
-    };
-
-    if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-    }
-
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isDragging, dragOffset, isMaximized, isCompact]);
-
-  const handleMaximize = () => {
-    if (isMaximized) {
-      setPosition(prevPosition);
-    } else {
-      if (position) setPrevPosition(position);
-    }
-    setIsMaximized(!isMaximized);
-  };
-
-  const windowStyle = isMaximized
-    ? { top: 0, left: 0, width: '100%', height: 'calc(100% - 48px)' }
-    : isCompact
-      ? {
-          top: '12px',
-          left: '12px',
-          right: '12px',
-          bottom: '60px',
-        }
-      : position
-      ? { top: position.y, left: position.x, width: '1000px', height: '700px' }
-      : { top: 0, left: 0, width: '1000px', height: '700px', visibility: 'hidden' as const };
-
-  const handleViewOriginal = () => {
-    if (selectedArtwork?.permalink) {
-      window.open(selectedArtwork.permalink, '_blank');
-    }
+  const openOriginal = () => {
+    if (current?.permalink) window.open(current.permalink, '_blank');
   };
 
   return (
-    <div
-      ref={windowRef}
-      className={`${isCompact ? 'fixed' : 'absolute'} bg-white rounded-2xl shadow-2xl overflow-hidden transition-shadow ${
-        isActive ? 'shadow-2xl' : 'opacity-95'
-      }`}
-      style={{ ...windowStyle, zIndex }}
-      onClick={onClick}
-    >
-      <button
-        className="absolute top-4 right-4 w-3 h-3 bg-red-500 hover:bg-red-600 rounded-full z-10 window-controls"
-        onClick={onClose}
-      />
+    <div className="collection-window" style={{ zIndex }} onClick={onClick}>
+      <style>{CW_CSS}</style>
 
-      <div
-        className="px-6 py-4 cursor-move select-none"
-        onMouseDown={handleMouseDown}
-        onDoubleClick={handleMaximize}
-        style={{ borderBottom: '1px solid #F3F4F6' }}
-      >
-        <span className="text-gray-600 text-sm font-normal">{title}</span>
-      </div>
-
-      <div className="flex flex-col lg:flex-row h-[calc(100%-57px)]">
-        {/* Main content: top on mobile, right on desktop */}
-        <div className="order-1 lg:order-2 flex-1 flex flex-col p-6 overflow-hidden min-h-0">
-          {selectedArtwork ? (
-            <>
-              <div className="flex-1 min-h-0 overflow-auto mb-6 flex justify-center min-w-0">
-                <img
-                  key={selectedArtwork.src}
-                  src={selectedArtwork.src}
-                  alt={selectedArtwork.title}
-                  className="block max-w-full w-auto h-auto object-contain min-w-0"
-                  loading="eager"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-4 gap-x-6 gap-y-4 lg:gap-8 text-center mb-4 py-3 border-t border-gray-100">
-                <div className="min-w-0">
-                  <p className="text-gray-400 text-xs uppercase tracking-wide mb-1">Title</p>
-                  <p
-                    className="text-gray-700 text-xs lg:text-sm font-medium px-2 leading-snug"
-                    title={selectedArtwork.title}
-                    style={{
-                      display: '-webkit-box',
-                      WebkitBoxOrient: 'vertical',
-                      WebkitLineClamp: 2,
-                      overflow: 'hidden',
-                    }}
-                  >
-                    {selectedArtwork.title}
-                  </p>
-                </div>
-                <div className="min-w-0 hidden lg:block">
-                  <p className="text-gray-400 text-xs uppercase tracking-wide mb-1">Collection</p>
-                  <p
-                    className="text-gray-700 text-xs lg:text-sm font-medium px-2 leading-snug"
-                    title={selectedArtwork.collection}
-                    style={{
-                      display: '-webkit-box',
-                      WebkitBoxOrient: 'vertical',
-                      WebkitLineClamp: 2,
-                      overflow: 'hidden',
-                    }}
-                  >
-                    {selectedArtwork.collection || '-'}
-                  </p>
-                </div>
-                <div className="min-w-0 hidden lg:block">
-                  <p className="text-gray-400 text-xs uppercase tracking-wide mb-1">Chain</p>
-                  <p className="text-gray-700 text-xs lg:text-sm font-medium px-2 break-words leading-snug">
-                    {selectedArtwork.chain || '-'}
-                  </p>
-                </div>
-                <div className="min-w-0 hidden lg:block">
-                  <p className="text-gray-400 text-xs uppercase tracking-wide mb-1">Technique</p>
-                  <p className="text-gray-700 text-xs lg:text-sm font-medium px-2 break-words leading-snug">
-                    {selectedArtwork.technique || '-'}
-                  </p>
-                </div>
-              </div>
-
-              <button
-                onClick={handleViewOriginal}
-                disabled={!selectedArtwork.permalink}
-                className="w-full py-3 bg-slate-800 hover:bg-slate-900 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg flex items-center justify-center gap-2 transition-colors"
-              >
-                <svg 
-                  xmlns="http://www.w3.org/2000/svg" 
-                  className="h-4 w-4" 
-                  fill="none" 
-                  viewBox="0 0 24 24" 
-                  stroke="currentColor"
-                >
-                  <path 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                    strokeWidth={2} 
-                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" 
-                  />
-                </svg>
-                View Original
-              </button>
-            </>
-          ) : (
-            <div className="flex-1 flex items-center justify-center">
-              {isLoading ? (
-                <div className="text-gray-400">Loading collection...</div>
-              ) : (
-                <div className="text-gray-400">Select an artwork to view</div>
-              )}
-            </div>
-          )}
+      <div className="cw-frame">
+        <div className="cw-bar">
+          <span className="cw-t">{title}</span>
+          {total > 0 && <span className="cw-ct">{index + 1} / {total}</span>}
+          <span className="cw-ctl">
+            <button className="cw-chip window-controls" onClick={onClose} aria-label="Close">X</button>
+            <span className="cw-chip" aria-hidden="true">_</span>
+          </span>
         </div>
 
-        {/* Thumbnail strip: bottom on mobile, left on desktop */}
-        <div
-          className="order-2 lg:order-1 w-full lg:w-44 flex-shrink-0 border-t lg:border-t-0 lg:border-r border-gray-100 overflow-x-auto lg:overflow-x-visible lg:overflow-y-auto overflow-y-hidden py-3 px-4 lg:py-4 lg:px-3"
-          style={{ backgroundColor: '#FAFAFA' }}
-        >
+        <div className="cw-stage">
           {isLoading ? (
-            <div className="flex items-center justify-center h-full min-h-[80px] lg:min-h-0">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400" />
-            </div>
+            <div className="cw-spin" />
           ) : error ? (
-            <div className="text-red-500 text-xs text-center p-4">{error}</div>
+            <div className="cw-msg">{error}</div>
+          ) : current ? (
+            <>
+              {total > 1 && (
+                <button className="cw-nav prev" onClick={(e) => { e.stopPropagation(); go(-1); }} aria-label="Previous">‹</button>
+              )}
+              <div className="cw-mat">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  key={current.src}
+                  className="cw-art"
+                  src={current.src}
+                  alt={current.title}
+                  title={current.permalink ? 'View original ↗' : current.title}
+                  loading="eager"
+                  onClick={(e) => { e.stopPropagation(); openOriginal(); }}
+                />
+              </div>
+              {total > 1 && (
+                <button className="cw-nav next" onClick={(e) => { e.stopPropagation(); go(1); }} aria-label="Next">›</button>
+              )}
+              <div className="cw-cap">{current.title}</div>
+            </>
           ) : (
-            <div className="flex flex-row lg:flex-col gap-3 lg:gap-4">
-              {artworks.map((artwork, index) => (
-                <div
-                  key={artwork.id}
-                  className={`flex-shrink-0 w-20 lg:w-full cursor-pointer transition-all duration-200 rounded-lg overflow-hidden bg-white ${
-                    selectedArtwork?.id === artwork.id
-                      ? 'ring-2 ring-slate-800 shadow-md'
-                      : 'hover:shadow-md hover:ring-1 hover:ring-gray-300'
-                  }`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedArtwork(artwork);
-                  }}
-                >
-                  <div className="relative aspect-square w-full bg-gray-50">
-                    <img
-                      src={artwork.src}
-                      alt={artwork.title}
-                      className="w-full h-full object-contain"
-                    />
-                  </div>
-                  <div className="p-1.5 lg:p-2 bg-white">
-                    <p className="text-xs text-gray-600 truncate text-center" title={artwork.title}>
-                      {artwork.title || `artwork_${String(index + 1).padStart(2, '0')}.jpg`}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <div className="cw-msg">No works to show.</div>
           )}
         </div>
       </div>
     </div>
   );
 }
-
