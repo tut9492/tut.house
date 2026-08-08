@@ -225,9 +225,9 @@ const HUB_CSS = `
 
 /* GALLERY */
 #collectors-hub .gallery { display:flex; gap:20px; padding:22px; overflow-x:auto; background:linear-gradient(#fff,#fcfcfb); }
-#collectors-hub .ch-frame { flex:none; width:210px; text-decoration:none; }
-#collectors-hub .ch-frame .ch-mat { padding:14px; }
-#collectors-hub .ch-frame .cap { font:500 11.5px/1.3 var(--sans); color:#5a5a62; margin-top:9px; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#collectors-hub .gal-frame { flex:none; width:210px; text-decoration:none; }
+#collectors-hub .gal-frame .ch-mat { padding:14px; }
+#collectors-hub .gal-frame .cap { font:500 11.5px/1.3 var(--sans); color:#5a5a62; margin-top:9px; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 #collectors-hub .gal-empty { padding:40px 18px; font-size:13px; color:var(--label); }
 
 /* DISCORD */
@@ -620,7 +620,7 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
                 {artworks.map((a) => (
                   <a
                     key={`${a.collectionSlug}-${a.tokenId}`}
-                    className="ch-frame"
+                    className="gal-frame"
                     href={a.permalink || undefined}
                     target="_blank"
                     rel="noreferrer"
