@@ -6,27 +6,35 @@ interface FolderProps {
   id: string;
   name: string;
   onClick: () => void;
+  /** Optional art/icon shown inside the folder. Falls back to the plain folder. */
+  image?: string;
 }
 
-export default function Folder({ name, onClick }: FolderProps) {
+export default function Folder({ name, onClick, image }: FolderProps) {
   return (
     <div
       className="flex flex-col items-center cursor-pointer group"
       onClick={onClick}
       onDoubleClick={onClick}
     >
-      
-      <div className="relative w-16 h-16 lg:w-20 lg:h-20 mb-2">
+      <div className="relative w-28 h-28 lg:w-36 lg:h-36 mb-3">
         <Image
           src="/assets/images/folderTut.png"
           alt={`${name} folder`}
-          width={80}
-          height={80}
-          className="drop-shadow-lg transition-transform group-hover:scale-110"
+          width={160}
+          height={160}
+          className="w-full h-full object-contain drop-shadow-xl transition-transform group-hover:scale-105"
         />
+        {image && (
+          <div className="absolute inset-0 flex items-end justify-center pb-[15%]">
+            <div className="relative w-[64%] h-[54%] overflow-hidden rounded-md shadow-md ring-1 ring-black/10">
+              <Image src={image} alt={name} fill sizes="160px" className="object-cover" />
+            </div>
+          </div>
+        )}
       </div>
 
-      <span className="text-white text-xs lg:text-sm font-medium px-2 py-1 text-center max-w-[140px] break-words [text-shadow:0_1px_4px_rgba(0,0,0,0.55)]">
+      <span className="text-white text-sm lg:text-base font-semibold px-2 py-1 text-center max-w-[160px] break-words [text-shadow:0_1px_4px_rgba(0,0,0,0.6)]">
         {name}
       </span>
     </div>

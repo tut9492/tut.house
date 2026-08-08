@@ -211,7 +211,7 @@ export default function Desktop() {
 
       <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
         <div className="w-[calc(100vw-2rem)] lg:w-auto">
-          <div className="grid grid-cols-2 gap-x-16 gap-y-12 place-items-center lg:flex lg:flex-nowrap lg:items-center lg:justify-center lg:gap-[120px]">
+          <div className="grid grid-cols-2 gap-x-10 gap-y-10 place-items-center lg:flex lg:flex-nowrap lg:items-center lg:justify-center lg:gap-[72px]">
             {folders
               .filter(f => ['physical-art', 'digital-art', 'buy-art', 'collectors-hub', 'about', 'design-agency'].includes(f.id))
               .map((folder) => (
