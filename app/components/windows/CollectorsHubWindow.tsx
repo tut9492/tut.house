@@ -150,15 +150,22 @@ const HUB_CSS = `
   --blurple:#5865f2; --blue:#a9c6e8; --navy:#1d2532; --olive:#6f8600;
   --label:#8a8a93; --hair:#ececec; --hair2:#e0e0e0;
   --shadow:4px 5px 0 0 rgba(20,16,30,.26), 0 16px 30px -12px rgba(30,20,45,.5);
-  position:fixed; top:0; left:0; right:0; bottom:48px; overflow-y:auto;
-  padding:26px 30px 60px; color:var(--ink);
+  position:fixed; top:0; left:0; right:0; bottom:48px; overflow:hidden;
+  padding:16px; color:var(--ink);
   font-family:var(--sans); -webkit-font-smoothing:antialiased;
   background:#c3b8cb url(/assets/images/hubClouds.jpg) center/cover fixed no-repeat;
 }
 /* pink gradient layered ABOVE the clouds for the dusk effect */
 #collectors-hub::before { content:""; position:fixed; top:0; left:0; right:0; bottom:48px; background:url(/assets/images/hubPink.jpg) center/cover no-repeat; opacity:.6; mix-blend-mode:multiply; pointer-events:none; z-index:0; }
-#collectors-hub .ch-top, #collectors-hub .desk, #collectors-hub .hub-footer { position:relative; z-index:1; }
-#collectors-hub .ch-top { display:flex; align-items:flex-start; justify-content:space-between; max-width:1180px; margin:0 auto 22px; }
+/* the whole Hub, framed as one window on the dusk desktop */
+#collectors-hub .ch-frame { position:relative; z-index:1; height:100%; display:flex; flex-direction:column; border:3px solid #000; border-radius:14px; box-shadow:5px 6px 0 0 rgba(20,16,30,.26), 0 20px 40px -14px rgba(30,20,45,.5); overflow:hidden; }
+#collectors-hub .ch-titlebar { flex:none; display:flex; align-items:center; gap:12px; padding:11px 18px; border-bottom:3px solid #000; background:#fff; }
+#collectors-hub .ch-wm-sm { width:44px; height:20px; background:url(/assets/images/tutLogo.png) left center/contain no-repeat; filter:brightness(0); flex:none; }
+#collectors-hub .ch-winttl { font:700 14.5px/1 var(--mono); letter-spacing:.12em; text-transform:uppercase; color:#161616; }
+#collectors-hub .ch-winctl { margin-left:auto; display:flex; gap:5px; }
+#collectors-hub .ch-chip { width:26px; height:22px; border:2.5px solid #000; border-radius:5px; background:#ededed; font:700 12px/1 var(--mono); display:grid; place-items:center; color:#000; cursor:pointer; padding:0; }
+#collectors-hub .ch-chip:hover { filter:brightness(.94); }
+#collectors-hub .ch-framebody { flex:1; overflow-y:auto; padding:24px 28px 44px; }
 #collectors-hub .ch-wordmark { width:120px; height:52px; background-repeat:no-repeat; background-position:left center; background-size:contain; filter:brightness(0); }
 #collectors-hub .ch-hubclose { width:30px; height:26px; border:3px solid #000; border-radius:6px; background:#ededed; font:700 15px/1 var(--mono); color:#000; cursor:pointer; box-shadow:3px 3px 0 0 rgba(20,16,30,.24); display:grid; place-items:center; padding:0; }
 #collectors-hub .ch-hubclose:hover { filter:brightness(.94); }
@@ -498,10 +505,16 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
     <div id="collectors-hub" className={signedIn ? '' : 'sealed'} style={{ zIndex }} onClick={onClick}>
       <style>{HUB_CSS}</style>
 
-      <div className="ch-top">
-        <div className="ch-wordmark" style={{ backgroundImage: 'url(/assets/images/tutLogo.png)' }} aria-label="tut" />
-        <button className="ch-hubclose window-controls" onClick={onClose} aria-label="Close">X</button>
-      </div>
+      <div className="ch-frame">
+        <div className="ch-titlebar">
+          <span className="ch-wm-sm" aria-label="tut" />
+          <span className="ch-winttl">Collectors Hub</span>
+          <span className="ch-winctl">
+            <button className="ch-chip window-controls" onClick={onClose} aria-label="Close">X</button>
+            <span className="ch-chip" aria-hidden="true">_</span>
+          </span>
+        </div>
+        <div className="ch-framebody">
 
       <div className="desk">
         {/* ================= LEFT COLUMN ================= */}
@@ -670,6 +683,9 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
         <a href="/security" target="_blank" rel="noreferrer">Security</a>
         <a href="/privacy" target="_blank" rel="noreferrer">Privacy</a>
         <a href="/terms" target="_blank" rel="noreferrer">Terms</a>
+      </div>
+
+        </div>
       </div>
     </div>
   );
