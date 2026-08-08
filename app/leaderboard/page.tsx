@@ -19,13 +19,10 @@ const PAGE_CSS = `
   --shadow:4px 5px 0 0 rgba(20,16,30,.26), 0 16px 30px -12px rgba(30,20,45,.5);
   min-height:100vh; padding:34px 24px 70px; color:var(--ink);
   font-family:var(--sans); -webkit-font-smoothing:antialiased;
-  background:
-    radial-gradient(70% 50% at 18% 8%, rgba(255,246,250,.75), transparent 60%),
-    radial-gradient(60% 45% at 82% 22%, rgba(240,224,236,.6), transparent 62%),
-    radial-gradient(80% 55% at 60% 96%, rgba(196,206,226,.55), transparent 60%),
-    radial-gradient(50% 40% at 40% 60%, rgba(255,255,255,.35), transparent 65%),
-    linear-gradient(170deg,#c7c3d4 0%,#d4bcc6 42%,#c3b8cb 68%,#b7c1d3 100%);
+  background:#c3b8cb url(/assets/images/hubClouds.jpg) center/cover fixed no-repeat;
 }
+#lb-page::before { content:""; position:fixed; inset:0; background:url(/assets/images/hubPink.jpg) center/cover no-repeat; opacity:.6; mix-blend-mode:multiply; pointer-events:none; z-index:0; }
+#lb-page .lb-top, #lb-page .win, #lb-page .foot { position:relative; z-index:1; }
 #lb-page .lb-top { display:flex; align-items:center; justify-content:space-between; max-width:760px; margin:0 auto 22px; }
 #lb-page .lb-wordmark { width:104px; height:46px; background-repeat:no-repeat; background-position:left center; background-size:contain; filter:brightness(0); }
 #lb-page .lb-back { font:600 12.5px/1 var(--sans); color:#3a3a44; text-decoration:none; border:2.5px solid #000; border-radius:8px; background:#fff; padding:9px 14px; box-shadow:2px 2px 0 0 rgba(20,16,30,.22); }

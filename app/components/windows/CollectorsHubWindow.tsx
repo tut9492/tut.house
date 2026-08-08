@@ -153,13 +153,11 @@ const HUB_CSS = `
   position:fixed; top:0; left:0; right:0; bottom:48px; overflow-y:auto;
   padding:26px 30px 60px; color:var(--ink);
   font-family:var(--sans); -webkit-font-smoothing:antialiased;
-  background:
-    radial-gradient(70% 50% at 18% 8%, rgba(255,246,250,.75), transparent 60%),
-    radial-gradient(60% 45% at 82% 22%, rgba(240,224,236,.6), transparent 62%),
-    radial-gradient(80% 55% at 60% 96%, rgba(196,206,226,.55), transparent 60%),
-    radial-gradient(50% 40% at 40% 60%, rgba(255,255,255,.35), transparent 65%),
-    linear-gradient(170deg,#c7c3d4 0%,#d4bcc6 42%,#c3b8cb 68%,#b7c1d3 100%);
+  background:#c3b8cb url(/assets/images/hubClouds.jpg) center/cover fixed no-repeat;
 }
+/* pink gradient layered ABOVE the clouds for the dusk effect */
+#collectors-hub::before { content:""; position:fixed; top:0; left:0; right:0; bottom:48px; background:url(/assets/images/hubPink.jpg) center/cover no-repeat; opacity:.6; mix-blend-mode:multiply; pointer-events:none; z-index:0; }
+#collectors-hub .ch-top, #collectors-hub .desk, #collectors-hub .hub-footer { position:relative; z-index:1; }
 #collectors-hub .ch-top { display:flex; align-items:flex-start; justify-content:space-between; max-width:1180px; margin:0 auto 22px; }
 #collectors-hub .ch-wordmark { width:120px; height:52px; background-repeat:no-repeat; background-position:left center; background-size:contain; filter:brightness(0); }
 #collectors-hub .ch-hubclose { width:30px; height:26px; border:3px solid #000; border-radius:6px; background:#ededed; font:700 15px/1 var(--mono); color:#000; cursor:pointer; box-shadow:3px 3px 0 0 rgba(20,16,30,.24); display:grid; place-items:center; padding:0; }
