@@ -186,21 +186,25 @@ export default function Desktop() {
 
   return (
     <div className="relative w-full h-[100svh] overflow-hidden bg-black">
-      <Image
-        src="/assets/images/tutWebsiteWallpaper.png"
-        alt="Desktop Background"
-        fill
-        className="object-cover"
-        priority
+      {/* dusk background: cloud photo base + pink gradient blended above (matches the Hub) */}
+      <div
+        className="absolute inset-0"
+        style={{ background: '#c3b8cb url(/assets/images/hubClouds.jpg) center/cover no-repeat' }}
+      />
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{ background: 'url(/assets/images/hubPink.jpg) center/cover no-repeat', opacity: 0.6, mixBlendMode: 'multiply' }}
       />
 
-      <div className="absolute top-6 lg:top-8 left-1/2 -translate-x-1/2 z-10">
+      {/* small black tut wordmark, top-left (matches the Hub) */}
+      <div className="absolute top-6 left-6 lg:top-8 lg:left-8 z-10">
         <Image
           src="/assets/images/tutLogo.png"
-          alt="tut Logo"
-          width={400}
-          height={150}
-          className="w-[240px] lg:w-[400px] h-auto"
+          alt="tut"
+          width={120}
+          height={52}
+          className="w-[92px] lg:w-[110px] h-auto"
+          style={{ filter: 'brightness(0)' }}
           priority
         />
       </div>

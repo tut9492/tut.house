@@ -26,7 +26,7 @@ export default function Folder({ name, onClick }: FolderProps) {
         />
       </div>
 
-      <span className="text-white text-xs lg:text-sm font-medium px-2 py-1 text-center max-w-[140px] break-words">
+      <span className="text-white text-xs lg:text-sm font-medium px-2 py-1 text-center max-w-[140px] break-words [text-shadow:0_1px_4px_rgba(0,0,0,0.55)]">
         {name}
       </span>
     </div>
