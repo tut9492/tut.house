@@ -173,7 +173,7 @@ export default function DesignAgencyWindow({ title, onClose, isActive, onClick, 
 
       <div className="px-6 pb-6 h-[calc(100%-56px)] bg-white overflow-auto">
         <div className="mt-8 mb-8 text-center">
-          <h2 className="text-gray-800 text-xl font-medium mb-2">Design Agency</h2>
+          <h2 className="text-gray-800 text-xl font-medium mb-2">Creative Agency</h2>
           <p className="text-gray-400 text-sm max-w-md mx-auto">
             Creative solutions for brands, products, and digital experiences.
           </p>

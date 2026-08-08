@@ -47,12 +47,12 @@ export default function Desktop() {
   const [collectionNamesBySlug, setCollectionNamesBySlug] = useState<Record<string, string>>({});
 
   const folders = [
-    { id: 'physical-art', name: 'Physical Art', contentType: 'physical-art' as const },
-    { id: 'digital-art', name: 'Digital Art', contentType: 'folders' as const },
-    { id: 'buy-art', name: 'Buy Art', contentType: 'folders' as const },
     { id: 'collectors-hub', name: 'Collectors Hub', contentType: 'collectors-hub' as const },
+    { id: 'digital-art', name: 'Digital Art', contentType: 'folders' as const },
+    { id: 'design-agency', name: 'Creative Agency', contentType: 'design-agency' as const },
+    { id: 'physical-art', name: 'Physical Art', contentType: 'physical-art' as const },
     { id: 'about', name: 'About', contentType: 'about' as const },
-    { id: 'design-agency', name: 'Design Agency', contentType: 'design-agency' as const },
+    { id: 'buy-art', name: 'Buy Art', contentType: 'folders' as const },
     { id: 'collection-01', name: 'Collection_01', contentType: 'images' as const, openseaSlug: 'obsessive-cycles-of-fiber' },
     { id: 'collection-02', name: 'Collection_02', contentType: 'images' as const, openseaSlug: 'tut-1-1' },
     { id: 'collection-03', name: 'Collection_03', contentType: 'images' as const, openseaSlug: 'kingtut-genesis' },
