@@ -205,7 +205,7 @@ const HUB_CSS = `
 /* Each panel: rounded TOP, straight bottom. The next panel down tucks up by >= the corner
    radius so it buries the square bottom corners of the panel above — that overlap is what
    makes the flat bottom read as "hidden under" the next window. */
-#collectors-hub .stack > .win { border:3px solid #000; border-radius:10px 10px 0 0; box-shadow:0 -9px 16px -8px rgba(20,16,30,.7); }
+#collectors-hub .stack > .win { border:3px solid #000; border-radius:10px 10px 0 0; box-shadow:var(--shadow), 0 -8px 16px -6px rgba(20,16,30,.5); }
 #collectors-hub .stack > .win:first-child { box-shadow:var(--shadow); }
 #collectors-hub .stack > .win:not(:first-child) { margin-top:-10px; }
 /* the stack's outer bottom edge (last panel) gets rounded corners for a finished edge */
@@ -222,7 +222,7 @@ const HUB_CSS = `
 
 /* FAMILY MEMBER */
 #collectors-hub .fm-body { display:flex; flex-direction:column; align-items:center; gap:16px; padding:26px 18px 30px; }
-#collectors-hub .ch-avatar { width:150px; height:150px; border-radius:22px; background-size:cover; background-position:center; box-shadow:0 6px 16px -6px rgba(0,0,0,.4); }
+#collectors-hub .ch-avatar { width:min(268px,100%); aspect-ratio:1; height:auto; border-radius:26px; background-size:cover; background-position:center; box-shadow:0 8px 20px -8px rgba(0,0,0,.42); }
 #collectors-hub .ch-avatar.empty { background:transparent; box-shadow:none; border:2px dashed #cdcdcd; }
 #collectors-hub .fm-name { font:700 26px/1 var(--mono); letter-spacing:.06em; color:#161616; }
 #collectors-hub .fm-signin { display:flex; flex-direction:column; align-items:center; gap:12px; }
