@@ -29,3 +29,35 @@ body {
   user-select: none;
   -webkit-touch-callout: none;
 }
+
+/* Idle "light sweep" over the desktop folder icons — a diagonal sheen clipped to the
+   folder shape that travels across, then rests. Staggered per folder so the light
+   appears to move across the row. Runs only while the desktop is stale (idle). */
+@keyframes folderSweep {
+  0%   { transform: translateX(-140%); }
+  20%  { transform: translateX(140%); }
+  100% { transform: translateX(140%); }
+}
+.folder-sheen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  opacity: 0;
+  -webkit-mask: url(/assets/images/folderTut.png) center/contain no-repeat;
+  mask: url(/assets/images/folderTut.png) center/contain no-repeat;
+}
+.folder-sheen.on { opacity: 1; }
+.folder-sheen .band {
+  position: absolute;
+  top: -25%;
+  bottom: -25%;
+  left: 0;
+  width: 60%;
+  transform: translateX(-140%);
+  background: linear-gradient(105deg, rgba(255,255,255,0) 35%, rgba(255,255,255,0.6) 50%, rgba(255,255,255,0) 65%);
+}
+.folder-sheen.on .band { animation: folderSweep 4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .folder-sheen.on .band { animation: none; }
+}

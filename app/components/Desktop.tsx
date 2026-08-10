@@ -47,6 +47,25 @@ export default function Desktop() {
   const [windowStack, setWindowStack] = useState<string[]>([]);
   const [prefetchedBySlug, setPrefetchedBySlug] = useState<Record<string, PrefetchedArtwork[]>>({});
   const [collectionNamesBySlug, setCollectionNamesBySlug] = useState<Record<string, string>>({});
+  const [stale, setStale] = useState(false);
+
+  // Idle detection: after 5s of no interaction the desktop is "stale" and the folders run a
+  // light-sweep sheen. Any activity cancels it and restarts the countdown.
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+    const markActive = () => {
+      setStale(false);
+      clearTimeout(timer);
+      timer = setTimeout(() => setStale(true), 5000);
+    };
+    const events = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'wheel'];
+    events.forEach((e) => window.addEventListener(e, markActive, { passive: true }));
+    markActive();
+    return () => {
+      clearTimeout(timer);
+      events.forEach((e) => window.removeEventListener(e, markActive));
+    };
+  }, []);
 
   const folders = [
     { id: 'collectors-hub', name: 'Collectors Hub', contentType: 'collectors-hub' as const },
@@ -219,12 +238,14 @@ export default function Desktop() {
           <div className="grid grid-cols-2 gap-x-10 gap-y-10 place-items-center lg:flex lg:flex-nowrap lg:items-center lg:justify-center lg:gap-[72px]">
             {folders
               .filter(f => ['physical-art', 'digital-art', 'collectors-hub', 'about', 'design-agency'].includes(f.id))
-              .map((folder) => (
+              .map((folder, i) => (
                 <Folder
                   key={folder.id}
                   id={folder.id}
                   name={folder.name}
                   onClick={() => handleFolderClick(folder.id)}
+                  shimmer={stale}
+                  index={i}
                 />
               ))}
           </div>

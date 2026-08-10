@@ -8,9 +8,13 @@ interface FolderProps {
   onClick: () => void;
   /** Optional art/icon shown inside the folder. Falls back to the plain folder. */
   image?: string;
+  /** When true, runs the idle light-sweep sheen across the folder. */
+  shimmer?: boolean;
+  /** Position in the row — staggers the sweep so the light travels across. */
+  index?: number;
 }
 
-export default function Folder({ name, onClick, image }: FolderProps) {
+export default function Folder({ name, onClick, image, shimmer, index = 0 }: FolderProps) {
   return (
     <div
       className="flex flex-col items-center cursor-pointer group"
@@ -32,6 +36,9 @@ export default function Folder({ name, onClick, image }: FolderProps) {
             </div>
           </div>
         )}
+        <div className={`folder-sheen${shimmer ? ' on' : ''}`} aria-hidden="true">
+          <div className="band" style={{ animationDelay: `${index * 0.18}s` }} />
+        </div>
       </div>
 
       <span className="text-white text-sm lg:text-base font-semibold px-2 py-1 text-center max-w-[160px] break-words [text-shadow:0_1px_4px_rgba(0,0,0,0.6)]">
