@@ -45,6 +45,7 @@ type ScoreCollection = {
   count: number;
   score: number;
   artworks: OwnedArtwork[];
+  logo?: string;
 };
 
 type ScoreBreakdown = {
@@ -612,7 +613,7 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
             <div className="badges">
               {(badgeCollections || []).map((c) => {
                 const owned = c.count > 0;
-                const img = c.artworks?.[0]?.image;
+                const img = c.artworks?.[0]?.image || c.logo;
                 const tint = SWATCH[c.slug] || '#c9c9cf';
                 return (
                   <div key={c.slug} className={`ch-badge${owned ? '' : ' locked'}`} title={`${c.name}${owned ? ` · ×${c.count}` : ''}`}>

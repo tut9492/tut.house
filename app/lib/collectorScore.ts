@@ -100,6 +100,9 @@ export type ScoreCollection = {
   count: number;
   score: number;
   artworks: OwnedArtwork[];
+  // Collection-level image (from on-chain contractURI) — used as the badge thumbnail for
+  // chains without an NFT metadata API (MegaETH/Breadio), which have count but no per-token art.
+  logo?: string;
 };
 
 export type ScoreBreakdown = {
@@ -319,6 +322,56 @@ async function fetchCountViaRpc(
   }
 }
 
+// Decode a solidity `string` return value (offset + length + data) into UTF-8.
+function decodeAbiString(result: string): string {
+  const hex = result.startsWith('0x') ? result.slice(2) : result;
+  if (hex.length < 128) return '';
+  const offset = parseInt(hex.slice(0, 64), 16) * 2;
+  const len = parseInt(hex.slice(offset, offset + 64), 16) * 2;
+  const strHex = hex.slice(offset + 64, offset + 64 + len);
+  return Buffer.from(strHex, 'hex').toString('utf8');
+}
+
+// Chains without an NFT metadata API still expose a collection image via ERC-7572
+// contractURI() (selector 0xe8a3d485). Read it on-chain and pull the `image` field so the
+// badge can show real art instead of a blank swatch.
+async function fetchCollectionLogoViaRpc(
+  subdomain: string,
+  apiKey: string,
+  contract: string,
+): Promise<string> {
+  try {
+    const res = await fetch(`https://${subdomain}.g.alchemy.com/v2/${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      cache: 'no-store',
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'eth_call',
+        params: [{ to: contract, data: '0xe8a3d485' }, 'latest'],
+      }),
+    });
+    if (!res.ok) return '';
+    const json = await res.json();
+    if (json?.error || !json?.result || json.result === '0x') return '';
+    const uri = decodeAbiString(json.result);
+    if (!uri) return '';
+    if (uri.startsWith('data:application/json')) {
+      const comma = uri.indexOf(',');
+      const payload = uri.slice(comma + 1);
+      const jsonStr = uri.slice(0, comma).includes('base64')
+        ? Buffer.from(payload, 'base64').toString('utf8')
+        : decodeURIComponent(payload);
+      const meta = JSON.parse(jsonStr);
+      return normalizeIpfsUrl(meta?.image || '');
+    }
+    return ''; // an http(s) contractURI would need a second fetch — skip for now
+  } catch {
+    return '';
+  }
+}
+
 export async function getTutCollectionHoldings(wallet: string, maxPerCollection = 100): Promise<ScoreCollection[]> {
   const normalized = normalizeWallet(wallet);
   const apiKey = process.env.ALCHEMY_API_KEY;
@@ -332,13 +385,19 @@ export async function getTutCollectionHoldings(wallet: string, maxPerCollection 
     const subdomain = ALCHEMY_SUBDOMAIN[collection.chain];
     let count = 0;
     let artworks: OwnedArtwork[] = [];
+    let logo: string | undefined;
 
     if (subdomain) {
       try {
         if (ALCHEMY_NFT_API_CHAINS.has(collection.chain)) {
           ({ count, artworks } = await fetchHoldingsViaNftApi(subdomain, apiKey, normalized, collection, maxPerCollection));
         } else {
+          // RPC-only chains (MegaETH/Breadio): count via balanceOf, and if held, grab the
+          // collection image from contractURI so the badge isn't blank.
           count = await fetchCountViaRpc(subdomain, apiKey, normalized, collection);
+          if (count > 0) {
+            logo = (await fetchCollectionLogoViaRpc(subdomain, apiKey, collection.contract)) || undefined;
+          }
         }
       } catch {
         // A single collection's read failing (e.g. a chain not enabled on the Alchemy app)
@@ -358,6 +417,7 @@ export async function getTutCollectionHoldings(wallet: string, maxPerCollection 
       count,
       score: count * collection.weight,
       artworks,
+      logo,
     };
   }));
 }
