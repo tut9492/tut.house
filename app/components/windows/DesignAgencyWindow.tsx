@@ -20,7 +20,6 @@ const TEAMS: { id: string; name: string; cover?: string; href?: string }[] = [
   { id: 'tutloudio', name: 'Tut Loudio', cover: '/assets/images/tutloudio.png' },
 ];
 
-const SERVICES = ['Art', 'Marketing', 'Websites', 'On-chain creation'];
 
 const AGENCY_CSS = `
 .agency { --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace; --sans:"Segoe UI",-apple-system,Helvetica,Arial,sans-serif; max-width:1080px; margin:0 auto; display:flex; flex-direction:column; gap:24px; }
@@ -61,15 +60,6 @@ export default function DesignAgencyWindow({ title, onClose, onClick, zIndex }: 
               product. Tut does everything — art, marketing, websites, and on-chain creation — so a
               project can launch and grow from one place.
             </p>
-            <div className="svc">
-              {SERVICES.map((s) => <span key={s}>{s}</span>)}
-            </div>
-            <button
-              className="cta"
-              onClick={(e) => { e.stopPropagation(); window.open('https://x.com/Tuteth_', '_blank', 'noopener,noreferrer'); }}
-            >
-              Get in Touch ↗
-            </button>
           </div>
         </div>
 
