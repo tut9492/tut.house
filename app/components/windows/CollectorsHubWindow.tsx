@@ -203,7 +203,9 @@ const HUB_CSS = `
 #collectors-hub .stack > .win { border:none; border-radius:0; box-shadow:none; }
 #collectors-hub .stack > .win + .win { border-top:3px solid #000; }
 #collectors-hub .stack > .win .bar { border-bottom:none; }
-#collectors-hub .stack > .win:has(.badges) .bar { border-bottom:3px solid #000; }
+/* a bar that sits above a body (Family Member, Badges) keeps its divider; bar-only
+   windows (Status, Gold Stars) don't */
+#collectors-hub .stack > .win .bar:not(:only-child) { border-bottom:3px solid #000; }
 #collectors-hub .col-right { min-width:0; }
 #collectors-hub .full { grid-column:1 / -1; }
 #collectors-hub .trio { display:grid; grid-template-columns:1.05fr 1.2fr 1fr; gap:22px; }
@@ -566,6 +568,7 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
         {/* ================= LEFT COLUMN ================= */}
         <div className="col-left">
 
+          <div className="stack">
           {/* FAMILY MEMBER */}
           <div className="win w-lime">
             <div className="bar"><span className="t">Family Member</span><span className="ctl"><b>_</b><b>X</b></span></div>
@@ -610,7 +613,6 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
             </div>
           </div>
 
-          <div className="stack">
           {/* STATUS */}
           <div className="win w-pink">
             <div className="bar"><span className="t">Status — {statusLabel}</span><span className="ctl"><b>_</b><b>X</b></span></div>
