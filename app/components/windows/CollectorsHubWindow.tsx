@@ -196,17 +196,22 @@ const HUB_CSS = `
 #collectors-hub .w-blurple .ctl b { background:#cdd2fb; }
 #collectors-hub .w-blue .bar { background:var(--blue); }
 
-#collectors-hub .desk { display:grid; grid-template-columns:352px 1fr; gap:22px; align-items:start; max-width:1180px; margin:0 auto; }
+#collectors-hub .desk { display:grid; grid-template-columns:352px 1fr; gap:22px; align-items:stretch; max-width:1180px; margin:0 auto; }
 #collectors-hub .col-left { display:flex; flex-direction:column; gap:16px; }
-/* STATUS + GOLD STARS + BADGES fused into one connected panel (no gaps, shared borders) */
-#collectors-hub .stack { display:flex; flex-direction:column; border:3px solid #000; border-radius:12px; overflow:hidden; box-shadow:var(--shadow); }
-#collectors-hub .stack > .win { border:none; border-radius:0; box-shadow:none; }
-#collectors-hub .stack > .win + .win { border-top:3px solid #000; }
+/* Family Member + Status + Gold Stars + Badges — stacked like overlapping windows:
+   each keeps its own border + rounded top corners and tucks under the one above,
+   with a seam shadow so it reads as layered panes. */
+#collectors-hub .stack { display:flex; flex-direction:column; }
+#collectors-hub .stack > .win { border:3px solid #000; border-radius:13px 13px 0 0; box-shadow:0 -6px 13px -7px rgba(20,16,30,.55); }
+#collectors-hub .stack > .win:first-child { box-shadow:var(--shadow); }
+#collectors-hub .stack > .win:not(:first-child) { margin-top:-4px; }
+#collectors-hub .stack > .win:last-child { border-radius:13px 13px 12px 12px; }
 #collectors-hub .stack > .win .bar { border-bottom:none; }
 /* a bar that sits above a body (Family Member, Badges) keeps its divider; bar-only
    windows (Status, Gold Stars) don't */
 #collectors-hub .stack > .win .bar:not(:only-child) { border-bottom:3px solid #000; }
-#collectors-hub .col-right { min-width:0; }
+#collectors-hub .col-right { min-width:0; display:flex; flex-direction:column; }
+#collectors-hub .col-right > .win { flex:1; display:flex; flex-direction:column; }
 #collectors-hub .full { grid-column:1 / -1; }
 #collectors-hub .trio { display:grid; grid-template-columns:1.05fr 1.2fr 1fr; gap:22px; }
 @media (max-width:880px){ #collectors-hub .desk { grid-template-columns:1fr; } #collectors-hub .trio { grid-template-columns:1fr; } }
@@ -237,12 +242,16 @@ const HUB_CSS = `
 #collectors-hub .ch-badge.locked .lock { display:grid; }
 
 /* ESTEEMED WORKS */
-#collectors-hub .esteem-body { padding:18px 22px 20px; background:linear-gradient(#fff,#fbfbfa); }
-#collectors-hub .ch-mat { background:#fff; padding:20px; border-radius:4px; box-shadow:0 20px 44px -20px rgba(0,0,0,.45), 0 0 0 1px #eee; display:flex; justify-content:center; }
+#collectors-hub .esteem-body { flex:1; display:flex; flex-direction:column; padding:18px 22px 18px; background:linear-gradient(#fff,#fbfbfa); }
+#collectors-hub .ch-mat { background:#fff; padding:20px; border-radius:4px; box-shadow:0 20px 44px -20px rgba(0,0,0,.45), 0 0 0 1px #eee; display:flex; align-items:center; justify-content:center; }
 #collectors-hub .ch-art { width:100%; aspect-ratio:4/5; border-radius:2px; background-size:cover; background-position:center; background-color:#efeae2; }
-/* Large display piece: bound the height to the viewport so it never forces the Hub to scroll.
-   Height drives width via the portrait aspect ratio, so the piece stays framed and centered. */
-#collectors-hub .ch-art.hero { aspect-ratio:3/3.4; width:auto; max-width:100%; height:min(46vh,500px); }
+/* Feature piece: the frame height is set by the left profile stack (grid stretch); the mat
+   grows to fill it and the art uses background-size:contain, so ANY aspect ratio (square,
+   2:3, landscape…) shows in full, centered, and never cropped. */
+#collectors-hub .esteem-cap { flex:none; }
+#collectors-hub .esteem-empty { margin:auto; }
+#collectors-hub .col-right > .win .esteem-body .ch-mat { flex:1; min-height:0; }
+#collectors-hub .ch-art.hero { width:100%; height:100%; aspect-ratio:auto; background-size:contain; background-repeat:no-repeat; background-position:center; background-color:transparent; }
 #collectors-hub .esteem-cap { display:flex; justify-content:space-between; align-items:baseline; gap:12px; margin-top:14px; padding:0 2px; }
 #collectors-hub .esteem-cap .ti { font:600 15px/1.25 var(--sans); color:#1a1a1a; }
 #collectors-hub .esteem-cap .wt { font:700 12px/1 var(--mono); color:var(--olive); white-space:nowrap; }
