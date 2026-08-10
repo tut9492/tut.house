@@ -140,6 +140,39 @@ export async function fetchDiscordUser(accessToken: string): Promise<{ id: strin
   return res.json();
 }
 
+// Map of collection slug -> Discord role id, from DISCORD_COLLECTION_ROLES (JSON). This is how
+// the verifier grants the right NFT roles based on what a collector actually holds.
+function collectionRoleMap(): Record<string, string> {
+  const raw = process.env.DISCORD_COLLECTION_ROLES;
+  if (!raw) return {};
+  try {
+    return JSON.parse(raw) as Record<string, string>;
+  } catch {
+    return {};
+  }
+}
+
+// Grant every role that maps to a collection the wallet owns. De-duplicated; skips unknowns.
+export async function assignCollectionRoles(discordUserId: string, ownedSlugs: string[]): Promise<DiscordRoleResult[]> {
+  const guildId = process.env.DISCORD_GUILD_ID;
+  const botToken = process.env.DISCORD_BOT_TOKEN;
+  if (!guildId || !botToken) throw new Error('Missing Discord guild or bot token');
+
+  const map = collectionRoleMap();
+  const roleIds = [...new Set(ownedSlugs.map((s) => map[s]).filter(Boolean))];
+
+  const results: DiscordRoleResult[] = [];
+  for (const roleId of roleIds) {
+    const res = await fetch(
+      `https://discord.com/api/v10/guilds/${guildId}/members/${discordUserId}/roles/${roleId}`,
+      { method: 'PUT', headers: { Authorization: `Bot ${botToken}`, 'Content-Length': '0' } },
+    );
+    const text = res.ok ? '' : await res.text();
+    results.push({ roleId, name: roleId, ok: res.ok || res.status === 204, status: res.status, error: text || undefined });
+  }
+  return results;
+}
+
 export async function assignDiscordRoles(discordUserId: string, score: number): Promise<DiscordRoleResult[]> {
   const guildId = process.env.DISCORD_GUILD_ID;
   const botToken = process.env.DISCORD_BOT_TOKEN;

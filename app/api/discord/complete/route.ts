@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCollectorScore, scoreRank, verifyDiscordWalletProof } from '@/app/lib/collectorScore';
-import { assignDiscordRoles, fetchDiscordUser, takeDiscordToken } from '@/app/lib/discordVerify';
+import { getCollectorScoreBreakdown, scoreRank, verifyDiscordWalletProof } from '@/app/lib/collectorScore';
+import { assignCollectionRoles, fetchDiscordUser, takeDiscordToken } from '@/app/lib/discordVerify';
 
 type Body = {
   wallet?: string;
@@ -33,7 +33,8 @@ export async function POST(request: NextRequest) {
       signature: body.signature,
     });
 
-    const score = await getCollectorScore(wallet);
+    const breakdown = await getCollectorScoreBreakdown(wallet);
+    const score = breakdown.calculatedScore;
     if (score <= 0) {
       return NextResponse.json({
         ok: false,
@@ -47,7 +48,9 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const roles = await assignDiscordRoles(discordUser.id, score);
+    // Grant the Discord role for each collection this wallet actually holds.
+    const ownedSlugs = breakdown.collections.filter((c) => c.count > 0).map((c) => c.slug);
+    const roles = await assignCollectionRoles(discordUser.id, ownedSlugs);
     const failedRoles = roles.filter((role) => !role.ok);
 
     return NextResponse.json({
