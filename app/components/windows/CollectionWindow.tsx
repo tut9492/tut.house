@@ -40,7 +40,7 @@ const CW_CSS = `
 .collection-window .cw-t { font:700 15.5px/1 var(--mono); letter-spacing:.11em; color:#000; text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .collection-window .cw-ct { font:700 10.5px/1 var(--mono); letter-spacing:.06em; color:#2b3a00; border:1.5px solid rgba(0,0,0,.35); border-radius:20px; padding:4px 10px; font-variant-numeric:tabular-nums; flex:none; }
 .collection-window .cw-ctl { margin-left:auto; display:flex; gap:5px; flex:none; }
-.collection-window .cw-chip { width:26px; height:22px; border:2.5px solid #000; border-radius:5px; background:#ededed; font:700 12px/1 var(--mono); display:grid; place-items:center; color:#000; padding:0; cursor:pointer; }
+.collection-window .cw-chip { width:32px; height:32px; border:2.5px solid #000; border-radius:8px; background:#fff; box-shadow:2px 2px 0 0 rgba(20,16,30,.24); font:700 13px/1 var(--mono); display:grid; place-items:center; color:#000; padding:0; cursor:pointer; }
 .collection-window .cw-chip:hover { filter:brightness(.94); }
 .collection-window .cw-back { width:auto; gap:5px; padding:0 11px; display:flex; align-items:center; font:700 11px/1 var(--mono); letter-spacing:.06em; text-transform:uppercase; flex:none; }
 .collection-window .cw-ctl { align-items:center; }

@@ -19,6 +19,10 @@
   }
 }
 
+/* No visible scrollbars anywhere — scrolling still works, just no bars. */
+* { scrollbar-width: none; -ms-overflow-style: none; }
+*::-webkit-scrollbar { width: 0; height: 0; display: none; }
+
 body {
   background: var(--background);
   color: var(--foreground);

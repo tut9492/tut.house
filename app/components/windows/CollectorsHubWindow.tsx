@@ -172,7 +172,7 @@ const HUB_CSS = `
 #collectors-hub .ch-wm-sm { width:44px; height:20px; background:url(/assets/images/tutLogo.png) left center/contain no-repeat; filter:brightness(0); flex:none; }
 #collectors-hub .ch-winttl { font:700 14.5px/1 var(--mono); letter-spacing:.12em; text-transform:uppercase; color:#161616; }
 #collectors-hub .ch-winctl { margin-left:auto; display:flex; align-items:center; gap:8px; }
-#collectors-hub .ch-chip { width:26px; height:22px; border:2.5px solid #000; border-radius:5px; background:#ededed; font:700 12px/1 var(--mono); display:grid; place-items:center; color:#000; cursor:pointer; padding:0; }
+#collectors-hub .ch-chip { width:32px; height:32px; border:2.5px solid #000; border-radius:8px; background:#fff; box-shadow:2px 2px 0 0 rgba(20,16,30,.24); font:700 13px/1 var(--mono); display:grid; place-items:center; color:#000; cursor:pointer; padding:0; }
 #collectors-hub .ch-chip:hover { filter:brightness(.94); }
 #collectors-hub .ch-framebody { flex:1; overflow-y:auto; padding:24px 28px 44px; }
 #collectors-hub .ch-wordmark { width:120px; height:52px; background-repeat:no-repeat; background-position:left center; background-size:contain; filter:brightness(0); }

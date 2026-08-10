@@ -339,13 +339,17 @@ export default function Desktop() {
 
         // Digital Art: fullscreen browser of collection cards (heading + cover art). Clicking a
         // card opens that collection's fullscreen viewer (CollectionWindow), which has a Back button.
-        const collections: GalleryCollection[] = folders
-          .filter((f): f is typeof f & { openseaSlug: string } => f.contentType === 'images' && !!f.openseaSlug)
-          .map((f) => ({
-            id: f.id,
-            name: collectionNamesBySlug[f.openseaSlug] || f.name,
-            cover: prefetchedBySlug[f.openseaSlug]?.[0]?.src,
-          }));
+        const collections: GalleryCollection[] = [
+          ...folders
+            .filter((f): f is typeof f & { openseaSlug: string } => f.contentType === 'images' && !!f.openseaSlug)
+            .map((f) => ({
+              id: f.id,
+              name: collectionNamesBySlug[f.openseaSlug] || f.name,
+              cover: prefetchedBySlug[f.openseaSlug]?.[0]?.src,
+            })),
+          // Breadio lives on MegaETH (no OpenSea) — show its on-chain logo and link out.
+          { id: 'breadio', name: 'Breadio', cover: 'https://breadio.tuthopium.store/logo.jpg', href: 'https://breadio.tuthopium.store' },
+        ];
 
         return (
           <GalleryFolderWindow

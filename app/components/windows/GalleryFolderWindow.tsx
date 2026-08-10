@@ -6,6 +6,8 @@ export interface GalleryCollection {
   id: string;
   name: string;
   cover?: string;
+  /** When set, the card links out instead of opening an in-app collection viewer. */
+  href?: string;
 }
 
 interface Props {
@@ -32,18 +34,19 @@ const GFW_CSS = `
 .gfw .gfw-bar { flex:none; display:flex; align-items:center; gap:12px; padding:10px 16px; border-bottom:3px solid #000; background:#cbf000; }
 .gfw .gfw-t { font:700 15.5px/1 var(--mono); letter-spacing:.11em; color:#000; text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .gfw .gfw-ctl { margin-left:auto; display:flex; align-items:center; gap:8px; flex:none; }
-.gfw .gfw-chip { width:28px; height:24px; border:2.5px solid #000; border-radius:6px; background:#ededed; font:700 12px/1 var(--mono); display:grid; place-items:center; color:#000; padding:0; cursor:pointer; }
+.gfw .gfw-chip { width:32px; height:32px; border:2.5px solid #000; border-radius:8px; background:#fff; box-shadow:2px 2px 0 0 rgba(20,16,30,.24); font:700 13px/1 var(--mono); display:grid; place-items:center; color:#000; padding:0; cursor:pointer; }
 .gfw .gfw-chip:hover { filter:brightness(.94); }
 .gfw .gfw-body { flex:1; overflow-y:auto; padding:26px; background:linear-gradient(#fbfbfa,#f4f2ee); }
 .gfw .gfw-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:26px; max-width:1180px; margin:0 auto; }
-.gfw .card { border:3px solid #000; border-radius:12px; background:#fff; overflow:hidden; cursor:pointer; box-shadow:4px 5px 0 0 rgba(20,16,30,.26), 0 16px 30px -14px rgba(30,20,45,.5); transition:transform .14s ease, box-shadow .14s ease; }
+.gfw .card { display:block; border:3px solid #000; border-radius:12px; background:#fff; overflow:hidden; cursor:pointer; text-decoration:none; color:inherit; box-shadow:4px 5px 0 0 rgba(20,16,30,.26), 0 16px 30px -14px rgba(30,20,45,.5); transition:transform .14s ease, box-shadow .14s ease; }
 .gfw .card:hover { transform:translateY(-3px); box-shadow:5px 7px 0 0 rgba(20,16,30,.28), 0 22px 38px -14px rgba(30,20,45,.55); }
 .gfw .card-bar { display:flex; align-items:center; gap:8px; padding:9px 12px; border-bottom:3px solid #000; background:#cbf000; }
 .gfw .card-t { font:700 12.5px/1 var(--mono); letter-spacing:.08em; text-transform:uppercase; color:#000; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .gfw .card-dot { margin-left:auto; width:11px; height:11px; border-radius:50%; background:#ec5f56; border:1.5px solid rgba(0,0,0,.4); flex:none; }
-/* Show the FULL artwork inside the card (contain, centered) — never crop; the card frame
-   size is unchanged, the art scales to fit with a clean mat around non-square pieces. */
-.gfw .card-art { aspect-ratio:1/1; background:#fff center/contain no-repeat; display:grid; place-items:center; }
+/* Full artwork, contained and centered (never cropped), with a white mat padding so the
+   piece never touches the card frame. */
+.gfw .card-art { aspect-ratio:1/1; background:#fff; padding:16px; display:grid; place-items:center; }
+.gfw .card-img { width:100%; height:100%; background:center/contain no-repeat; }
 .gfw .card-art .ph { font:700 12px/1.4 var(--sans); color:#b7b1a6; text-align:center; padding:12px; }
 `;
 
@@ -62,22 +65,30 @@ export default function GalleryFolderWindow({ title, collections, onOpen, onClos
         </div>
         <div className="gfw-body">
           <div className="gfw-grid">
-            {collections.map((c) => (
-              <div
-                key={c.id}
-                className="card"
-                onClick={(e) => { e.stopPropagation(); onOpen(c.id); }}
-                title={c.name}
-              >
-                <div className="card-bar">
-                  <span className="card-t">{c.name}</span>
-                  <span className="card-dot" aria-hidden="true" />
+            {collections.map((c) => {
+              const inner = (
+                <>
+                  <div className="card-bar">
+                    <span className="card-t">{c.name}</span>
+                    <span className="card-dot" aria-hidden="true" />
+                  </div>
+                  <div className="card-art">
+                    {c.cover
+                      ? <div className="card-img" style={{ backgroundImage: `url(${c.cover})` }} />
+                      : <span className="ph">{c.name}</span>}
+                  </div>
+                </>
+              );
+              return c.href ? (
+                <a key={c.id} className="card" href={c.href} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} title={c.name}>
+                  {inner}
+                </a>
+              ) : (
+                <div key={c.id} className="card" onClick={(e) => { e.stopPropagation(); onOpen(c.id); }} title={c.name}>
+                  {inner}
                 </div>
-                <div className="card-art" style={c.cover ? { backgroundImage: `url(${c.cover})` } : undefined}>
-                  {!c.cover && <span className="ph">{c.name}</span>}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
