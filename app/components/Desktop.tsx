@@ -14,6 +14,7 @@ import Taskbar from './Taskbar';
 import { AudioProvider } from './audio/AudioProvider';
 import AudioControls from './audio/AudioControls';
 import GalleryFolderWindow, { type GalleryCollection } from './windows/GalleryFolderWindow';
+import LeaderboardWindow from './windows/LeaderboardWindow';
 import Menu from './Menu';
 
 interface OpenImage {
@@ -69,6 +70,7 @@ export default function Desktop() {
 
   const folders = [
     { id: 'collectors-hub', name: 'Collectors Hub', contentType: 'collectors-hub' as const },
+    { id: 'leaderboard', name: 'Leaderboard', contentType: 'leaderboard' as const },
     { id: 'digital-art', name: 'Digital Art', contentType: 'folders' as const },
     { id: 'design-agency', name: 'Creative Agency', contentType: 'design-agency' as const },
     { id: 'physical-art', name: 'Physical Art', contentType: 'physical-art' as const },
@@ -237,7 +239,7 @@ export default function Desktop() {
         <div className="w-[calc(100vw-2rem)] lg:w-auto">
           <div className="grid grid-cols-2 gap-x-10 gap-y-10 place-items-center lg:flex lg:flex-nowrap lg:items-center lg:justify-center lg:gap-[72px]">
             {folders
-              .filter(f => ['physical-art', 'digital-art', 'collectors-hub', 'about', 'design-agency'].includes(f.id))
+              .filter(f => ['physical-art', 'digital-art', 'collectors-hub', 'leaderboard', 'about', 'design-agency'].includes(f.id))
               .map((folder, i) => (
                 <Folder
                   key={folder.id}
@@ -298,6 +300,20 @@ export default function Desktop() {
         if (folder.contentType === 'collectors-hub') {
           return (
             <CollectorsHubWindow
+              key={folder.id}
+              id={folder.id}
+              title={folder.name}
+              onClose={() => handleCloseWindow(folder.id)}
+              isActive={activeWindow === folder.id}
+              onClick={() => handleWindowClick(folder.id)}
+              zIndex={getZIndex(folder.id)}
+            />
+          );
+        }
+
+        if (folder.contentType === 'leaderboard') {
+          return (
+            <LeaderboardWindow
               key={folder.id}
               id={folder.id}
               title={folder.name}

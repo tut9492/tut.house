@@ -45,6 +45,15 @@ export async function getProfileByWallet(wallet: string): Promise<CollectorProfi
   return rows[0] ? rowToProfile(rows[0]) : null;
 }
 
+// All profiles (lightweight fields) — used to build the leaderboard by scoring each wallet.
+export async function getAllProfiles(): Promise<{ wallet: string; username: string; avatar: CollectorProfile['avatar'] }[]> {
+  const sql = client();
+  const rows = (await sql`SELECT wallet, username, avatar FROM collector_profiles`) as {
+    wallet: string; username: string; avatar: CollectorProfile['avatar'];
+  }[];
+  return rows;
+}
+
 export async function getProfileByUsername(username: string): Promise<CollectorProfile | null> {
   const sql = client();
   const rows = (await sql`
