@@ -214,10 +214,12 @@ const HUB_CSS = `
 #collectors-hub .ch-badge.locked .lock { display:grid; }
 
 /* ESTEEMED WORKS */
-#collectors-hub .esteem-body { padding:22px; background:linear-gradient(#fff,#fbfbfa); }
-#collectors-hub .ch-mat { background:#fff; padding:20px; border-radius:4px; box-shadow:0 20px 44px -20px rgba(0,0,0,.45), 0 0 0 1px #eee; }
+#collectors-hub .esteem-body { padding:18px 22px 20px; background:linear-gradient(#fff,#fbfbfa); }
+#collectors-hub .ch-mat { background:#fff; padding:20px; border-radius:4px; box-shadow:0 20px 44px -20px rgba(0,0,0,.45), 0 0 0 1px #eee; display:flex; justify-content:center; }
 #collectors-hub .ch-art { width:100%; aspect-ratio:4/5; border-radius:2px; background-size:cover; background-position:center; background-color:#efeae2; }
-#collectors-hub .ch-art.hero { aspect-ratio:3/3.4; }
+/* Large display piece: bound the height to the viewport so it never forces the Hub to scroll.
+   Height drives width via the portrait aspect ratio, so the piece stays framed and centered. */
+#collectors-hub .ch-art.hero { aspect-ratio:3/3.4; width:auto; max-width:100%; height:min(46vh,500px); }
 #collectors-hub .esteem-cap { display:flex; justify-content:space-between; align-items:baseline; gap:12px; margin-top:14px; padding:0 2px; }
 #collectors-hub .esteem-cap .ti { font:600 15px/1.25 var(--sans); color:#1a1a1a; }
 #collectors-hub .esteem-cap .wt { font:700 12px/1 var(--mono); color:var(--olive); white-space:nowrap; }
