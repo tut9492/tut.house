@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import DesignPageWizard, { type WizardArt } from './DesignPageWizard';
+import type { CollectorProfile } from '@/app/lib/collectorProfile';
 
 interface CollectorsHubWindowProps {
   id: string;
@@ -98,6 +100,16 @@ declare global {
 
 function shortWallet(wallet: string) {
   return wallet ? `${wallet.slice(0, 6)}…${wallet.slice(-4)}` : '';
+}
+
+// "https://x.com/tuteth_" -> "x.com/tuteth_" for a compact social chip.
+function socialLabel(url: string) {
+  try {
+    const u = new URL(url);
+    return `${u.hostname.replace(/^www\./, '')}${u.pathname === '/' ? '' : u.pathname}`;
+  } catch {
+    return url;
+  }
 }
 
 function buildMessage(wallet: string) {
@@ -201,6 +213,9 @@ const HUB_CSS = `
 #collectors-hub .btn-navy { border:3px solid #000; border-radius:9px; background:var(--navy); color:#fff; font:600 13.5px/1 var(--sans); padding:12px 22px; cursor:pointer; box-shadow:3px 3px 0 0 rgba(20,16,30,.24); }
 #collectors-hub .btn-navy:hover { background:#171d28; }
 #collectors-hub .btn-navy:disabled { opacity:.6; cursor:default; }
+#collectors-hub .fm-social { font:600 11.5px/1 var(--mono); color:var(--navy); text-decoration:none; border-bottom:1.5px solid rgba(29,37,50,.3); padding-bottom:1px; max-width:22ch; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#collectors-hub .fm-social:hover { border-bottom-color:var(--navy); }
+#collectors-hub .fm-edit { margin-top:6px; padding:9px 18px; font-size:12.5px; }
 
 /* STATUS / GOLD STARS slim bars */
 #collectors-hub .stars-num { font-variant-numeric:tabular-nums; }
@@ -311,6 +326,9 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
   const [dashboard, setDashboard] = useState<CollectorDashboard | null>(null);
   const [dashboardLoading, setDashboardLoading] = useState(false);
   const [displayScore, setDisplayScore] = useState(0);
+  const [profile, setProfile] = useState<CollectorProfile | null>(null);
+  const [profileStoreReady, setProfileStoreReady] = useState(false);
+  const [wizardOpen, setWizardOpen] = useState(false);
 
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
@@ -375,6 +393,18 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
     }
   };
 
+  const loadProfile = async (selectedWallet: string) => {
+    try {
+      const res = await fetch(`/api/collectors/profile?wallet=${encodeURIComponent(selectedWallet)}`);
+      if (!res.ok) return;
+      const data = (await res.json()) as { profile?: CollectorProfile | null; storeEnabled?: boolean };
+      setProfileStoreReady(!!data.storeEnabled);
+      if (data.profile) setProfile(data.profile);
+    } catch {
+      // Profile is optional chrome — a load failure never blocks the Hub.
+    }
+  };
+
   const connectAndVerify = async () => {
     setError('');
     setDiscordResult(null);
@@ -410,6 +440,7 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
       setSession(data);
       setStatus('verified');
       await loadCollectorDashboard(selected);
+      void loadProfile(selected);
     } catch (err) {
       setStatus('idle');
       setError(err instanceof Error ? err.message : 'Wallet verification failed.');
@@ -463,6 +494,12 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
   const signedIn = !!session;
   const artworks = dashboard?.holdings.assets.artworks || [];
   const topArt = artworks.length ? [...artworks].sort((a, b) => b.weight - a.weight)[0] : null;
+  // The collector's chosen feature piece + curated gallery win; otherwise fall back to the
+  // auto picks (highest-scoring piece, and the full collection).
+  const frameArt = profile?.frame || topArt;
+  const galleryArt = profile?.gallery && profile.gallery.length ? profile.gallery : artworks;
+  const displayName = profile?.username || shortWallet(wallet);
+  const avatarImage = profile?.avatar?.image || '/assets/images/aboutProfilePicture.png';
   const rank = session?.rank || dashboard?.rank || 'Unscored';
   const statusLabel = STATUS_LABELS[rank] || rank;
   const targetScore = dashboard?.score ?? session?.score ?? 0;
@@ -504,6 +541,7 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
         : 'Connect Discord';
 
   return (
+    <>
     <div id="collectors-hub" className={signedIn ? '' : 'sealed'} style={{ zIndex }} onClick={onClick}>
       <style>{HUB_CSS}</style>
 
@@ -528,8 +566,13 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
             <div className="fm-body">
               {signedIn ? (
                 <>
-                  <div className="ch-avatar" style={{ backgroundImage: 'url(/assets/images/aboutProfilePicture.png)' }} />
-                  <div className="fm-name">{shortWallet(wallet)}</div>
+                  <div className="ch-avatar" style={{ backgroundImage: `url(${avatarImage})` }} />
+                  <div className="fm-name">{displayName}</div>
+                  {profile?.socialUrl && (
+                    <a className="fm-social" href={profile.socialUrl} target="_blank" rel="noopener noreferrer nofollow">
+                      ↗ {socialLabel(profile.socialUrl)}
+                    </a>
+                  )}
                   <div className="fm-discord">
                     <button
                       className={`disc-ico${discordDone ? ' done' : ''}`}
@@ -542,6 +585,11 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
                     </button>
                     <div className={`disc-cap${error ? ' err' : ''}`}>{error || discordCap}</div>
                   </div>
+                  {profileStoreReady && (
+                    <button className="btn-navy fm-edit" onClick={() => setWizardOpen(true)}>
+                      {profile ? 'Edit page' : 'Design your page'}
+                    </button>
+                  )}
                 </>
               ) : (
                 <div className="fm-signin">
@@ -597,12 +645,12 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
           <div className="win w-lime mute">
             <div className="bar"><span className="t">Esteemed Works</span><span className="ctl"><b>X</b><b>_</b></span></div>
             <div className="esteem-body">
-              {topArt ? (
+              {frameArt ? (
                 <>
                   <div className="ch-mat">
-                    <div className="ch-art hero" style={topArt.image ? { backgroundImage: `url(${topArt.image})` } : undefined} />
+                    <div className="ch-art hero" style={frameArt.image ? { backgroundImage: `url(${frameArt.image})` } : undefined} />
                   </div>
-                  <div className="esteem-cap"><span className="ti">{topArt.title}</span><span className="wt">+{topArt.weight.toLocaleString()} ★</span></div>
+                  <div className="esteem-cap"><span className="ti">{frameArt.title}</span><span className="wt">+{frameArt.weight.toLocaleString()} ★</span></div>
                 </>
               ) : (
                 <div className="esteem-empty">
@@ -617,11 +665,11 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
         <div className="full">
           <div className="win w-lime mute">
             <div className="bar"><span className="t">Gallery of Fine Art</span><span className="ctl"><b>X</b><b>_</b></span></div>
-            {artworks.length ? (
+            {galleryArt.length ? (
               <div className="gallery">
-                {artworks.map((a) => (
+                {galleryArt.map((a, i) => (
                   <a
-                    key={`${a.collectionSlug}-${a.tokenId}`}
+                    key={`${a.collectionSlug}-${a.title}-${i}`}
                     className="gal-frame"
                     href={a.permalink || undefined}
                     target="_blank"
@@ -690,5 +738,16 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
         </div>
       </div>
     </div>
+
+    {wizardOpen && signedIn && (
+      <DesignPageWizard
+        wallet={wallet}
+        artworks={artworks as WizardArt[]}
+        existing={profile}
+        onClose={() => setWizardOpen(false)}
+        onSaved={(p) => { setProfile(p); setWizardOpen(false); }}
+      />
+    )}
+    </>
   );
 }
