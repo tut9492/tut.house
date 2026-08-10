@@ -202,11 +202,14 @@ const HUB_CSS = `
    each keeps its own border + rounded top corners and tucks under the one above,
    with a seam shadow so it reads as layered panes. */
 #collectors-hub .stack { display:flex; flex-direction:column; }
-/* every panel fully rounded (no square bottom corner ever shows) and tucked under the one
-   above; a stronger seam shadow sells the overlap and masks the tiny corner gap */
-#collectors-hub .stack > .win { border:3px solid #000; border-radius:13px; box-shadow:0 -9px 16px -8px rgba(20,16,30,.7); }
+/* Each panel: rounded TOP, straight bottom. The next panel down tucks up by >= the corner
+   radius so it buries the square bottom corners of the panel above — that overlap is what
+   makes the flat bottom read as "hidden under" the next window. */
+#collectors-hub .stack > .win { border:3px solid #000; border-radius:10px 10px 0 0; box-shadow:0 -9px 16px -8px rgba(20,16,30,.7); }
 #collectors-hub .stack > .win:first-child { box-shadow:var(--shadow); }
-#collectors-hub .stack > .win:not(:first-child) { margin-top:-8px; }
+#collectors-hub .stack > .win:not(:first-child) { margin-top:-10px; }
+/* the stack's outer bottom edge (last panel) gets rounded corners for a finished edge */
+#collectors-hub .stack > .win:last-child { border-radius:10px 10px 12px 12px; }
 #collectors-hub .stack > .win .bar { border-bottom:none; }
 /* a bar that sits above a body (Family Member, Badges) keeps its divider; bar-only
    windows (Status, Gold Stars) don't */
