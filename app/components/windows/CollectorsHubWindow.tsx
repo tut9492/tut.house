@@ -36,11 +36,6 @@ type DiscordConnection = {
   discordUsername: string;
 };
 
-type LeaderboardEntry = {
-  wallet: string;
-  score: number;
-  rank: string;
-};
 
 type ScoreCollection = {
   slug: string;
@@ -342,8 +337,6 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
   const [discordResult, setDiscordResult] = useState<DiscordResult | null>(null);
   const [status, setStatus] = useState<'idle' | 'connecting' | 'signing' | 'verified' | 'discord_connected' | 'assigning' | 'discord'>('idle');
   const [error, setError] = useState('');
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
-  const [leaderboardLoading, setLeaderboardLoading] = useState(false);
   const [dashboard, setDashboard] = useState<CollectorDashboard | null>(null);
   const [dashboardLoading, setDashboardLoading] = useState(false);
   const [displayScore, setDisplayScore] = useState(0);
@@ -373,29 +366,6 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
     };
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const loadLeaderboard = async () => {
-      setLeaderboardLoading(true);
-      try {
-        const res = await fetch('/api/collectors/leaderboard?limit=50');
-        if (!res.ok) return;
-        const data = (await res.json()) as { leaderboard?: LeaderboardEntry[] };
-        if (!cancelled) setLeaderboard(data.leaderboard || []);
-      } catch {
-        if (!cancelled) setLeaderboard([]);
-      } finally {
-        if (!cancelled) setLeaderboardLoading(false);
-      }
-    };
-
-    void loadLeaderboard();
-    return () => {
-      cancelled = true;
-    };
   }, []);
 
   const loadCollectorDashboard = async (selectedWallet: string) => {
@@ -712,44 +682,6 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
           </div>
         </div>
 
-        {/* ================= PAIR: SCORING / RANKS ================= */}
-        <div className="full pair">
-
-          {/* SCORING */}
-          <div className="win w-lime">
-            <div className="bar"><span className="t">Scoring</span><span className="ctl"><b>_</b><b>X</b></span></div>
-            <div className="score-body">
-              <pre className="formula">{`stars = Σ (count × weight)
-      + n² × 250      breadth
-      + depth 3·5·10·25`}</pre>
-              <div className="wrow"><span>Tut Genesis</span><span className="k">Genesis</span><span className="w">25,000</span></div>
-              <div className="wrow"><span>Abstractions</span><span className="k">Series</span><span className="w">5,000</span></div>
-              <div className="wrow"><span>OCF</span><span className="k">1/1</span><span className="w">1,000</span></div>
-              <div className="wrow"><span>Breadio</span><span className="k">MegaETH</span><span className="w">500</span></div>
-              <div className="wrow"><span>Tut Loudio</span><span className="k">Edition</span><span className="w">100</span></div>
-              <div className="wrow"><span>tut™ Editions</span><span className="k">Edition</span><span className="w">50</span></div>
-            </div>
-          </div>
-
-          {/* RANKS */}
-          <div className="win w-blue">
-            <div className="bar"><span className="t">Ranks</span><span className="ctl"><b>_</b><b>X</b></span></div>
-            <div>
-              <div className="lbhead"><div>#</div><div>Wallet</div><div style={{ textAlign: 'right' }}>Stars</div></div>
-              {leaderboardLoading && <div className="lb-empty">Checking leaderboard…</div>}
-              {!leaderboardLoading && leaderboard.length === 0 && (
-                <div className="lb-empty">The leaderboard isn’t indexed yet. Sign in on Family Member for your live score.</div>
-              )}
-              {!leaderboardLoading && leaderboard.map((entry, i) => (
-                <div key={`${entry.wallet}-${i}`} className={`lbrow${wallet && entry.wallet.toLowerCase() === wallet.toLowerCase() ? ' me' : ''}`}>
-                  <div className="r">{i + 1}</div>
-                  <div className="wal">{shortWallet(entry.wallet)}</div>
-                  <div className="sc">{entry.score.toLocaleString()}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
       </div>
 
       <div className="hub-footer">
