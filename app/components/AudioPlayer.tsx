@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 const TRACKS = [
-  { src: '/music/need-some1.mp3', title: 'DEGO — Need Some1' },
+  { src: '/music/eill-fraction.mp3', title: 'Eill — Fraction' },
   { src: '/music/azure-flute.mp3', title: 'Benno — Azure Flute' },
   { src: '/music/lights-go-down.mp3', title: 'Duce Williams — Lights Go Down' },
 ];
@@ -34,22 +34,36 @@ export default function AudioPlayer() {
   };
 
   const handleEnded = () => setIndex((i) => (i + 1) % TRACKS.length);
+  const skip = () => setIndex((i) => (i + 1) % TRACKS.length);
+
+  const btnClass =
+    'grid h-11 w-11 place-items-center rounded-lg border-[2.5px] border-black bg-white shadow-[2px_2px_0_0_rgba(20,16,30,0.24)] transition hover:brightness-95';
 
   return (
     <>
       <audio ref={audioRef} onEnded={handleEnded} preload="none" />
-      <button
-        onClick={toggle}
-        aria-label={playing ? 'Stop music' : 'Play music'}
-        title={playing ? `Now playing — ${TRACKS[index].title}` : 'Play music'}
-        className="absolute top-6 right-6 lg:top-8 lg:right-8 z-30 grid h-11 w-11 place-items-center rounded-lg border-[2.5px] border-black bg-white shadow-[2px_2px_0_0_rgba(20,16,30,0.24)] transition hover:brightness-95"
-      >
-        {playing ? (
-          <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><rect width="14" height="14" rx="2" fill="#000" /></svg>
-        ) : (
-          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style={{ marginLeft: 2 }}><path d="M4 3l9 5-9 5z" fill="#000" /></svg>
-        )}
-      </button>
+      <div className="absolute top-6 right-6 lg:top-8 lg:right-8 z-30 flex gap-2">
+        <button
+          onClick={toggle}
+          aria-label={playing ? 'Stop music' : 'Play music'}
+          title={playing ? `Now playing — ${TRACKS[index].title}` : 'Play music'}
+          className={btnClass}
+        >
+          {playing ? (
+            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><rect width="14" height="14" rx="2" fill="#000" /></svg>
+          ) : (
+            <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style={{ marginLeft: 2 }}><path d="M4 3l9 5-9 5z" fill="#000" /></svg>
+          )}
+        </button>
+        <button
+          onClick={skip}
+          aria-label="Skip to next track"
+          title="Skip track"
+          className={btnClass}
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3l6 5-6 5z" fill="#000" /><rect x="10.4" y="3" width="2.4" height="10" rx="1" fill="#000" /></svg>
+        </button>
+      </div>
     </>
   );
 }
