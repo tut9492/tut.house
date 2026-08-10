@@ -220,7 +220,7 @@ const HUB_CSS = `
 /* FAMILY MEMBER */
 #collectors-hub .fm-body { display:flex; flex-direction:column; align-items:center; gap:16px; padding:26px 18px 30px; }
 #collectors-hub .ch-avatar { width:150px; height:150px; border-radius:22px; background-size:cover; background-position:center; box-shadow:0 6px 16px -6px rgba(0,0,0,.4); }
-#collectors-hub .ch-avatar.empty { display:grid; place-items:center; background:#f0efec; box-shadow:none; border:2px dashed #cdcdcd; font:700 34px/1 var(--mono); color:#c4c4c4; }
+#collectors-hub .ch-avatar.empty { background:transparent; box-shadow:none; border:2px dashed #cdcdcd; }
 #collectors-hub .fm-name { font:700 26px/1 var(--mono); letter-spacing:.06em; color:#161616; }
 #collectors-hub .fm-signin { display:flex; flex-direction:column; align-items:center; gap:12px; }
 #collectors-hub .fm-signin .sub { font:400 12.5px/1.5 var(--sans); color:var(--label); text-align:center; max-width:24ch; }
@@ -612,7 +612,7 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
                 </>
               ) : (
                 <div className="fm-signin">
-                  <div className="ch-avatar empty">?</div>
+                  <div className="ch-avatar empty" />
                   <div className="sub">Sign with the wallet that holds your tut™ work — a signature, never a transaction.</div>
                   <button className="btn-navy" onClick={connectAndVerify} disabled={status === 'connecting' || status === 'signing'}>
                     {walletActionLabel}
