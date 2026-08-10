@@ -15,9 +15,9 @@ interface DesignAgencyWindowProps {
 // these — fill in as they arrive); `href` links to the project when known.
 const TEAMS: { id: string; name: string; cover?: string; href?: string }[] = [
   { id: 'betman69', name: 'betman69', cover: '/assets/images/betman.png', href: 'https://x.com/betmangenesis69' },
-  { id: 'agntsocial', name: 'AGNT Social', href: 'https://agnt.social' },
+  { id: 'agntsocial', name: 'AGNT Social', cover: '/assets/images/agnt-logo.png', href: 'https://agnt.social' },
   { id: 'breadio', name: 'Breadio', cover: 'https://breadio.tuthopium.store/logo.jpg', href: 'https://breadio.tuthopium.store' },
-  { id: 'tutloudio', name: 'Tut Loudio' },
+  { id: 'tutloudio', name: 'Tut Loudio', cover: '/assets/images/tutloudio.png' },
 ];
 
 const SERVICES = ['Art', 'Marketing', 'Websites', 'On-chain creation'];
