@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { useIsMobile } from '../hooks/useIsMobile';
+import FullscreenFrame from './FullscreenFrame';
 
 interface DesignAgencyWindowProps {
   id: string;
@@ -88,111 +87,31 @@ const services = [
   },
 ];
 
-export default function DesignAgencyWindow({ title, onClose, isActive, onClick, zIndex }: DesignAgencyWindowProps) {
-  const isCompact = useIsMobile(1024);
-  const [position, setPosition] = useState(() => ({
-    x: Math.floor(Math.random() * (window.innerWidth - 1000)) + 50,
-    y: Math.floor(Math.random() * (window.innerHeight - 650)) + 50,
-  }));
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const windowRef = useRef<HTMLDivElement>(null);
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).closest('.window-controls')) return;
-    if (isCompact) return;
-
-    onClick();
-    setIsDragging(true);
-    const rect = windowRef.current?.getBoundingClientRect();
-    if (rect) {
-      setDragOffset({
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top,
-      });
-    }
-  };
-
-  useEffect(() => {
-    if (isCompact) return;
-    const handleMouseMove = (e: MouseEvent) => {
-      if (isDragging) {
-        setPosition({
-          x: e.clientX - dragOffset.x,
-          y: e.clientY - dragOffset.y,
-        });
-      }
-    };
-
-    const handleMouseUp = () => {
-      setIsDragging(false);
-    };
-
-    if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-    }
-
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isDragging, dragOffset, isCompact]);
-
+export default function DesignAgencyWindow({ title, onClose, onClick, zIndex }: DesignAgencyWindowProps) {
   return (
-    <div
-      ref={windowRef}
-      className={`${isCompact ? 'fixed' : 'absolute'} bg-white rounded-2xl shadow-2xl overflow-hidden transition-shadow ${
-        isActive ? 'shadow-2xl' : 'opacity-95'
-      }`}
-      style={
-        isCompact
-          ? {
-              top: '12px',
-              left: '12px',
-              right: '12px',
-              bottom: '60px',
-              zIndex,
-            }
-          : { top: position.y, left: position.x, width: '1000px', height: '650px', zIndex }
-      }
-      onClick={onClick}
-    >
-      <button
-        className="absolute top-4 right-4 w-3 h-3 bg-red-500 hover:bg-red-600 rounded-full z-10 window-controls"
-        onClick={onClose}
-      />
-
-      <div
-        className="px-6 py-4 cursor-move select-none"
-        onMouseDown={handleMouseDown}
-        style={{ borderBottom: '1px solid #F3F4F6' }}
-      >
-        <span className="text-gray-600 text-sm font-normal">{title}</span>
-      </div>
-
-      <div className="px-6 pb-6 h-[calc(100%-56px)] bg-white overflow-auto">
-        <div className="mt-8 mb-8 text-center">
-          <h2 className="text-gray-800 text-xl font-medium mb-2">Creative Agency</h2>
-          <p className="text-gray-400 text-sm max-w-md mx-auto">
+    <FullscreenFrame title={title} onClose={onClose} onClick={onClick} zIndex={zIndex}>
+      <div className="fsw-inner">
+        <div className="mb-10 text-center">
+          <h2 className="text-gray-800 text-2xl font-semibold mb-2">Creative Agency</h2>
+          <p className="text-gray-500 text-sm max-w-md mx-auto">
             Creative solutions for brands, products, and digital experiences.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {services.map((service) => (
             <div
               key={service.id}
-              className="p-5 rounded-xl border border-gray-100 hover:border-gray-200 hover:shadow-sm transition-all cursor-default"
+              className="p-6 rounded-xl border border-gray-200 bg-white hover:shadow-md transition-all cursor-default"
             >
               <div className="mb-3">{service.icon}</div>
-              <h3 className="text-gray-700 text-sm font-medium mb-1">{service.name}</h3>
-              <p className="text-gray-400 text-xs leading-relaxed">{service.description}</p>
+              <h3 className="text-gray-800 text-sm font-semibold mb-1">{service.name}</h3>
+              <p className="text-gray-500 text-xs leading-relaxed">{service.description}</p>
             </div>
           ))}
         </div>
 
-        <div className="mt-8 text-center">
+        <div className="mt-10 text-center">
           <button
             onClick={() => window.open('https://x.com/Tuteth_', '_blank', 'noopener,noreferrer')}
             className="px-8 py-3 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-sm font-medium transition-colors"
@@ -201,6 +120,6 @@ export default function DesignAgencyWindow({ title, onClose, isActive, onClick, 
           </button>
         </div>
       </div>
-    </div>
+    </FullscreenFrame>
   );
 }
