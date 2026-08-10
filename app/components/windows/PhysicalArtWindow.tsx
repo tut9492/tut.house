@@ -13,7 +13,7 @@ interface PhysicalArtWindowProps {
 
 // Physical / RWA pieces. `cover` = product photo (add as available); `href` = where to buy/view.
 const PIECES: { id: string; name: string; cover?: string; href?: string }[] = [
-  { id: 'rwa-f-001', name: 'TUT™ RWA F-001', href: 'https://www.dyli.io/drop/18580-tuttm-rwa-f-001' },
+  { id: 'rwa-f-001', name: 'TUT™ RWA F-001', cover: '/assets/images/rwa-f-001.webp', href: 'https://www.dyli.io/drop/18580-tuttm-rwa-f-001' },
 ];
 
 const PA_CSS = `
