@@ -393,10 +393,23 @@ export async function getTutCollectionHoldings(wallet: string, maxPerCollection 
           ({ count, artworks } = await fetchHoldingsViaNftApi(subdomain, apiKey, normalized, collection, maxPerCollection));
         } else {
           // RPC-only chains (MegaETH/Breadio): count via balanceOf, and if held, grab the
-          // collection image from contractURI so the badge isn't blank.
+          // collection image from contractURI. There's no per-token metadata API here, so we
+          // surface ONE representative piece (the collection image) — enough to render the badge
+          // and to let the collector pick Breadio for their frame/gallery in the wizard.
           count = await fetchCountViaRpc(subdomain, apiKey, normalized, collection);
           if (count > 0) {
             logo = (await fetchCollectionLogoViaRpc(subdomain, apiKey, collection.contract)) || undefined;
+            if (logo) {
+              artworks = [{
+                tokenId: '0',
+                title: collection.name,
+                image: logo,
+                permalink: '',
+                collection: collection.name,
+                collectionSlug: collection.slug,
+                weight: collection.weight,
+              }];
+            }
           }
         }
       } catch {
