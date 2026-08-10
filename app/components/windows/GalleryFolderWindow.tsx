@@ -41,7 +41,9 @@ const GFW_CSS = `
 .gfw .card-bar { display:flex; align-items:center; gap:8px; padding:9px 12px; border-bottom:3px solid #000; background:#cbf000; }
 .gfw .card-t { font:700 12.5px/1 var(--mono); letter-spacing:.08em; text-transform:uppercase; color:#000; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .gfw .card-dot { margin-left:auto; width:11px; height:11px; border-radius:50%; background:#ec5f56; border:1.5px solid rgba(0,0,0,.4); flex:none; }
-.gfw .card-art { aspect-ratio:1/1; background:#efeae2 center/cover no-repeat; display:grid; place-items:center; }
+/* Show the FULL artwork inside the card (contain, centered) — never crop; the card frame
+   size is unchanged, the art scales to fit with a clean mat around non-square pieces. */
+.gfw .card-art { aspect-ratio:1/1; background:#fff center/contain no-repeat; display:grid; place-items:center; }
 .gfw .card-art .ph { font:700 12px/1.4 var(--sans); color:#b7b1a6; text-align:center; padding:12px; }
 `;
 
