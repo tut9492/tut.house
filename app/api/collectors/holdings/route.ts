@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCollectorScoreBreakdown, normalizeWallet } from '@/app/lib/collectorScore';
+import { collectionBadges, getCollectorScoreBreakdown, normalizeWallet, scoreRank } from '@/app/lib/collectorScore';
+import { profileStoreEnabled, updateProfileScore } from '@/app/lib/db';
 
 type CachedHoldings = { ts: number; body: unknown };
 
@@ -23,6 +24,14 @@ export async function GET(request: NextRequest) {
     }
 
     const breakdown = await getCollectorScoreBreakdown(wallet);
+
+    // Keep the stored leaderboard score fresh: no-ops unless this wallet has a collector page.
+    if (profileStoreEnabled()) {
+      try {
+        await updateProfileScore(wallet, breakdown.calculatedScore, scoreRank(breakdown.calculatedScore), collectionBadges(breakdown));
+      } catch { /* score persistence is best-effort */ }
+    }
+
     const artworks = breakdown.collections.flatMap((collection) => collection.artworks);
     const body = {
       wallet,

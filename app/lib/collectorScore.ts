@@ -441,6 +441,13 @@ export async function getCollectorScoreBreakdown(wallet: string): Promise<ScoreB
   });
 }
 
+// Owned collections (with an image) → leaderboard/badge shape.
+export function collectionBadges(breakdown: ScoreBreakdown): { slug: string; name: string; count: number; image: string | null }[] {
+  return breakdown.collections
+    .filter((c) => c.count > 0)
+    .map((c) => ({ slug: c.slug, name: c.name, count: c.count, image: c.artworks?.[0]?.image || c.logo || null }));
+}
+
 export function scoreRank(score: number): string {
   if (score >= 100000) return 'Legend';
   if (score >= 25000) return 'Whale';

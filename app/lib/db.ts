@@ -45,13 +45,44 @@ export async function getProfileByWallet(wallet: string): Promise<CollectorProfi
   return rows[0] ? rowToProfile(rows[0]) : null;
 }
 
-// All profiles (lightweight fields) — used to build the leaderboard by scoring each wallet.
+// All profiles (lightweight fields) — used to (re)build the leaderboard by scoring each wallet.
 export async function getAllProfiles(): Promise<{ wallet: string; username: string; avatar: CollectorProfile['avatar'] }[]> {
   const sql = client();
   const rows = (await sql`SELECT wallet, username, avatar FROM collector_profiles`) as {
     wallet: string; username: string; avatar: CollectorProfile['avatar'];
   }[];
   return rows;
+}
+
+export type LeaderboardBadge = { slug: string; name: string; count: number; image: string | null };
+export type StoredLeaderboardRow = {
+  wallet: string; username: string; avatar: CollectorProfile['avatar'];
+  score: number; tier: string | null; badges: LeaderboardBadge[];
+};
+
+// Persist a wallet's computed score snapshot. No-ops when the wallet has no profile row.
+export async function updateProfileScore(
+  wallet: string, score: number, tier: string, badges: LeaderboardBadge[],
+): Promise<void> {
+  const sql = client();
+  await sql`
+    UPDATE collector_profiles
+    SET score = ${score}, tier = ${tier}, badges = ${JSON.stringify(badges)}::jsonb, score_updated_at = now()
+    WHERE wallet = ${wallet.toLowerCase()}
+  `;
+}
+
+// Fast leaderboard read straight from stored scores — no Alchemy fan-out.
+export async function getStoredLeaderboard(limit: number): Promise<StoredLeaderboardRow[]> {
+  const sql = client();
+  const rows = (await sql`
+    SELECT wallet, username, avatar, score, tier, badges
+    FROM collector_profiles
+    WHERE score > 0
+    ORDER BY score DESC, score_updated_at DESC NULLS LAST
+    LIMIT ${limit}
+  `) as StoredLeaderboardRow[];
+  return rows.map((r) => ({ ...r, badges: Array.isArray(r.badges) ? r.badges : [] }));
 }
 
 export async function getProfileByUsername(username: string): Promise<CollectorProfile | null> {
