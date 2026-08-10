@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Folder from './Folder';
-import FolderWindow from './windows/FolderWindow';
 import CollectionWindow from './windows/CollectionWindow';
 import CollectorsHubWindow from './windows/CollectorsHubWindow';
 import PhysicalArtWindow from './windows/PhysicalArtWindow';
@@ -12,7 +11,9 @@ import TextViewerWindow from './windows/TextViewerWindow';
 import AboutWindow from './windows/AboutWindow';
 import DesignAgencyWindow from './windows/DesignAgencyWindow';
 import Taskbar from './Taskbar';
-import AudioPlayer from './AudioPlayer';
+import { AudioProvider } from './audio/AudioProvider';
+import AudioControls from './audio/AudioControls';
+import GalleryFolderWindow, { type GalleryCollection } from './windows/GalleryFolderWindow';
 import Menu from './Menu';
 
 interface OpenImage {
@@ -185,6 +186,7 @@ export default function Desktop() {
   };
 
   return (
+    <AudioProvider>
     <div className="relative w-full h-[100svh] overflow-hidden bg-black">
       {/* dusk background: cloud photo base + pink gradient blended above (matches the Hub) */}
       <div
@@ -196,8 +198,8 @@ export default function Desktop() {
         style={{ background: 'url(/assets/images/hubPink.jpg) center/cover no-repeat', opacity: 0.6, mixBlendMode: 'multiply' }}
       />
 
-      {/* music: play / stop, top-right */}
-      <AudioPlayer />
+      {/* music: play / skip, top-right (shared across every fullscreen window) */}
+      <AudioControls className="absolute top-6 right-6 lg:top-8 lg:right-8 z-30" />
 
       {/* small black tut wordmark, top-left (matches the Hub) */}
       <div className="absolute top-6 left-6 lg:top-8 lg:left-8 z-10">
@@ -314,26 +316,27 @@ export default function Desktop() {
           );
         }
 
-        const digitalArtSubfolders =
-          folder.id === 'digital-art'
-            ? folders
-                .filter((f): f is typeof f & { openseaSlug: string } => f.contentType === 'images' && !!f.openseaSlug)
-                .map((f) => ({ id: f.id, name: collectionNamesBySlug[f.openseaSlug] || f.name }))
-            : undefined;
-
-        const subfolders = digitalArtSubfolders;
+        // Digital Art: fullscreen browser of collection cards (heading + cover art). Clicking a
+        // card opens that collection's fullscreen viewer (CollectionWindow), which has a Back button.
+        const collections: GalleryCollection[] = folders
+          .filter((f): f is typeof f & { openseaSlug: string } => f.contentType === 'images' && !!f.openseaSlug)
+          .map((f) => ({
+            id: f.id,
+            name: collectionNamesBySlug[f.openseaSlug] || f.name,
+            cover: prefetchedBySlug[f.openseaSlug]?.[0]?.src,
+          }));
 
         return (
-          <FolderWindow
+          <GalleryFolderWindow
             key={folder.id}
             id={folder.id}
             title={folder.name}
+            collections={collections}
+            onOpen={handleFolderClick}
             onClose={() => handleCloseWindow(folder.id)}
             isActive={activeWindow === folder.id}
             onClick={() => handleWindowClick(folder.id)}
-            onSubfolderClick={handleFolderClick}
             zIndex={getZIndex(folder.id)}
-            subfolders={subfolders}
           />
         );
       })}
@@ -388,5 +391,6 @@ export default function Desktop() {
         onFolderClick={handleFolderClick}
       />
     </div>
+    </AudioProvider>
   );
 }

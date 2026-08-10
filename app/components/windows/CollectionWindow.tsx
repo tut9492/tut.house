@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import AudioControls from '../audio/AudioControls';
 
 interface ArtworkItem {
   id: string;
@@ -41,6 +42,8 @@ const CW_CSS = `
 .collection-window .cw-ctl { margin-left:auto; display:flex; gap:5px; flex:none; }
 .collection-window .cw-chip { width:26px; height:22px; border:2.5px solid #000; border-radius:5px; background:#ededed; font:700 12px/1 var(--mono); display:grid; place-items:center; color:#000; padding:0; cursor:pointer; }
 .collection-window .cw-chip:hover { filter:brightness(.94); }
+.collection-window .cw-back { width:auto; gap:5px; padding:0 11px; display:flex; align-items:center; font:700 11px/1 var(--mono); letter-spacing:.06em; text-transform:uppercase; flex:none; }
+.collection-window .cw-ctl { align-items:center; }
 .collection-window .cw-stage { flex:1; position:relative; display:grid; place-items:center; padding:40px; min-height:0; background:linear-gradient(#fbfbfa,#f4f2ee); }
 .collection-window .cw-mat { background:#fff; padding:22px; border-radius:4px; box-shadow:0 26px 54px -22px rgba(0,0,0,.5), 0 0 0 1px #eee; max-height:100%; display:flex; }
 .collection-window .cw-art { display:block; max-height:min(70vh,760px); max-width:80vw; width:auto; height:auto; object-fit:contain; border-radius:2px; cursor:pointer; }
@@ -136,11 +139,13 @@ export default function CollectionWindow({
 
       <div className="cw-frame">
         <div className="cw-bar">
+          <button className="cw-chip cw-back window-controls" onClick={onClose} aria-label="Back" title="Back to collections">‹ Back</button>
           <span className="cw-t">{title}</span>
           {total > 0 && <span className="cw-ct">{index + 1} / {total}</span>}
           <span className="cw-ctl">
-            <button className="cw-chip window-controls" onClick={onClose} aria-label="Close">X</button>
+            <AudioControls />
             <span className="cw-chip" aria-hidden="true">_</span>
+            <button className="cw-chip window-controls" onClick={onClose} aria-label="Close">X</button>
           </span>
         </div>
 
