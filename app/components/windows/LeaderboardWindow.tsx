@@ -27,7 +27,7 @@ const LB_CSS = `
 .lb-name { font:700 17px/1.1 var(--mono); color:#161616; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .lb-tier { font:600 11px/1 var(--sans); color:#6f8600; text-transform:uppercase; letter-spacing:.06em; margin-top:5px; }
 .lb-badges { display:flex; gap:6px; }
-.lb-badge { width:30px; height:30px; border-radius:50%; border:2px solid rgba(0,0,0,.5); background:#dcdce0 center/cover no-repeat; box-shadow:inset 0 -2px 4px rgba(0,0,0,.3); flex:none; }
+.lb-badge { width:30px; height:30px; border-radius:50%; border:2px solid rgba(0,0,0,.5); background:#dcdce0 center/150% no-repeat; box-shadow:inset 0 -2px 4px rgba(0,0,0,.3); flex:none; }
 .lb-score { font:800 18px/1 var(--mono); color:#161616; font-variant-numeric:tabular-nums; text-align:right; white-space:nowrap; }
 .lb-score .st { color:#6f8600; }
 .lb-msg { text-align:center; color:#8a8a93; font:500 14px/1.6 var(--sans); padding:48px 16px; }

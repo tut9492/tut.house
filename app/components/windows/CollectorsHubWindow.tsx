@@ -237,7 +237,8 @@ const HUB_CSS = `
 /* BADGES */
 #collectors-hub .badges { display:flex; flex-wrap:wrap; gap:13px; padding:16px 15px 18px; justify-content:space-between; }
 #collectors-hub .ch-badge { width:70px; height:70px; border-radius:50%; position:relative; flex:none; border:2px solid rgba(0,0,0,.35); box-shadow:inset 0 2px 4px rgba(255,255,255,.65), inset 0 -4px 8px rgba(0,0,0,.4), 0 3px 6px rgba(0,0,0,.34); }
-#collectors-hub .ch-badge i { position:absolute; inset:4px; border-radius:50%; background-size:cover; background-position:center; border:1.5px solid rgba(0,0,0,.25); }
+/* zoom the art past the circle so no source-image white edges show inside the badge */
+#collectors-hub .ch-badge i { position:absolute; inset:4px; border-radius:50%; background-size:150%; background-position:center; border:1.5px solid rgba(0,0,0,.25); }
 #collectors-hub .ch-badge .lock { position:absolute; inset:0; display:none; place-items:center; font-size:20px; }
 #collectors-hub .ch-badge.locked { filter:grayscale(1) brightness(.92); opacity:.5; }
 #collectors-hub .ch-badge.locked .lock { display:grid; }
