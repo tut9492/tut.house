@@ -53,7 +53,6 @@ export default function Desktop() {
     { id: 'design-agency', name: 'Creative Agency', contentType: 'design-agency' as const },
     { id: 'physical-art', name: 'Physical Art', contentType: 'physical-art' as const },
     { id: 'about', name: 'About', contentType: 'about' as const },
-    { id: 'buy-art', name: 'Buy Art', contentType: 'folders' as const },
     { id: 'collection-01', name: 'Collection_01', contentType: 'images' as const, openseaSlug: 'obsessive-cycles-of-fiber' },
     { id: 'collection-02', name: 'Collection_02', contentType: 'images' as const, openseaSlug: 'tut-1-1' },
     { id: 'collection-03', name: 'Collection_03', contentType: 'images' as const, openseaSlug: 'kingtut-genesis' },
@@ -217,7 +216,7 @@ export default function Desktop() {
         <div className="w-[calc(100vw-2rem)] lg:w-auto">
           <div className="grid grid-cols-2 gap-x-10 gap-y-10 place-items-center lg:flex lg:flex-nowrap lg:items-center lg:justify-center lg:gap-[72px]">
             {folders
-              .filter(f => ['physical-art', 'digital-art', 'buy-art', 'collectors-hub', 'about', 'design-agency'].includes(f.id))
+              .filter(f => ['physical-art', 'digital-art', 'collectors-hub', 'about', 'design-agency'].includes(f.id))
               .map((folder) => (
                 <Folder
                   key={folder.id}
@@ -322,18 +321,7 @@ export default function Desktop() {
                 .map((f) => ({ id: f.id, name: collectionNamesBySlug[f.openseaSlug] || f.name }))
             : undefined;
 
-        const buyArtPlatformSubfolders =
-          folder.id === 'buy-art'
-            ? [
-                { id: 'foundation', name: 'Foundation', href: 'https://foundation.app/@tutart' },
-                { id: 'exchange-art', name: 'Exchange Art', href: 'https://exchange.art/tut/on-sale' },
-                { id: 'opensea', name: 'OpenSea', href: 'https://opensea.io/_tut' },
-                { id: 'gamma', name: 'Gamma', href: 'https://gamma.io/tut/created' },
-                { id: 'blastr', name: 'Blastr', href: 'https://blastr.xyz/tut-along-ride' },
-              ]
-            : undefined;
-
-        const subfolders = digitalArtSubfolders ?? buyArtPlatformSubfolders;
+        const subfolders = digitalArtSubfolders;
 
         return (
           <FolderWindow
