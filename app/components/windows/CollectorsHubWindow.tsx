@@ -230,6 +230,8 @@ const HUB_CSS = `
 #collectors-hub .fm-social { font:600 11.5px/1 var(--mono); color:var(--navy); text-decoration:none; border-bottom:1.5px solid rgba(29,37,50,.3); padding-bottom:1px; max-width:22ch; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 #collectors-hub .fm-social:hover { border-bottom-color:var(--navy); }
 #collectors-hub .fm-edit { margin-top:6px; padding:9px 18px; font-size:12.5px; }
+#collectors-hub .fm-signout { margin-top:2px; background:none; border:none; font:600 10.5px/1 var(--sans); letter-spacing:.04em; text-transform:uppercase; color:var(--label); cursor:pointer; padding:4px; }
+#collectors-hub .fm-signout:hover { color:var(--ink); }
 
 /* STATUS / GOLD STARS slim bars */
 #collectors-hub .stars-num { font-variant-numeric:tabular-nums; }
@@ -399,6 +401,32 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
     }
   };
 
+  // Restore the signed-in view across reloads: we remember the verified wallet locally and
+  // re-hydrate profile + score from public reads (no re-signing needed just to view).
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const stored = window.localStorage.getItem('tut_collector_wallet');
+    if (!stored || !/^0x[a-fA-F0-9]{40}$/.test(stored)) return;
+    const w = stored.toLowerCase();
+    setWallet(w);
+    setSession({ wallet: w, score: 0, rank: 'Unscored', discordLink: '/api/discord/link' });
+    void loadCollectorDashboard(w);
+    void loadProfile(w);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const signOut = () => {
+    if (typeof window !== 'undefined') window.localStorage.removeItem('tut_collector_wallet');
+    setSession(null);
+    setWallet('');
+    setDashboard(null);
+    setProfile(null);
+    setDiscordConnection(null);
+    setDiscordResult(null);
+    setStatus('idle');
+    setError('');
+  };
+
   const connectAndVerify = async () => {
     setError('');
     setDiscordResult(null);
@@ -432,6 +460,7 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
       if (!res.ok) throw new Error(data?.error || 'Could not verify collector score.');
 
       setSession(data);
+      if (typeof window !== 'undefined') window.localStorage.setItem('tut_collector_wallet', selected);
       setStatus('verified');
       await loadCollectorDashboard(selected);
       void loadProfile(selected);
@@ -586,6 +615,7 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
                       {profile ? 'Edit page' : 'Design your page'}
                     </button>
                   )}
+                  <button className="fm-signout" onClick={signOut}>Sign out</button>
                 </>
               ) : (
                 <div className="fm-signin">
