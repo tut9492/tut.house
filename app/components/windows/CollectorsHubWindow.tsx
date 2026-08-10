@@ -198,6 +198,12 @@ const HUB_CSS = `
 
 #collectors-hub .desk { display:grid; grid-template-columns:352px 1fr; gap:22px; align-items:start; max-width:1180px; margin:0 auto; }
 #collectors-hub .col-left { display:flex; flex-direction:column; gap:16px; }
+/* STATUS + GOLD STARS + BADGES fused into one connected panel (no gaps, shared borders) */
+#collectors-hub .stack { display:flex; flex-direction:column; border:3px solid #000; border-radius:12px; overflow:hidden; box-shadow:var(--shadow); }
+#collectors-hub .stack > .win { border:none; border-radius:0; box-shadow:none; }
+#collectors-hub .stack > .win + .win { border-top:3px solid #000; }
+#collectors-hub .stack > .win .bar { border-bottom:none; }
+#collectors-hub .stack > .win:has(.badges) .bar { border-bottom:3px solid #000; }
 #collectors-hub .col-right { min-width:0; }
 #collectors-hub .full { grid-column:1 / -1; }
 #collectors-hub .trio { display:grid; grid-template-columns:1.05fr 1.2fr 1fr; gap:22px; }
@@ -550,8 +556,8 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
           <span className="ch-wm-sm" aria-label="tut" />
           <span className="ch-winttl">Collectors Hub</span>
           <span className="ch-winctl">
-            <button className="ch-chip window-controls" onClick={onClose} aria-label="Close">X</button>
             <span className="ch-chip" aria-hidden="true">_</span>
+            <button className="ch-chip window-controls" onClick={onClose} aria-label="Close">X</button>
           </span>
         </div>
         <div className="ch-framebody">
@@ -562,7 +568,7 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
 
           {/* FAMILY MEMBER */}
           <div className="win w-lime">
-            <div className="bar"><span className="t">Family Member</span><span className="ctl"><b>X</b><b>_</b></span></div>
+            <div className="bar"><span className="t">Family Member</span><span className="ctl"><b>_</b><b>X</b></span></div>
             <div className="fm-body">
               {signedIn ? (
                 <>
@@ -604,19 +610,20 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
             </div>
           </div>
 
+          <div className="stack">
           {/* STATUS */}
           <div className="win w-pink">
-            <div className="bar"><span className="t">Status — {statusLabel}</span><span className="ctl"><b>X</b><b>_</b></span></div>
+            <div className="bar"><span className="t">Status — {statusLabel}</span><span className="ctl"><b>_</b><b>X</b></span></div>
           </div>
 
           {/* GOLD STARS */}
           <div className="win w-gold mute">
-            <div className="bar"><span className="t">Gold Stars ⭐ — <span className="stars-num">{goldStars}</span></span><span className="ctl"><b>X</b><b>_</b></span></div>
+            <div className="bar"><span className="t">Gold Stars ⭐ — <span className="stars-num">{goldStars}</span></span><span className="ctl"><b>_</b><b>X</b></span></div>
           </div>
 
           {/* BADGES */}
           <div className="win w-gray mute">
-            <div className="bar"><span className="t">Badges</span><span className="ctl"><b>X</b><b>_</b></span></div>
+            <div className="bar"><span className="t">Badges</span><span className="ctl"><b>_</b><b>X</b></span></div>
             <div className="badges">
               {(badgeCollections || []).map((c) => {
                 const owned = c.count > 0;
@@ -638,12 +645,13 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
                 ))}
             </div>
           </div>
+          </div>
         </div>
 
         {/* ================= RIGHT COLUMN — ESTEEMED WORKS ================= */}
         <div className="col-right">
           <div className="win w-lime mute">
-            <div className="bar"><span className="t">Esteemed Works</span><span className="ctl"><b>X</b><b>_</b></span></div>
+            <div className="bar"><span className="t">Esteemed Works</span><span className="ctl"><b>_</b><b>X</b></span></div>
             <div className="esteem-body">
               {frameArt ? (
                 <>
@@ -664,7 +672,7 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
         {/* ================= GALLERY OF FINE ART ================= */}
         <div className="full">
           <div className="win w-lime mute">
-            <div className="bar"><span className="t">Gallery of Fine Art</span><span className="ctl"><b>X</b><b>_</b></span></div>
+            <div className="bar"><span className="t">Gallery of Fine Art</span><span className="ctl"><b>_</b><b>X</b></span></div>
             {galleryArt.length ? (
               <div className="gallery">
                 {galleryArt.map((a, i) => (
@@ -694,7 +702,7 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
 
           {/* SCORING */}
           <div className="win w-lime">
-            <div className="bar"><span className="t">Scoring</span><span className="ctl"><b>X</b><b>_</b></span></div>
+            <div className="bar"><span className="t">Scoring</span><span className="ctl"><b>_</b><b>X</b></span></div>
             <div className="score-body">
               <pre className="formula">{`stars = Σ (count × weight)
       + n² × 250      breadth
@@ -710,7 +718,7 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
 
           {/* RANKS */}
           <div className="win w-blue">
-            <div className="bar"><span className="t">Ranks</span><span className="ctl"><b>X</b><b>_</b></span></div>
+            <div className="bar"><span className="t">Ranks</span><span className="ctl"><b>_</b><b>X</b></span></div>
             <div>
               <div className="lbhead"><div>#</div><div>Wallet</div><div style={{ textAlign: 'right' }}>Stars</div></div>
               {leaderboardLoading && <div className="lb-empty">Checking leaderboard…</div>}
