@@ -13,11 +13,23 @@ interface DesignAgencyWindowProps {
 
 // Teams/clients Tut has done go-to-market work for. `cover` = showcase art (Tut is sharing
 // these — fill in as they arrive); `href` links to the project when known.
-const TEAMS: { id: string; name: string; cover?: string; href?: string }[] = [
-  { id: 'betman69', name: 'betman69', cover: '/assets/images/betman.png', href: 'https://x.com/betmangenesis69' },
-  { id: 'agntsocial', name: 'AGNT Social', cover: '/assets/images/agnt-pink.png', href: 'https://agnt.social' },
-  { id: 'breadio', name: 'Breadio', cover: 'https://breadio.tuthopium.store/logo.jpg', href: 'https://breadio.tuthopium.store' },
-  { id: 'tutloudio', name: 'Tut Loudio', cover: '/assets/images/tutloudio.png' },
+const TEAMS: { id: string; name: string; cover?: string; href?: string; desc?: string }[] = [
+  {
+    id: 'betman69', name: 'betman69', cover: '/assets/images/betman.png', href: 'https://x.com/betmangenesis69',
+    desc: 'Tut built all the art, the website, and the contracts, and advised on the go-to-market strategy.',
+  },
+  {
+    id: 'agntsocial', name: 'AGNT Social', cover: '/assets/images/agnt-pink.png', href: 'https://agnt.social',
+    desc: 'A Tut-built application building the largest human community that owns AI agents. Tut designed the entire site, concept, and marketing.',
+  },
+  {
+    id: 'breadio', name: 'Breadio', cover: 'https://breadio.tuthopium.store/logo.jpg', href: 'https://breadio.tuthopium.store',
+    desc: 'Legend of Breadio — a collaboration with Breadguy to help build the NFT community on MegaETH.',
+  },
+  {
+    id: 'tutloudio', name: 'Tut Loudio', cover: '/assets/images/tutloudio.png',
+    desc: 'An experiment on top of the Loudio experiment — Tut built an NFT collection inspired by the Loudio logo and lore.',
+  },
 ];
 
 
@@ -43,6 +55,7 @@ const AGENCY_CSS = `
 .agency .card-dot { margin-left:auto; width:11px; height:11px; border-radius:50%; background:#ec5f56; border:1.5px solid rgba(0,0,0,.4); flex:none; }
 .agency .card-art { aspect-ratio:1/1; background-color:#fff; background-repeat:no-repeat; background-position:center; background-size:contain; background-origin:content-box; padding:16px; display:grid; place-items:center; }
 .agency .card-art .ph { font:700 12px/1.4 var(--sans); color:#b7b1a6; text-align:center; padding:12px; }
+.agency .card-desc { padding:14px 16px 16px; border-top:2px solid #eee; font:400 12.5px/1.55 var(--sans); color:#43434c; }
 `;
 
 export default function DesignAgencyWindow({ title, onClose, onClick, zIndex }: DesignAgencyWindowProps) {
@@ -72,6 +85,7 @@ export default function DesignAgencyWindow({ title, onClose, onClick, zIndex }: 
                 <div className="card-art" style={team.cover ? { backgroundImage: `url(${team.cover})` } : undefined}>
                   {!team.cover && <span className="ph">{team.name}</span>}
                 </div>
+                {team.desc && <div className="card-desc">{team.desc}</div>}
               </>
             );
             return team.href ? (
