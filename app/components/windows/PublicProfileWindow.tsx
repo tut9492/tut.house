@@ -39,7 +39,7 @@ const PP_CSS = `
 .pp .badge { width:52px; height:52px; border-radius:50%; border:2px solid rgba(0,0,0,.4); background:#dcdce0 center/150% no-repeat; box-shadow:inset 0 -3px 6px rgba(0,0,0,.3); flex:none; }
 .pp .frame-body { padding:20px; display:flex; flex-direction:column; align-items:center; background:#fff; }
 .pp .frame-mat { background:#fff; padding:18px; border-radius:4px; box-shadow:0 20px 44px -20px rgba(0,0,0,.45), 0 0 0 1px #eee; }
-.pp .frame-img { width:100%; max-width:460px; height:min(46vh,460px); background:center/contain no-repeat; }
+.pp .frame-img { width:min(70vw,440px); height:min(46vh,440px); background:center/contain no-repeat; }
 .pp .frame-cap { margin-top:12px; font:600 14px/1.2 var(--sans); color:#1a1a1a; text-align:center; }
 .pp .gallery { display:flex; gap:18px; padding:18px; overflow-x:auto; }
 .pp .g-frame { flex:none; width:190px; }
