@@ -12,7 +12,8 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'openseauserdata.com' },
       { protocol: 'https', hostname: 'arweave.net' },
       { protocol: 'https', hostname: 'ipfs.io' },
-      { protocol: 'https', hostname: 'nft-cdn.alchemy.com' },
+      // Alchemy load-balances NFT images across nft-cdn / nft2-cdn / nft3-cdn … — wildcard covers all.
+      { protocol: 'https', hostname: '**.alchemy.com' },
       { protocol: 'https', hostname: 'breadio.tuthopium.store' },
     ],
   },
