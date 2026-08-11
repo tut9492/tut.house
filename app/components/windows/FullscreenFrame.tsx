@@ -34,7 +34,7 @@ const FSW_CSS = `
 .fsw .fsw-chip { width:32px; height:32px; border:2.5px solid #000; border-radius:8px; background:#fff; box-shadow:2px 2px 0 0 rgba(20,16,30,.24); font:700 13px/1 var(--mono); display:grid; place-items:center; color:#000; padding:0; cursor:pointer; }
 .fsw .fsw-chip:hover { filter:brightness(.94); }
 .fsw .fsw-back { width:auto; gap:5px; padding:0 11px; display:flex; align-items:center; font:700 11px/1 var(--mono); letter-spacing:.06em; text-transform:uppercase; }
-.fsw .fsw-body { flex:1; overflow-y:auto; padding:32px 26px; background:linear-gradient(#fbfbfa,#f4f2ee); }
+.fsw .fsw-body { flex:1; overflow-y:auto; padding:32px 26px; background:#f4f2ee url(/assets/images/white-grain.jpg) center/cover no-repeat; }
 .fsw .fsw-inner { max-width:1080px; margin:0 auto; }
 .fsw .fsw-center { min-height:100%; display:grid; place-items:center; text-align:center; }
 `;

@@ -44,7 +44,7 @@ const CW_CSS = `
 .collection-window .cw-chip:hover { filter:brightness(.94); }
 .collection-window .cw-back { width:auto; gap:5px; padding:0 11px; display:flex; align-items:center; font:700 11px/1 var(--mono); letter-spacing:.06em; text-transform:uppercase; flex:none; }
 .collection-window .cw-ctl { align-items:center; }
-.collection-window .cw-stage { flex:1; position:relative; display:grid; place-items:center; padding:40px; min-height:0; background:linear-gradient(#fbfbfa,#f4f2ee); }
+.collection-window .cw-stage { flex:1; position:relative; display:grid; place-items:center; padding:40px; min-height:0; background:#f4f2ee url(/assets/images/white-grain.jpg) center/cover no-repeat; }
 .collection-window .cw-mat { background:#fff; padding:22px; border-radius:4px; box-shadow:0 26px 54px -22px rgba(0,0,0,.5), 0 0 0 1px #eee; max-height:100%; display:flex; }
 .collection-window .cw-art { display:block; max-height:min(70vh,760px); max-width:80vw; width:auto; height:auto; object-fit:contain; border-radius:2px; cursor:pointer; }
 .collection-window .cw-nav { position:absolute; top:50%; transform:translateY(-50%); width:52px; height:52px; border:3px solid #000; border-radius:12px; background:rgba(255,255,255,.92); display:grid; place-items:center; cursor:pointer; box-shadow:3px 3px 0 0 rgba(20,16,30,.24); font:700 22px/1 var(--sans); color:#000; padding:0; }
