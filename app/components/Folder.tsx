@@ -21,7 +21,7 @@ export default function Folder({ name, onClick, image, shimmer, index = 0 }: Fol
       onClick={onClick}
       onDoubleClick={onClick}
     >
-      <div className="relative w-28 h-28 lg:w-36 lg:h-36 mb-3">
+      <div className="relative w-[76px] h-[76px] lg:w-36 lg:h-36 mb-2 lg:mb-3">
         <Image
           src="/assets/images/folderTut.png"
           alt={`${name} folder`}
@@ -41,7 +41,7 @@ export default function Folder({ name, onClick, image, shimmer, index = 0 }: Fol
         </div>
       </div>
 
-      <span className="text-white text-sm lg:text-base font-semibold px-2 py-1 text-center max-w-[160px] break-words [text-shadow:0_1px_4px_rgba(0,0,0,0.6)]">
+      <span className="text-white text-[13px] lg:text-base font-semibold px-2 py-0.5 lg:py-1 text-center max-w-[130px] lg:max-w-[160px] break-words [text-shadow:0_1px_4px_rgba(0,0,0,0.6)]">
         {name}
       </span>
     </div>
