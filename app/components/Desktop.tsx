@@ -15,6 +15,7 @@ import { AudioProvider } from './audio/AudioProvider';
 import AudioControls from './audio/AudioControls';
 import GalleryFolderWindow, { type GalleryCollection } from './windows/GalleryFolderWindow';
 import LeaderboardWindow from './windows/LeaderboardWindow';
+import PublicProfileWindow from './windows/PublicProfileWindow';
 import Menu from './Menu';
 
 interface OpenImage {
@@ -48,7 +49,14 @@ export default function Desktop() {
   const [windowStack, setWindowStack] = useState<string[]>([]);
   const [prefetchedBySlug, setPrefetchedBySlug] = useState<Record<string, PrefetchedArtwork[]>>({});
   const [collectionNamesBySlug, setCollectionNamesBySlug] = useState<Record<string, string>>({});
+  const [openProfile, setOpenProfile] = useState<{ wallet: string; username: string } | null>(null);
   const [stale, setStale] = useState(false);
+
+  const handleOpenProfile = (wallet: string, username: string) => {
+    setOpenProfile({ wallet, username });
+    setActiveWindow('public-profile');
+    setWindowStack(prev => [...prev.filter(id => id !== 'public-profile'), 'public-profile']);
+  };
 
   // Idle detection: after 5s of no interaction the desktop is "stale" and the folders run a
   // light-sweep sheen. Any activity cancels it and restarts the countdown.
@@ -321,6 +329,7 @@ export default function Desktop() {
               isActive={activeWindow === folder.id}
               onClick={() => handleWindowClick(folder.id)}
               zIndex={getZIndex(folder.id)}
+              onOpenProfile={handleOpenProfile}
             />
           );
         }
@@ -408,6 +417,18 @@ export default function Desktop() {
           zIndex={getZIndex(text.id)}
         />
       ))}
+
+      {openProfile && (
+        <PublicProfileWindow
+          id="public-profile"
+          wallet={openProfile.wallet}
+          username={openProfile.username}
+          onClose={() => { setOpenProfile(null); if (activeWindow === 'public-profile') setActiveWindow(null); setWindowStack(prev => prev.filter(id => id !== 'public-profile')); }}
+          isActive={activeWindow === 'public-profile'}
+          onClick={() => handleWindowClick('public-profile')}
+          zIndex={getZIndex('public-profile')}
+        />
+      )}
 
       <Taskbar
         openFolders={[

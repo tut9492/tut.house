@@ -10,6 +10,7 @@ interface LeaderboardWindowProps {
   isActive: boolean;
   onClick: () => void;
   zIndex: number;
+  onOpenProfile?: (wallet: string, username: string) => void;
 }
 
 type Badge = { slug: string; name: string; count: number; image: string | null };
@@ -36,7 +37,7 @@ const LB_CSS = `
 @media (max-width:640px){ .lb-head, .lb-row { grid-template-columns:40px 48px 1fr auto; } .lb-badges { display:none; } }
 `;
 
-export default function LeaderboardWindow({ title, onClose, onClick, zIndex }: LeaderboardWindowProps) {
+export default function LeaderboardWindow({ title, onClose, onClick, zIndex, onOpenProfile }: LeaderboardWindowProps) {
   const [entries, setEntries] = useState<Entry[] | null>(null);
   const [error, setError] = useState('');
 
@@ -74,7 +75,13 @@ export default function LeaderboardWindow({ title, onClose, onClick, zIndex }: L
               <div style={{ textAlign: 'right' }}>Score</div>
             </div>
             {entries.map((e) => (
-              <div key={e.wallet} className={`lb-row${e.rank <= 3 ? ` top${e.rank}` : ''}`}>
+              <div
+                key={e.wallet}
+                className={`lb-row${e.rank <= 3 ? ` top${e.rank}` : ''}`}
+                onClick={(ev) => { ev.stopPropagation(); onOpenProfile?.(e.wallet, e.username); }}
+                style={{ cursor: 'pointer' }}
+                title={`View ${e.username}'s profile`}
+              >
                 <div className="lb-rank">{e.rank}</div>
                 <div className="lb-av" style={e.avatar ? { backgroundImage: `url(${e.avatar})` } : undefined} />
                 <div className="lb-main">
