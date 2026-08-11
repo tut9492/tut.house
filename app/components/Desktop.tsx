@@ -50,6 +50,7 @@ export default function Desktop() {
   const [prefetchedBySlug, setPrefetchedBySlug] = useState<Record<string, PrefetchedArtwork[]>>({});
   const [collectionNamesBySlug, setCollectionNamesBySlug] = useState<Record<string, string>>({});
   const [openProfile, setOpenProfile] = useState<{ wallet: string; username: string } | null>(null);
+  const [prefetchDone, setPrefetchDone] = useState(false);
   const [stale, setStale] = useState(false);
 
   const handleOpenProfile = (wallet: string, username: string) => {
@@ -121,7 +122,11 @@ export default function Desktop() {
             img.src = a.src;
           });
         }
-      } catch {}
+      } catch {
+        // ignore — covers just fall back to placeholders
+      } finally {
+        if (!cancelled) setPrefetchDone(true);
+      }
     };
 
     const ric = (window as Window & { requestIdleCallback?: (cb: IdleRequestCallback) => number })
@@ -383,6 +388,7 @@ export default function Desktop() {
             id={folder.id}
             title={folder.name}
             collections={collections}
+            loading={!prefetchDone}
             onOpen={handleFolderClick}
             onClose={() => handleCloseWindow(folder.id)}
             isActive={activeWindow === folder.id}

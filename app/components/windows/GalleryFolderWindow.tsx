@@ -21,6 +21,8 @@ interface Props {
   isActive: boolean;
   onClick: () => void;
   zIndex: number;
+  /** Covers still loading (prefetch not done) — show shimmer skeletons. */
+  loading?: boolean;
 }
 
 const GFW_CSS = `
@@ -51,10 +53,12 @@ const GFW_CSS = `
    piece never touches the card frame. */
 .gfw .card-art { aspect-ratio:1/1; background:#fff; padding:16px; display:grid; place-items:center; }
 .gfw .card-img { width:100%; height:100%; background:center/contain no-repeat; }
+.gfw .card-skel { width:100%; height:100%; border-radius:6px; background:linear-gradient(100deg,#efeae2 30%,#f7f4ee 50%,#efeae2 70%); background-size:200% 100%; animation:gfw-shimmer 1.3s ease-in-out infinite; }
+@keyframes gfw-shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
 .gfw .card-art .ph { font:700 12px/1.4 var(--sans); color:#b7b1a6; text-align:center; padding:12px; }
 `;
 
-export default function GalleryFolderWindow({ title, collections, onOpen, onClose, onClick, zIndex }: Props) {
+export default function GalleryFolderWindow({ title, collections, onOpen, onClose, onClick, zIndex, loading }: Props) {
   return (
     <div className="gfw" style={{ zIndex }} onClick={onClick}>
       <style>{GFW_CSS}</style>
@@ -86,7 +90,9 @@ export default function GalleryFolderWindow({ title, collections, onOpen, onClos
                   <div className="card-art">
                     {c.cover
                       ? <div className="card-img" style={{ backgroundImage: `url(${c.cover})` }} />
-                      : <span className="ph">{c.name}</span>}
+                      : loading
+                        ? <div className="card-skel" />
+                        : <span className="ph">{c.name}</span>}
                   </div>
                 </>
               );

@@ -55,9 +55,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(body);
     }
 
+    // Edge-cache the board so repeat opens are instant (served from the CDN, not recomputed).
+    const cacheHeaders = { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=600' };
+
     const cached = globalThis.__collectorLeaderboardCache;
     if (cached && Date.now() - cached.ts < CACHE_TTL_MS) {
-      return NextResponse.json(cached.body);
+      return NextResponse.json(cached.body, { headers: cacheHeaders });
     }
 
     let body = await buildBody(limit);
@@ -71,7 +74,7 @@ export async function GET(request: NextRequest) {
     }
 
     globalThis.__collectorLeaderboardCache = { ts: Date.now(), body };
-    return NextResponse.json(body);
+    return NextResponse.json(body, { headers: cacheHeaders });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Leaderboard lookup failed';
     return NextResponse.json({ error: message }, { status: 500 });

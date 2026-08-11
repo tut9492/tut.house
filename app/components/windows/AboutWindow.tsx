@@ -31,7 +31,11 @@ In 2019 I began my web3 journey. Since then I've minted my own collections, incl
 
 MY ART NOW
 
-Currently, I’m experimenting with a process that involves creating images from my photos and then layering digital art elements to produce a new, cohesive artwork. This body of work centers around a central figure in a brutalist landscape, prompting viewers to explore their own existence. Through my art, I’ve come to realize that we often fail to truly explore ourselves until we’re alone with our thoughts and feelings.`;
+Currently, I’m experimenting with a process that involves creating images from my photos and then layering digital art elements to produce a new, cohesive artwork. This body of work centers around a central figure in a brutalist landscape, prompting viewers to explore their own existence. Through my art, I’ve come to realize that we often fail to truly explore ourselves until we’re alone with our thoughts and feelings.
+
+COMING SOON
+
+A tut pfp and art collection is coming. Yes, this is official.`;
 
 const LINKS = [
   { label: 'X / Twitter', href: 'https://x.com/Tuteth_' },
