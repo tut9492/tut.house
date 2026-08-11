@@ -16,7 +16,7 @@ interface DesignAgencyWindowProps {
 const TEAMS: { id: string; name: string; cover?: string; href?: string; desc?: string }[] = [
   {
     id: 'betman69', name: 'betman69', cover: '/assets/images/betman.png', href: 'https://x.com/betmangenesis69',
-    desc: 'Tut built all the art, the website, and the contracts, and advised on the go-to-market strategy.',
+    desc: 'Tut built the art, website, and contracts, and advised on go-to-market strategy.',
   },
   {
     id: 'agntsocial', name: 'AGNT Social', cover: '/assets/images/agnt-pink.png', href: 'https://agnt.social',
@@ -24,14 +24,15 @@ const TEAMS: { id: string; name: string; cover?: string; href?: string; desc?: s
   },
   {
     id: 'breadio', name: 'Breadio', cover: 'https://breadio.tuthopium.store/logo.jpg', href: 'https://breadio.tuthopium.store',
-    desc: 'Legend of Breadio — a collaboration with Breadguy to help build the NFT community on MegaETH.',
+    desc: 'Legend of Breadio, a collaboration with Breadguy to help build the NFT community on MegaETH.',
   },
   {
     id: 'tutloudio', name: 'Tut Loudio', cover: '/assets/images/tutloudio.png',
-    desc: 'An experiment on top of the Loudio experiment — Tut built an NFT collection inspired by the Loudio logo and lore.',
+    desc: 'An experiment on top of the Loudio experiment. Tut built an NFT collection inspired by the Loudio logo and lore.',
   },
   {
-    id: 'beer', name: 'BEER', cover: '/assets/images/beer.png',
+    id: 'beer', name: '$BEER', cover: '/assets/images/beer.png', href: 'https://x.com/BeerOnRobinHood',
+    desc: 'A curated launch on AGNT. Tut helped with on-chain ideas and marketing.',
   },
 ];
 
