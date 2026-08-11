@@ -41,7 +41,6 @@ const LINKS = [
   { label: 'X / Twitter', href: 'https://x.com/Tuteth_' },
   { label: 'OpenSea', href: 'https://opensea.io/_tut' },
   { label: 'AGNT', href: 'https://agnt.social' },
-  { label: 'Linktree', href: 'https://linktr.ee/tut_' },
 ];
 
 const ABOUT_CSS = `
