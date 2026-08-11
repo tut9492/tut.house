@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import FullscreenFrame from './FullscreenFrame';
+import { cdnImg } from '../../lib/img';
 
 interface LeaderboardWindowProps {
   id: string;
@@ -83,7 +84,7 @@ export default function LeaderboardWindow({ title, onClose, onClick, zIndex, onO
                 title={`View ${e.username}'s profile`}
               >
                 <div className="lb-rank">{e.rank}</div>
-                <div className="lb-av" style={e.avatar ? { backgroundImage: `url(${e.avatar})` } : undefined} />
+                <div className="lb-av" style={e.avatar ? { backgroundImage: `url(${cdnImg(e.avatar, 128)})` } : undefined} />
                 <div className="lb-main">
                   <div className="lb-name">{e.username}</div>
                   <div className="lb-tier">{e.tier}</div>
@@ -93,7 +94,7 @@ export default function LeaderboardWindow({ title, onClose, onClick, zIndex, onO
                     <div
                       key={b.slug}
                       className="lb-badge"
-                      style={b.image ? { backgroundImage: `url(${b.image})` } : undefined}
+                      style={b.image ? { backgroundImage: `url(${cdnImg(b.image, 96)})` } : undefined}
                       title={`${b.name} · ×${b.count}`}
                     />
                   ))}

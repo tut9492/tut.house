@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import AudioControls from '../audio/AudioControls';
+import { cdnImg } from '../../lib/img';
 import DesignPageWizard, { type WizardArt } from './DesignPageWizard';
 import type { CollectorProfile } from '@/app/lib/collectorProfile';
 
@@ -627,7 +628,7 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
               {signedIn ? (
                 <>
                   <div className="fm-pfp">
-                    <div className={`ch-avatar${profileLoaded ? '' : ' loading'}`} style={profileLoaded ? { backgroundImage: `url(${avatarImage})` } : undefined} />
+                    <div className={`ch-avatar${profileLoaded ? '' : ' loading'}`} style={profileLoaded ? { backgroundImage: `url(${cdnImg(avatarImage, 384)})` } : undefined} />
                     <div className="fm-hover">
                       {profileStoreReady && (
                         <button className="fm-hbtn" onClick={() => setWizardOpen(true)}>{profile ? 'Edit page' : 'Design page'}</button>
@@ -693,7 +694,7 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
                 const tint = SWATCH[c.slug] || '#c9c9cf';
                 return (
                   <div key={c.slug} className={`ch-badge${owned ? '' : ' locked'}`} title={`${c.name}${owned ? ` · ×${c.count}` : ''}`}>
-                    <i style={owned && img ? { backgroundImage: `url(${img})` } : { background: `radial-gradient(circle at 35% 30%, ${tint}, rgba(0,0,0,.5))` }} />
+                    <i style={owned && img ? { backgroundImage: `url(${cdnImg(img, 128)})` } : { background: `radial-gradient(circle at 35% 30%, ${tint}, rgba(0,0,0,.5))` }} />
                     <span className="lock">🔒</span>
                   </div>
                 );
@@ -718,7 +719,7 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
               {frameArt ? (
                 <>
                   <div className="ch-mat">
-                    <div className="ch-art hero" style={frameArt.image ? { backgroundImage: `url(${frameArt.image})` } : undefined} />
+                    <div className="ch-art hero" style={frameArt.image ? { backgroundImage: `url(${cdnImg(frameArt.image, 640)})` } : undefined} />
                   </div>
                   <div className="esteem-cap"><span className="ti">{frameArt.title}</span></div>
                 </>
@@ -746,7 +747,7 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
                     rel="noreferrer"
                     onClick={(e) => { if (!a.permalink) e.preventDefault(); }}
                   >
-                    <div className="ch-mat"><div className="ch-art" style={a.image ? { backgroundImage: `url(${a.image})` } : undefined} /></div>
+                    <div className="ch-mat"><div className="ch-art" style={a.image ? { backgroundImage: `url(${cdnImg(a.image, 384)})` } : undefined} /></div>
                     <div className="cap">{a.title}{a.collection ? ` · ${a.collection}` : ''}</div>
                   </a>
                 ))}

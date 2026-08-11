@@ -1,6 +1,7 @@
 'use client';
 
 import AudioControls from '../audio/AudioControls';
+import { cdnImg } from '../../lib/img';
 
 export interface GalleryCollection {
   id: string;
@@ -89,7 +90,7 @@ export default function GalleryFolderWindow({ title, collections, onOpen, onClos
                                       </div>
                   <div className="card-art">
                     {c.cover
-                      ? <div className="card-img" style={{ backgroundImage: `url(${c.cover})` }} />
+                      ? <div className="card-img" style={{ backgroundImage: `url(${cdnImg(c.cover, 640)})` }} />
                       : loading
                         ? <div className="card-skel" />
                         : <span className="ph">{c.name}</span>}

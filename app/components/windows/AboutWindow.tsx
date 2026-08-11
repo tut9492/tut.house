@@ -40,7 +40,7 @@ A tut pfp and art collection is coming. Yes, this is official.`;
 const LINKS = [
   { label: 'X / Twitter', href: 'https://x.com/Tuteth_' },
   { label: 'OpenSea', href: 'https://opensea.io/_tut' },
-  { label: 'Foundation', href: 'https://foundation.app/@tutart' },
+  { label: 'AGNT', href: 'https://agnt.social' },
 ];
 
 const ABOUT_CSS = `

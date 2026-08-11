@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import AudioControls from '../audio/AudioControls';
+import { cdnImg } from '../../lib/img';
 
 interface ArtworkItem {
   id: string;
@@ -164,7 +165,7 @@ export default function CollectionWindow({
                 <img
                   key={current.src}
                   className="cw-art"
-                  src={current.src}
+                  src={cdnImg(current.src, 1080)}
                   alt={current.title}
                   title={current.permalink ? 'View original ↗' : current.title}
                   loading="eager"

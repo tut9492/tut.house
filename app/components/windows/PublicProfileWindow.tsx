@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import FullscreenFrame from './FullscreenFrame';
+import { cdnImg } from '../../lib/img';
 
 interface PublicProfileWindowProps {
   id: string;
@@ -102,7 +103,7 @@ export default function PublicProfileWindow({ wallet, username, onClose, onClick
             <div className="win">
               <div className="bar lime"><span className="t">Collector</span></div>
               <div className="head">
-                <div className="av" style={avatar ? { backgroundImage: `url(${avatar})` } : undefined} />
+                <div className="av" style={avatar ? { backgroundImage: `url(${cdnImg(avatar, 128)})` } : undefined} />
                 <div>
                   <div className="name">{name}</div>
                   <div className="meta">{tier || 'Unscored'} · {score.toLocaleString()} ★</div>
@@ -118,7 +119,7 @@ export default function PublicProfileWindow({ wallet, username, onClose, onClick
                 <div className="bar gray"><span className="t">Badges</span></div>
                 <div className="badges">
                   {badges.map((b) => (
-                    <div key={b.slug} className="badge" style={b.image ? { backgroundImage: `url(${b.image})` } : undefined} title={`${b.name} · ×${b.count}`} />
+                    <div key={b.slug} className="badge" style={b.image ? { backgroundImage: `url(${cdnImg(b.image, 96)})` } : undefined} title={`${b.name} · ×${b.count}`} />
                   ))}
                 </div>
               </div>
@@ -128,7 +129,7 @@ export default function PublicProfileWindow({ wallet, username, onClose, onClick
               <div className="win">
                 <div className="bar silver"><span className="t">Esteemed Works</span></div>
                 <div className="frame-body">
-                  <div className="frame-mat"><div className="frame-img" style={frameArt.image ? { backgroundImage: `url(${frameArt.image})` } : undefined} /></div>
+                  <div className="frame-mat"><div className="frame-img" style={frameArt.image ? { backgroundImage: `url(${cdnImg(frameArt.image, 640)})` } : undefined} /></div>
                   <div className="frame-cap">{frameArt.title}</div>
                 </div>
               </div>
@@ -140,7 +141,7 @@ export default function PublicProfileWindow({ wallet, username, onClose, onClick
                 <div className="gallery">
                   {gallery.map((a, i) => (
                     <a key={`${a.title}-${i}`} className="g-frame" href={a.permalink || undefined} target="_blank" rel="noreferrer" onClick={(e) => { if (!a.permalink) e.preventDefault(); }}>
-                      <div className="g-mat"><div className="g-img" style={a.image ? { backgroundImage: `url(${a.image})` } : undefined} /></div>
+                      <div className="g-mat"><div className="g-img" style={a.image ? { backgroundImage: `url(${cdnImg(a.image, 384)})` } : undefined} /></div>
                       <div className="g-cap">{a.title}{a.collection ? ` · ${a.collection}` : ''}</div>
                     </a>
                   ))}
