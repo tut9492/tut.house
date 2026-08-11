@@ -57,6 +57,19 @@ const CW_CSS = `
 .collection-window .cw-spin { width:34px; height:34px; border:3px solid #d8d8d8; border-bottom-color:#333; border-radius:50%; animation:cw-spin .8s linear infinite; }
 @keyframes cw-spin { to { transform:rotate(360deg); } }
 @media (prefers-reduced-motion:reduce){ .collection-window .cw-spin { animation-duration:1.6s; } }
+@media (max-width:640px){
+  .collection-window { padding:8px; }
+  .collection-window .cw-bar { padding:8px 10px; gap:8px; }
+  .collection-window .cw-t { font-size:12px; }
+  .collection-window .cw-back { padding:0 8px; font-size:10px; }
+  .collection-window .cw-ctl .cw-chip[aria-hidden="true"] { display:none; }
+  .collection-window .cw-chip { width:30px; height:30px; }
+  .collection-window .cw-stage { padding:14px; }
+  .collection-window .cw-art { max-width:88vw; max-height:min(62vh,560px); }
+  .collection-window .cw-nav { width:42px; height:42px; font-size:18px; }
+  .collection-window .cw-nav.prev { left:8px; } .collection-window .cw-nav.next { right:8px; }
+  .collection-window .cw-cap { padding:0 54px; }
+}
 `;
 
 export default function CollectionWindow({

@@ -57,6 +57,16 @@ const GFW_CSS = `
 .gfw .card-skel { width:100%; height:100%; border-radius:6px; background:linear-gradient(100deg,#efeae2 30%,#f7f4ee 50%,#efeae2 70%); background-size:200% 100%; animation:gfw-shimmer 1.3s ease-in-out infinite; }
 @keyframes gfw-shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
 .gfw .card-art .ph { font:700 12px/1.4 var(--sans); color:#b7b1a6; text-align:center; padding:12px; }
+@media (max-width:640px){
+  .gfw { padding:8px; }
+  .gfw .gfw-bar { padding:8px 10px; gap:8px; }
+  .gfw .gfw-t { font-size:12px; }
+  .gfw .gfw-ctl { gap:6px; }
+  .gfw .gfw-chip { width:30px; height:30px; }
+  .gfw .gfw-ctl .gfw-chip[aria-hidden="true"] { display:none; }
+  .gfw .gfw-body { padding:14px 10px; }
+  .gfw .gfw-grid { grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:14px; }
+}
 `;
 
 export default function GalleryFolderWindow({ title, collections, onOpen, onClose, onClick, zIndex, loading }: Props) {

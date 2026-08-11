@@ -30,6 +30,9 @@ const PA_CSS = `
 .pa .card-dot { margin-left:auto; width:11px; height:11px; border-radius:50%; background:#ec5f56; border:1.5px solid rgba(0,0,0,.4); flex:none; }
 .pa .card-art { aspect-ratio:1/1; background-color:#fff; background-repeat:no-repeat; background-position:center; background-size:contain; background-origin:content-box; padding:16px; display:grid; place-items:center; }
 .pa .card-art .ph { font:700 12px/1.4 var(--sans); color:#b7b1a6; text-align:center; padding:12px; }
+@media (max-width:640px){
+  .pa .grid { grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:14px; }
+}
 `;
 
 export default function PhysicalArtWindow({ title, onClose, onClick, zIndex }: PhysicalArtWindowProps) {

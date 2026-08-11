@@ -60,6 +60,12 @@ const AGENCY_CSS = `
 .agency .card-art { aspect-ratio:1/1; background-color:#fff; background-repeat:no-repeat; background-position:center; background-size:contain; background-origin:content-box; padding:16px; display:grid; place-items:center; }
 .agency .card-art .ph { font:700 12px/1.4 var(--sans); color:#b7b1a6; text-align:center; padding:12px; }
 .agency .card-desc { padding:14px 16px 16px; border-top:2px solid #eee; font:400 12.5px/1.55 var(--sans); color:#43434c; }
+@media (max-width:640px){
+  .agency .writeup { padding:16px 14px 14px; }
+  .agency .writeup h2 { font-size:21px; }
+  .agency .writeup p { font-size:14px; margin:0 0 14px; }
+  .agency .grid { grid-template-columns:1fr; gap:16px; }
+}
 `;
 
 export default function DesignAgencyWindow({ title, onClose, onClick, zIndex }: DesignAgencyWindowProps) {

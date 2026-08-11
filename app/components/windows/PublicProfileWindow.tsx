@@ -49,6 +49,18 @@ const PP_CSS = `
 .pp .msg { text-align:center; color:#8a8a93; font:500 14px/1.5 var(--sans); padding:34px 16px; }
 .pp .spin { width:32px; height:32px; border:3px solid #d8d8d8; border-bottom-color:#333; border-radius:50%; animation:pp-spin .8s linear infinite; margin:40px auto; }
 @keyframes pp-spin { to { transform:rotate(360deg); } }
+@media (max-width:640px){
+  .pp { gap:16px; }
+  .pp .head { flex-direction:column; align-items:flex-start; gap:12px; padding:14px; }
+  .pp .av { width:80px; height:80px; }
+  .pp .name { font-size:24px; }
+  .pp .badges { gap:10px; padding:12px 14px; }
+  .pp .badge { width:44px; height:44px; }
+  .pp .frame-body { padding:14px; }
+  .pp .frame-img { width:min(80vw,340px); height:min(50vh,340px); }
+  .pp .gallery { padding:14px; gap:12px; }
+  .pp .g-frame { width:150px; }
+}
 `;
 
 export default function PublicProfileWindow({ wallet, username, onClose, onClick, zIndex }: PublicProfileWindowProps) {

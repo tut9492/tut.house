@@ -360,6 +360,20 @@ const HUB_CSS = `
 #collectors-hub .hub-footer a:hover { color:#161616; }
 
 @media (prefers-reduced-motion:reduce){ #collectors-hub * { transition-duration:.001ms !important; } }
+@media (max-width:640px){
+  #collectors-hub .ch-frame { top:8px; left:8px; right:8px; bottom:8px; border-radius:12px; }
+  #collectors-hub .ch-titlebar { padding:9px 12px; gap:8px; }
+  #collectors-hub .ch-winttl { font-size:12px; letter-spacing:.06em; }
+  #collectors-hub .ch-winctl { gap:6px; }
+  #collectors-hub .ch-winctl .ch-chip[aria-hidden="true"] { display:none; }
+  #collectors-hub .ch-chip { width:30px; height:30px; }
+  #collectors-hub .ch-framebody { padding:14px 12px 40px; }
+  #collectors-hub .desk { gap:16px; }
+  #collectors-hub .fm-name { font-size:26px; }
+  #collectors-hub .fm-pfp, #collectors-hub .ch-avatar { width:120px; height:120px; }
+  #collectors-hub .badges { gap:10px; padding:14px 12px; justify-content:flex-start; }
+  #collectors-hub .ch-badge { width:58px; height:58px; }
+}
 `;
 
 export default function CollectorsHubWindow({ onClose, onClick, zIndex }: CollectorsHubWindowProps) {

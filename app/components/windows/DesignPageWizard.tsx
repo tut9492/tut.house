@@ -87,6 +87,14 @@ const DPW_CSS = `
 #dpw button.navy:hover:not(:disabled) { background:#171d28; }
 #dpw .av-preview { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
 #dpw .av-preview .ring { width:56px; height:56px; border-radius:14px; border:2.5px solid #000; background:#f0efec center/cover no-repeat; flex:none; display:grid; place-items:center; font:700 20px/1 ui-monospace,monospace; color:#c4c4c4; }
+@media (max-width:640px){
+  #dpw-overlay { padding:10px; }
+  #dpw { max-height:calc(100svh - 20px); }
+  #dpw .body { padding:14px 14px 6px; }
+  #dpw .grid { grid-template-columns:repeat(auto-fill,minmax(72px,1fr)); gap:8px; }
+  #dpw .foot { padding:11px 12px; }
+  #dpw .foot .err { font-size:10.5px; }
+}
 `;
 
 type AvailState = 'idle' | 'checking' | 'ok' | 'taken' | 'invalid';

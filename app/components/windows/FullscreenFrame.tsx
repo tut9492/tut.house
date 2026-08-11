@@ -37,6 +37,17 @@ const FSW_CSS = `
 .fsw .fsw-body { flex:1; overflow-y:auto; padding:32px 26px; background:#f4f2ee url(/assets/images/white-grain.jpg) center/cover no-repeat; }
 .fsw .fsw-inner { max-width:1080px; margin:0 auto; }
 .fsw .fsw-center { min-height:100%; display:grid; place-items:center; text-align:center; }
+@media (max-width:640px){
+  .fsw { padding:8px; }
+  .fsw .fsw-frame { border-radius:11px; }
+  .fsw .fsw-bar { padding:8px 10px; gap:8px; }
+  .fsw .fsw-t { font-size:12px; letter-spacing:.04em; }
+  .fsw .fsw-ctl { gap:6px; }
+  .fsw .fsw-chip { width:30px; height:30px; }
+  .fsw .fsw-ctl .fsw-chip[aria-hidden="true"] { display:none; }
+  .fsw .fsw-back { padding:0 8px; font-size:10px; gap:3px; }
+  .fsw .fsw-body { padding:16px 12px; }
+}
 `;
 
 export default function FullscreenFrame({ title, onClose, onClick, zIndex, onBack, barBg, bodyBg, children }: Props) {
