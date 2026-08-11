@@ -30,6 +30,9 @@ const TEAMS: { id: string; name: string; cover?: string; href?: string; desc?: s
     id: 'tutloudio', name: 'Tut Loudio', cover: '/assets/images/tutloudio.png',
     desc: 'An experiment on top of the Loudio experiment — Tut built an NFT collection inspired by the Loudio logo and lore.',
   },
+  {
+    id: 'beer', name: 'BEER', cover: '/assets/images/beer.png',
+  },
 ];
 
 
