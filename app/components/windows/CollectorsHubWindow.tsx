@@ -226,6 +226,8 @@ const HUB_CSS = `
 #collectors-hub .ch-avatar { width:140px; height:140px; aspect-ratio:auto; border-radius:20px; background-size:cover; background-position:center; }
 #collectors-hub .fm-pfp .ch-avatar { border-radius:0; }
 #collectors-hub .ch-avatar.empty { background:transparent; box-shadow:none; border:2px dashed #cdcdcd; }
+#collectors-hub .ch-avatar.loading { background:#ece9e4; animation:ch-pulse 1s ease-in-out infinite; }
+@keyframes ch-pulse { 0%,100%{opacity:.65} 50%{opacity:.95} }
 /* Edit / Sign out reveal on hovering the pfp */
 #collectors-hub .fm-hover { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; background:rgba(20,16,30,.74); opacity:0; transition:opacity .15s; }
 #collectors-hub .fm-pfp:hover .fm-hover { opacity:1; }
@@ -371,6 +373,7 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
   const [displayScore, setDisplayScore] = useState(0);
   const [profile, setProfile] = useState<CollectorProfile | null>(null);
   const [profileStoreReady, setProfileStoreReady] = useState(false);
+  const [profileLoaded, setProfileLoaded] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
 
   useEffect(() => {
@@ -422,6 +425,9 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
       if (data.profile) setProfile(data.profile);
     } catch {
       // Profile is optional chrome — a load failure never blocks the Hub.
+    } finally {
+      // Mark loaded so the avatar renders only once we know the real image (no fallback flash).
+      setProfileLoaded(true);
     }
   };
 
@@ -621,7 +627,7 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
               {signedIn ? (
                 <>
                   <div className="fm-pfp">
-                    <div className="ch-avatar" style={{ backgroundImage: `url(${avatarImage})` }} />
+                    <div className={`ch-avatar${profileLoaded ? '' : ' loading'}`} style={profileLoaded ? { backgroundImage: `url(${avatarImage})` } : undefined} />
                     <div className="fm-hover">
                       {profileStoreReady && (
                         <button className="fm-hbtn" onClick={() => setWizardOpen(true)}>{profile ? 'Edit page' : 'Design page'}</button>
