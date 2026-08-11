@@ -248,8 +248,8 @@ export default function Desktop() {
         />
       </div>
 
-      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
-        <div className="w-[calc(100vw-4rem)] px-2 lg:w-auto lg:px-0">
+      <div className="absolute inset-x-0 top-0 bottom-12 z-10 flex items-center justify-center pt-24 pb-6 lg:inset-0 lg:bottom-0 lg:py-0">
+        <div className="w-[calc(100vw-4rem)] lg:w-auto">
           <div className="grid grid-cols-2 gap-x-8 gap-y-12 place-items-center lg:flex lg:flex-nowrap lg:items-center lg:justify-center lg:gap-[72px]">
             {folders
               .filter(f => ['physical-art', 'digital-art', 'collectors-hub', 'leaderboard', 'about', 'design-agency'].includes(f.id))
