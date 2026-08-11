@@ -192,6 +192,9 @@ const HUB_CSS = `
 #collectors-hub .w-blurple .bar .t { color:#fff; }
 #collectors-hub .w-blurple .ctl b { background:#cdd2fb; }
 #collectors-hub .w-blue .bar { background:var(--blue); }
+/* metallic bars: silver (with a light shine) for Esteemed Works, gold for the Gallery */
+#collectors-hub .w-silver .bar { background:linear-gradient(135deg,#dfe2e7 0%,#fbfcfd 27%,#c4c9d2 55%,#eceef2 78%,#d3d7de 100%); }
+#collectors-hub .w-goldm .bar { background:linear-gradient(135deg,#d6a02c 0%,#f8dc7e 32%,#c69120 58%,#efc65a 80%,#d9a838 100%); }
 
 #collectors-hub .desk { display:grid; grid-template-columns:352px 1fr; gap:22px; align-items:stretch; max-width:1180px; margin:0 auto; }
 #collectors-hub .col-left { display:flex; flex-direction:column; gap:16px; }
@@ -703,7 +706,7 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
 
         {/* ================= RIGHT COLUMN — ESTEEMED WORKS ================= */}
         <div className="col-right">
-          <div className="win w-lime mute">
+          <div className="win w-silver mute">
             <div className="bar"><span className="t">Esteemed Works</span><span className="ctl"><b>_</b><b>X</b></span></div>
             <div className="esteem-body">
               {frameArt ? (
@@ -711,7 +714,7 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
                   <div className="ch-mat">
                     <div className="ch-art hero" style={frameArt.image ? { backgroundImage: `url(${frameArt.image})` } : undefined} />
                   </div>
-                  <div className="esteem-cap"><span className="ti">{frameArt.title}</span><span className="wt">+{frameArt.weight.toLocaleString()} ★</span></div>
+                  <div className="esteem-cap"><span className="ti">{frameArt.title}</span></div>
                 </>
               ) : (
                 <div className="esteem-empty">
@@ -724,7 +727,7 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
 
         {/* ================= GALLERY OF FINE ART ================= */}
         <div className="full">
-          <div className="win w-lime mute">
+          <div className="win w-goldm mute">
             <div className="bar"><span className="t">Gallery of Fine Art</span><span className="ctl"><b>_</b><b>X</b></span></div>
             {galleryArt.length ? (
               <div className="gallery">
