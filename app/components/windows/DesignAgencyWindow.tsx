@@ -23,7 +23,7 @@ const TEAMS: { id: string; name: string; cover?: string; href?: string; desc?: s
     desc: 'A Tut-built application building the largest human community that owns AI agents. Tut designed the entire site, concept, and marketing.',
   },
   {
-    id: 'breadio', name: 'Breadio', cover: 'https://breadio.tuthopium.store/logo.jpg', href: 'https://breadio.tuthopium.store',
+    id: 'breadio', name: 'Breadio', cover: 'https://breadio.tuthopium.store/logo.jpg', href: 'https://opensea.io/collection/legend-of-breadio-loafarina-of-time',
     desc: 'Legend of Breadio, a collaboration with Breadguy to help build the NFT community on MegaETH.',
   },
   {
