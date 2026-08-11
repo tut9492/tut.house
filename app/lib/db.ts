@@ -54,6 +54,17 @@ export async function getAllProfiles(): Promise<{ wallet: string; username: stri
   return rows;
 }
 
+// A wallet's indexed Breadio tokens (MegaETH has no NFT API — see breadio_tokens indexer).
+export async function getBreadioTokens(wallet: string, limit: number): Promise<{ tokenId: string; image: string; name: string }[]> {
+  if (!process.env.DATABASE_URL) return [];
+  const sql = client();
+  const rows = (await sql`
+    SELECT token_id, image, name FROM breadio_tokens
+    WHERE owner = ${wallet.toLowerCase()} ORDER BY token_id LIMIT ${limit}
+  `) as { token_id: number | string; image: string; name: string }[];
+  return rows.map((r) => ({ tokenId: String(r.token_id), image: r.image, name: r.name }));
+}
+
 export type LeaderboardBadge = { slug: string; name: string; count: number; image: string | null };
 export type StoredLeaderboardRow = {
   wallet: string; username: string; avatar: CollectorProfile['avatar'];
