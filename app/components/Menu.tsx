@@ -12,12 +12,13 @@ export default function Menu({ isOpen, onClose, onFolderClick }: MenuProps) {
   if (!isOpen) return null;
 
   const menuItems = [
-    { id: 'physical-art', name: 'Physical Art', icon: '/assets/images/folderTut.png' },
-    { id: 'digital-art', name: 'Digital Art', icon: '/assets/images/folderTut.png' },
-    { id: 'buy-art', name: 'Buy Art', icon: '/assets/images/folderTut.png' },
     { id: 'collectors-hub', name: 'Collectors Hub', icon: '/assets/images/folderTut.png' },
-    { id: 'about', name: 'About', icon: '/assets/images/folderTut.png' },
+    { id: 'leaderboard', name: 'Leaderboard', icon: '/assets/images/folderTut.png' },
+    { id: 'digital-art', name: 'Digital Art', icon: '/assets/images/folderTut.png' },
     { id: 'design-agency', name: 'Creative Agency', icon: '/assets/images/folderTut.png' },
+    { id: 'physical-art', name: 'Physical Art', icon: '/assets/images/folderTut.png' },
+    { id: 'about', name: 'About', icon: '/assets/images/folderTut.png' },
+    { id: 'agnt-referral', name: 'AGNT Referral', icon: '/assets/images/folderTut.png' },
   ];
 
   const handleItemClick = (folderId: string) => {

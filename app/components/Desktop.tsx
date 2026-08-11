@@ -10,6 +10,7 @@ import ImageViewerWindow from './windows/ImageViewerWindow';
 import TextViewerWindow from './windows/TextViewerWindow';
 import AboutWindow from './windows/AboutWindow';
 import DesignAgencyWindow from './windows/DesignAgencyWindow';
+import AgntReferralWindow from './windows/AgntReferralWindow';
 import Taskbar from './Taskbar';
 import { AudioProvider } from './audio/AudioProvider';
 import AudioControls from './audio/AudioControls';
@@ -75,6 +76,7 @@ export default function Desktop() {
     { id: 'design-agency', name: 'Creative Agency', contentType: 'design-agency' as const },
     { id: 'physical-art', name: 'Physical Art', contentType: 'physical-art' as const },
     { id: 'about', name: 'About', contentType: 'about' as const },
+    { id: 'agnt-referral', name: 'AGNT Referral', contentType: 'agnt-referral' as const },
     { id: 'collection-01', name: 'Collection_01', contentType: 'images' as const, openseaSlug: 'obsessive-cycles-of-fiber' },
     { id: 'collection-02', name: 'Collection_02', contentType: 'images' as const, openseaSlug: 'tut-1-1' },
     { id: 'collection-03', name: 'Collection_03', contentType: 'images' as const, openseaSlug: 'kingtut-genesis' },
@@ -239,7 +241,7 @@ export default function Desktop() {
         <div className="w-[calc(100vw-2rem)] lg:w-auto">
           <div className="grid grid-cols-2 gap-x-10 gap-y-10 place-items-center lg:flex lg:flex-nowrap lg:items-center lg:justify-center lg:gap-[72px]">
             {folders
-              .filter(f => ['physical-art', 'digital-art', 'collectors-hub', 'leaderboard', 'about', 'design-agency'].includes(f.id))
+              .filter(f => ['physical-art', 'digital-art', 'collectors-hub', 'leaderboard', 'about', 'design-agency', 'agnt-referral'].includes(f.id))
               .map((folder, i) => (
                 <Folder
                   key={folder.id}
@@ -342,6 +344,20 @@ export default function Desktop() {
         if (folder.contentType === 'design-agency') {
           return (
             <DesignAgencyWindow
+              key={folder.id}
+              id={folder.id}
+              title={folder.name}
+              onClose={() => handleCloseWindow(folder.id)}
+              isActive={activeWindow === folder.id}
+              onClick={() => handleWindowClick(folder.id)}
+              zIndex={getZIndex(folder.id)}
+            />
+          );
+        }
+
+        if (folder.contentType === 'agnt-referral') {
+          return (
+            <AgntReferralWindow
               key={folder.id}
               id={folder.id}
               title={folder.name}
