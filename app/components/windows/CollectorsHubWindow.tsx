@@ -218,10 +218,29 @@ const HUB_CSS = `
 @media (max-width:880px){ #collectors-hub .desk { grid-template-columns:1fr; } #collectors-hub .trio { grid-template-columns:1fr; } }
 
 /* FAMILY MEMBER */
-#collectors-hub .fm-body { display:flex; flex-direction:column; align-items:center; gap:16px; padding:26px 18px 30px; }
-#collectors-hub .ch-avatar { width:min(268px,100%); aspect-ratio:1; height:auto; border-radius:26px; background-size:cover; background-position:center; box-shadow:0 8px 20px -8px rgba(0,0,0,.42); }
+#collectors-hub .fm-body { display:flex; flex-direction:column; align-items:flex-start; gap:12px; padding:16px 16px 18px; }
+#collectors-hub .fm-pfp { position:relative; width:140px; height:140px; border-radius:20px; overflow:hidden; box-shadow:0 8px 20px -8px rgba(0,0,0,.42); }
+#collectors-hub .ch-avatar { width:140px; height:140px; aspect-ratio:auto; border-radius:20px; background-size:cover; background-position:center; }
+#collectors-hub .fm-pfp .ch-avatar { border-radius:0; }
 #collectors-hub .ch-avatar.empty { background:transparent; box-shadow:none; border:2px dashed #cdcdcd; }
-#collectors-hub .fm-name { font:700 26px/1 var(--mono); letter-spacing:.06em; color:#161616; }
+/* Edit / Sign out reveal on hovering the pfp */
+#collectors-hub .fm-hover { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; background:rgba(20,16,30,.74); opacity:0; transition:opacity .15s; }
+#collectors-hub .fm-pfp:hover .fm-hover { opacity:1; }
+#collectors-hub .fm-hbtn { width:82%; border:2px solid #fff; border-radius:8px; background:#fff; color:#161616; font:700 10.5px/1 var(--sans); letter-spacing:.04em; text-transform:uppercase; padding:8px 10px; cursor:pointer; }
+#collectors-hub .fm-hbtn.ghost { background:transparent; color:#fff; }
+#collectors-hub .fm-hbtn:hover { filter:brightness(.92); }
+#collectors-hub .fm-name { font:700 34px/1 var(--mono); letter-spacing:.01em; color:#161616; text-align:left; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+/* X + Discord logos side by side; each shows a linked / not-linked state */
+#collectors-hub .fm-links { display:flex; gap:10px; }
+#collectors-hub .fm-link { width:46px; height:46px; border:2.5px solid #000; border-radius:12px; display:grid; place-items:center; cursor:pointer; box-shadow:2px 2px 0 0 rgba(20,16,30,.24); padding:0; background:#fff; text-decoration:none; transition:filter .15s; }
+#collectors-hub .fm-link svg { width:23px; height:23px; }
+#collectors-hub .fm-link.x svg { fill:#000; }
+#collectors-hub .fm-link.disc { background:var(--blurple); }
+#collectors-hub .fm-link.disc svg { fill:#fff; }
+#collectors-hub .fm-link.disc.linked { background:#3a6b40; }
+#collectors-hub .fm-link.unset { opacity:.35; box-shadow:none; cursor:default; }
+#collectors-hub .fm-link:not(.unset):hover { filter:brightness(1.06); }
+#collectors-hub .fm-err { font:600 10.5px/1.4 var(--sans); color:#9a3b3b; }
 #collectors-hub .fm-signin { display:flex; flex-direction:column; align-items:center; gap:12px; }
 #collectors-hub .fm-signin .sub { font:400 12.5px/1.5 var(--sans); color:var(--label); text-align:center; max-width:24ch; }
 #collectors-hub .btn-navy { border:3px solid #000; border-radius:9px; background:var(--navy); color:#fff; font:600 13.5px/1 var(--sans); padding:12px 22px; cursor:pointer; box-shadow:3px 3px 0 0 rgba(20,16,30,.24); }
@@ -591,16 +610,28 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
             <div className="fm-body">
               {signedIn ? (
                 <>
-                  <div className="ch-avatar" style={{ backgroundImage: `url(${avatarImage})` }} />
+                  <div className="fm-pfp">
+                    <div className="ch-avatar" style={{ backgroundImage: `url(${avatarImage})` }} />
+                    <div className="fm-hover">
+                      {profileStoreReady && (
+                        <button className="fm-hbtn" onClick={() => setWizardOpen(true)}>{profile ? 'Edit page' : 'Design page'}</button>
+                      )}
+                      <button className="fm-hbtn ghost" onClick={signOut}>Sign out</button>
+                    </div>
+                  </div>
                   <div className="fm-name">{displayName}</div>
-                  {profile?.socialUrl && (
-                    <a className="fm-social" href={profile.socialUrl} target="_blank" rel="noopener noreferrer nofollow">
-                      ↗ {socialLabel(profile.socialUrl)}
-                    </a>
-                  )}
-                  <div className="fm-discord">
+                  <div className="fm-links">
+                    {profile?.socialUrl ? (
+                      <a className="fm-link x" href={profile.socialUrl} target="_blank" rel="noopener noreferrer nofollow" title={socialLabel(profile.socialUrl)}>
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+                      </a>
+                    ) : (
+                      <span className="fm-link x unset" title="No X linked — add it in Edit page">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+                      </span>
+                    )}
                     <button
-                      className={`disc-ico${discordDone ? ' done' : ''}`}
+                      className={`fm-link disc${discordDone ? ' linked' : ''}`}
                       onClick={discordAction}
                       disabled={discordDone || status === 'assigning'}
                       title={discordCap}
@@ -608,14 +639,8 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
                     >
                       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.317 4.369a19.79 19.79 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.211.375-.445.865-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.6 12.6 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.1 13.1 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.126-.094.252-.192.371-.291a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.009c.12.099.245.198.372.292a.077.077 0 0 1-.006.127 12.3 12.3 0 0 1-1.873.891.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.84 19.84 0 0 0 6.002-3.03.077.077 0 0 0 .032-.055c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.331c-1.183 0-2.157-1.086-2.157-2.419 0-1.333.955-2.42 2.157-2.42 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.955 2.419-2.157 2.419zm7.975 0c-1.183 0-2.157-1.086-2.157-2.419 0-1.333.955-2.42 2.157-2.42 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.419-2.157 2.419z" /></svg>
                     </button>
-                    <div className={`disc-cap${error ? ' err' : ''}`}>{error || discordCap}</div>
                   </div>
-                  {profileStoreReady && (
-                    <button className="btn-navy fm-edit" onClick={() => setWizardOpen(true)}>
-                      {profile ? 'Edit page' : 'Design your page'}
-                    </button>
-                  )}
-                  <button className="fm-signout" onClick={signOut}>Sign out</button>
+                  {error && <div className="fm-err">{error}</div>}
                 </>
               ) : (
                 <div className="fm-signin">
