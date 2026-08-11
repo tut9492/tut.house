@@ -159,6 +159,18 @@ export default function DesignPageWizard({ wallet, artworks, existing, onClose, 
     try {
       const eth = (window as unknown as { ethereum?: { request: (a: { method: string; params?: unknown[] }) => Promise<unknown> } }).ethereum;
       if (!eth) throw new Error('No wallet found to sign with.');
+      // The signed-in view can be restored from storage without a live wallet connection, so
+      // connect/wake the provider before signing (fixes "provider is not ready").
+      try {
+        const accounts = (await eth.request({ method: 'eth_requestAccounts' })) as string[];
+        const connected = (accounts?.[0] || '').toLowerCase();
+        if (connected && connected !== wallet) {
+          throw new Error(`Connected wallet ${connected.slice(0, 6)}…${connected.slice(-4)} doesn't match this page. Switch to ${wallet.slice(0, 6)}…${wallet.slice(-4)} and try again.`);
+        }
+      } catch (e) {
+        if (e instanceof Error && e.message.includes("doesn't match")) throw e;
+        // otherwise fall through — personal_sign will surface any real connection error
+      }
       const message = buildProfileMessage(wallet);
       const signature = (await eth.request({ method: 'personal_sign', params: [message, wallet] })) as string;
 

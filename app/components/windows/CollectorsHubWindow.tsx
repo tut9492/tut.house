@@ -517,6 +517,8 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
 
     try {
       if (!window.ethereum) throw new Error('No wallet found.');
+      // Restored sessions have no live wallet connection — wake the provider before signing.
+      try { await window.ethereum.request({ method: 'eth_requestAccounts' }); } catch { /* sign will surface real errors */ }
       const timestamp = Date.now();
       const message = buildDiscordMessage(wallet, discordConnection.discordUserId, timestamp);
       const signature = (await window.ethereum.request({
