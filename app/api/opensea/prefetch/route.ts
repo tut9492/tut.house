@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 type CachedPrefetch = { ts: number; body: unknown };
 
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 declare global {
   var __openseaPrefetchCache: CachedPrefetch | undefined;
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     if (cached && now - cached.ts < CACHE_TTL_MS) {
       return NextResponse.json(cached.body, {
         headers: {
-          'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=86400',
+          'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
         },
       });
     }
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(body, {
       headers: {
-        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=86400',
+        'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
       },
     });
   } catch (error: unknown) {
