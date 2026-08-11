@@ -56,7 +56,7 @@ export default function LeaderboardWindow({ title, onClose, onClick, zIndex }: L
   }, []);
 
   return (
-    <FullscreenFrame title={title} onClose={onClose} onClick={onClick} zIndex={zIndex} barBg="linear-gradient(135deg,#d6a02c 0%,#f8dc7e 32%,#c69120 58%,#efc65a 80%,#d9a838 100%)">
+    <FullscreenFrame title={title} onClose={onClose} onClick={onClick} zIndex={zIndex} barBg="linear-gradient(135deg,#d6a02c 0%,#f8dc7e 32%,#c69120 58%,#efc65a 80%,#d9a838 100%)" bodyBg="url(/assets/images/leaderboard-bg.jpg) center/cover no-repeat">
       <style>{LB_CSS}</style>
       <div className="lb">
         {entries === null && !error && <div className="lb-spin" />}

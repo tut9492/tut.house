@@ -13,6 +13,8 @@ interface Props {
   onBack?: () => void;
   /** Override the titlebar background (e.g. a gold gradient for the leaderboard). */
   barBg?: string;
+  /** Override the body background (e.g. a gradient image behind the content). */
+  bodyBg?: string;
   children: ReactNode;
 }
 
@@ -37,7 +39,7 @@ const FSW_CSS = `
 .fsw .fsw-center { min-height:100%; display:grid; place-items:center; text-align:center; }
 `;
 
-export default function FullscreenFrame({ title, onClose, onClick, zIndex, onBack, barBg, children }: Props) {
+export default function FullscreenFrame({ title, onClose, onClick, zIndex, onBack, barBg, bodyBg, children }: Props) {
   return (
     <div className="fsw" style={{ zIndex }} onClick={onClick}>
       <style>{FSW_CSS}</style>
@@ -53,7 +55,7 @@ export default function FullscreenFrame({ title, onClose, onClick, zIndex, onBac
             <button className="fsw-chip window-controls" onClick={onClose} aria-label="Close">X</button>
           </span>
         </div>
-        <div className="fsw-body">{children}</div>
+        <div className="fsw-body" style={bodyBg ? { background: bodyBg } : undefined}>{children}</div>
       </div>
     </div>
   );
