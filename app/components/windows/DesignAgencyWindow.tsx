@@ -67,19 +67,6 @@ export default function DesignAgencyWindow({ title, onClose, onClick, zIndex }: 
     <FullscreenFrame title={title} onClose={onClose} onClick={onClick} zIndex={zIndex}>
       <style>{AGENCY_CSS}</style>
       <div className="agency">
-        {/* WRITE-UP */}
-        <div className="win">
-          <div className="bar"><span className="t">Tut Agency</span><span className="dot" aria-hidden="true" /></div>
-          <div className="writeup">
-            <h2>Full go-to-market for teams who need eyes on their product.</h2>
-            <p>
-              Tut Agency is a complete go-to-market service for teams looking to get eyes on their
-              product. Tut does everything — art, marketing, websites, and on-chain creation — so a
-              project can launch and grow from one place.
-            </p>
-          </div>
-        </div>
-
         {/* TEAMS */}
         <div className="grid">
           {TEAMS.map((team) => {
@@ -100,6 +87,19 @@ export default function DesignAgencyWindow({ title, onClose, onClick, zIndex }: 
               <div key={team.id} className="card" title={team.name}>{inner}</div>
             );
           })}
+        </div>
+
+        {/* WRITE-UP */}
+        <div className="win">
+          <div className="bar"><span className="t">Tut Agency</span><span className="dot" aria-hidden="true" /></div>
+          <div className="writeup">
+            <h2>Full go-to-market for teams who need eyes on their product.</h2>
+            <p>
+              Tut Agency is a complete go-to-market service for teams looking to get eyes on their
+              product. Tut does everything, from art and marketing to websites and on-chain creation,
+              so a project can launch and grow from one place.
+            </p>
+          </div>
         </div>
       </div>
     </FullscreenFrame>
