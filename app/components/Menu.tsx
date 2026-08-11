@@ -18,7 +18,6 @@ export default function Menu({ isOpen, onClose, onFolderClick }: MenuProps) {
     { id: 'design-agency', name: 'Creative Agency', icon: '/assets/images/folderTut.png' },
     { id: 'physical-art', name: 'Physical Art', icon: '/assets/images/folderTut.png' },
     { id: 'about', name: 'About', icon: '/assets/images/folderTut.png' },
-    { id: 'agnt-referral', name: 'AGNT Referral', icon: '/assets/images/folderTut.png' },
   ];
 
   const handleItemClick = (folderId: string) => {
