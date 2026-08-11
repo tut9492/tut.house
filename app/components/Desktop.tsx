@@ -365,6 +365,7 @@ export default function Desktop() {
             })),
           // Breadio lives on MegaETH (no OpenSea) — show its on-chain logo and link out.
           { id: 'breadio', name: 'Breadio', cover: 'https://breadio.tuthopium.store/logo.jpg', href: 'https://breadio.tuthopium.store' },
+          { id: 'digital-soon', name: 'Coming Soon', comingSoon: true },
         ];
 
         return (

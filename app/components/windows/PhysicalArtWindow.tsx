@@ -12,8 +12,9 @@ interface PhysicalArtWindowProps {
 }
 
 // Physical / RWA pieces. `cover` = product photo (add as available); `href` = where to buy/view.
-const PIECES: { id: string; name: string; cover?: string; href?: string }[] = [
+const PIECES: { id: string; name: string; cover?: string; href?: string; comingSoon?: boolean }[] = [
   { id: 'rwa-f-001', name: 'TUT™ RWA F-001', cover: '/assets/images/rwa-f-001.webp', href: 'https://www.dyli.io/drop/18580-tuttm-rwa-f-001' },
+  { id: 'physical-soon', name: 'Coming Soon', comingSoon: true },
 ];
 
 const PA_CSS = `
@@ -23,6 +24,8 @@ const PA_CSS = `
 .pa a.card { cursor:pointer; }
 .pa a.card:hover { transform:translateY(-3px); box-shadow:5px 7px 0 0 rgba(20,16,30,.28), 0 22px 38px -14px rgba(30,20,45,.55); }
 .pa .card-bar { display:flex; align-items:center; gap:8px; padding:9px 12px; border-bottom:3px solid #000; background:#cbf000; }
+.pa .card.soon { cursor:default; }
+.pa .card.soon .card-bar { background:linear-gradient(135deg,#d6a02c 0%,#f8dc7e 32%,#c69120 58%,#efc65a 80%,#d9a838 100%); }
 .pa .card-t { font:700 12.5px/1 var(--mono); letter-spacing:.08em; text-transform:uppercase; color:#000; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .pa .card-dot { margin-left:auto; width:11px; height:11px; border-radius:50%; background:#ec5f56; border:1.5px solid rgba(0,0,0,.4); flex:none; }
 .pa .card-art { aspect-ratio:1/1; background-color:#fff; background-repeat:no-repeat; background-position:center; background-size:contain; background-origin:content-box; padding:16px; display:grid; place-items:center; }
@@ -36,6 +39,14 @@ export default function PhysicalArtWindow({ title, onClose, onClick, zIndex }: P
       <div className="pa">
         <div className="grid">
           {PIECES.map((p) => {
+            if (p.comingSoon) {
+              return (
+                <div key={p.id} className="card soon" title="Coming soon">
+                  <div className="card-bar"><span className="card-t">Coming Soon</span></div>
+                  <div className="cs-art"><span className="cs-text">Coming Soon</span><span className="cs-shine" /></div>
+                </div>
+              );
+            }
             const inner = (
               <>
                 <div className="card-bar"><span className="card-t">{p.name}</span></div>

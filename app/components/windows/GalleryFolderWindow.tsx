@@ -8,6 +8,8 @@ export interface GalleryCollection {
   cover?: string;
   /** When set, the card links out instead of opening an in-app collection viewer. */
   href?: string;
+  /** Renders a gold, shining "Coming Soon" placeholder card. */
+  comingSoon?: boolean;
 }
 
 interface Props {
@@ -41,6 +43,8 @@ const GFW_CSS = `
 .gfw .card { display:block; border:3px solid #000; border-radius:12px; background:#fff; overflow:hidden; cursor:pointer; text-decoration:none; color:inherit; box-shadow:4px 5px 0 0 rgba(20,16,30,.26), 0 16px 30px -14px rgba(30,20,45,.5); transition:transform .14s ease, box-shadow .14s ease; }
 .gfw .card:hover { transform:translateY(-3px); box-shadow:5px 7px 0 0 rgba(20,16,30,.28), 0 22px 38px -14px rgba(30,20,45,.55); }
 .gfw .card-bar { display:flex; align-items:center; gap:8px; padding:9px 12px; border-bottom:3px solid #000; background:#cbf000; }
+.gfw .card.soon { cursor:default; }
+.gfw .card.soon .card-bar { background:linear-gradient(135deg,#d6a02c 0%,#f8dc7e 32%,#c69120 58%,#efc65a 80%,#d9a838 100%); }
 .gfw .card-t { font:700 12.5px/1 var(--mono); letter-spacing:.08em; text-transform:uppercase; color:#000; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .gfw .card-dot { margin-left:auto; width:11px; height:11px; border-radius:50%; background:#ec5f56; border:1.5px solid rgba(0,0,0,.4); flex:none; }
 /* Full artwork, contained and centered (never cropped), with a white mat padding so the
@@ -66,6 +70,14 @@ export default function GalleryFolderWindow({ title, collections, onOpen, onClos
         <div className="gfw-body">
           <div className="gfw-grid">
             {collections.map((c) => {
+              if (c.comingSoon) {
+                return (
+                  <div key={c.id} className="card soon" title="Coming soon">
+                    <div className="card-bar"><span className="card-t">Coming Soon</span></div>
+                    <div className="cs-art"><span className="cs-text">Coming Soon</span><span className="cs-shine" /></div>
+                  </div>
+                );
+              }
               const inner = (
                 <>
                   <div className="card-bar">

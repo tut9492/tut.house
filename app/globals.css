@@ -34,6 +34,42 @@ body {
   -webkit-touch-callout: none;
 }
 
+/* Gold "Coming Soon" card — metallic gold fill with a shine that sweeps across. */
+@keyframes goldShine {
+  0% { transform: translateX(-170%); }
+  60%, 100% { transform: translateX(170%); }
+}
+.cs-art {
+  position: relative;
+  aspect-ratio: 1/1;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, #d19b28 0%, #f6d97b 30%, #c8931f 52%, #f2cf68 72%, #d6a230 100%);
+}
+.cs-art .cs-text {
+  position: relative;
+  z-index: 2;
+  font: 800 15px/1.1 "Segoe UI", -apple-system, Helvetica, Arial, sans-serif;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: #5a3d06;
+  text-shadow: 0 1px 0 rgba(255,255,255,.45);
+  text-align: center;
+}
+.cs-art .cs-shine {
+  position: absolute;
+  top: -30%;
+  bottom: -30%;
+  left: 0;
+  width: 46%;
+  z-index: 1;
+  transform: translateX(-170%);
+  background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,.75) 50%, transparent 70%);
+  animation: goldShine 3.2s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) { .cs-art .cs-shine { animation: none; } }
+
 /* Idle "light sweep" over the desktop folder icons — a diagonal sheen clipped to the
    folder shape that travels across, then rests. Staggered per folder so the light
    appears to move across the row. Runs only while the desktop is stale (idle). */
