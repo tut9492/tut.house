@@ -27,13 +27,11 @@ In 2013 I discovered a new passion for photography, particularly shooting film. 
 
 WEB 3
 
-In 2019, I embarked on my web 3 journey, exploring the potential impact that this space could have on art. After a year of studying the space, I decided to mint my own genesis collection: Tut Genesis. My goal is to create art that sparks the imagination and evokes powerful emotions.
+In 2019 I began my web3 journey. Since then I've minted my own collections, including Tut Genesis and Abstractions, and founded Tut Agency, a full go-to-market service that handles art, marketing, websites, and on-chain creation for teams. I'm also building AGNT, an application growing the largest human community that owns AI agents.
 
 MY ART NOW
 
-Currently, I’m experimenting with a process that involves creating images from my photos and then layering digital art elements to produce a new, cohesive artwork. This body of work centers around a central figure in a brutalist landscape, prompting viewers to explore their own existence. Through my art, I’ve come to realize that we often fail to truly explore ourselves until we’re alone with our thoughts and feelings.
-
-This is an evolving document that will showcase my work as I experience my time as an artist. I hope you have enjoyed learning a bit more about me and how I became an artist.`;
+Currently, I’m experimenting with a process that involves creating images from my photos and then layering digital art elements to produce a new, cohesive artwork. This body of work centers around a central figure in a brutalist landscape, prompting viewers to explore their own existence. Through my art, I’ve come to realize that we often fail to truly explore ourselves until we’re alone with our thoughts and feelings.`;
 
 const LINKS = [
   { label: 'X / Twitter', href: 'https://x.com/Tuteth_' },
