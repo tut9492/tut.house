@@ -64,9 +64,11 @@ const CW_CSS = `
   .collection-window .cw-back { padding:0 8px; font-size:10px; }
   .collection-window .cw-ctl .cw-chip[aria-hidden="true"] { display:none; }
   .collection-window .cw-chip { width:30px; height:30px; }
-  .collection-window .cw-stage { padding:14px; }
-  .collection-window .cw-art { max-width:88vw; max-height:min(62vh,560px); }
-  .collection-window .cw-nav { width:42px; height:42px; font-size:18px; }
+  .collection-window .cw-stage { padding:12px; }
+  .collection-window .cw-mat { padding:12px; }
+  /* cap by real available space (frame inset + titlebar + taskbar + mat + caption) so art is never cropped */
+  .collection-window .cw-art { max-width:calc(100vw - 64px); max-height:calc(100dvh - 200px); }
+  .collection-window .cw-nav { width:40px; height:40px; font-size:18px; }
   .collection-window .cw-nav.prev { left:8px; } .collection-window .cw-nav.next { right:8px; }
   .collection-window .cw-cap { padding:0 54px; }
 }

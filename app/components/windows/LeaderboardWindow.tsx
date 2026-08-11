@@ -35,7 +35,16 @@ const LB_CSS = `
 .lb-msg { text-align:center; color:#8a8a93; font:500 14px/1.6 var(--sans); padding:48px 16px; }
 .lb-spin { width:34px; height:34px; border:3px solid #d8d8d8; border-bottom-color:#333; border-radius:50%; animation:lb-spin .8s linear infinite; margin:48px auto; }
 @keyframes lb-spin { to { transform:rotate(360deg); } }
-@media (max-width:640px){ .lb-head, .lb-row { grid-template-columns:40px 48px 1fr auto; } .lb-badges { display:none; } }
+@media (max-width:640px){
+  .lb-head { display:none; }
+  .lb-row { grid-template-columns:30px 44px 1fr auto; gap:10px; padding:10px 12px; }
+  .lb-badges { display:none; }
+  .lb-rank { font-size:18px; }
+  .lb-av { width:44px; height:44px; }
+  .lb-name { font-size:15px; }
+  .lb-tier { font-size:10px; margin-top:3px; }
+  .lb-score { font-size:15px; }
+}
 `;
 
 export default function LeaderboardWindow({ title, onClose, onClick, zIndex, onOpenProfile }: LeaderboardWindowProps) {

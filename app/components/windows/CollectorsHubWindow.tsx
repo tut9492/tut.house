@@ -367,12 +367,15 @@ const HUB_CSS = `
   #collectors-hub .ch-winctl { gap:6px; }
   #collectors-hub .ch-winctl .ch-chip[aria-hidden="true"] { display:none; }
   #collectors-hub .ch-chip { width:30px; height:30px; }
-  #collectors-hub .ch-framebody { padding:14px 12px 40px; }
+  #collectors-hub .ch-framebody { padding:14px 12px 40px; overflow-x:hidden; }
   #collectors-hub .desk { gap:16px; }
   #collectors-hub .fm-name { font-size:26px; }
   #collectors-hub .fm-pfp, #collectors-hub .ch-avatar { width:120px; height:120px; }
   #collectors-hub .badges { gap:10px; padding:14px 12px; justify-content:flex-start; }
   #collectors-hub .ch-badge { width:58px; height:58px; }
+  /* keep every inner grid within the viewport so nothing forces a sideways scroll */
+  #collectors-hub .trio > *, #collectors-hub .pair > *, #collectors-hub .disc-btns > *, #collectors-hub .steps > *, #collectors-hub .wrow > *, #collectors-hub .lbrow > *, #collectors-hub .lbhead > * { min-width:0; }
+  #collectors-hub .formula { font-size:10.5px; }
 }
 `;
 
