@@ -230,16 +230,18 @@ const HUB_CSS = `
 #collectors-hub .fm-hbtn.ghost { background:transparent; color:#fff; }
 #collectors-hub .fm-hbtn:hover { filter:brightness(.92); }
 #collectors-hub .fm-name { font:700 34px/1 var(--mono); letter-spacing:.01em; color:#161616; text-align:left; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-/* X + Discord logos side by side; each shows a linked / not-linked state */
-#collectors-hub .fm-links { display:flex; gap:10px; }
-#collectors-hub .fm-link { width:46px; height:46px; border:2.5px solid #000; border-radius:12px; display:grid; place-items:center; cursor:pointer; box-shadow:2px 2px 0 0 rgba(20,16,30,.24); padding:0; background:#fff; text-decoration:none; transition:filter .15s; }
-#collectors-hub .fm-link svg { width:23px; height:23px; }
-#collectors-hub .fm-link.x svg { fill:#000; }
-#collectors-hub .fm-link.disc { background:var(--blurple); }
-#collectors-hub .fm-link.disc svg { fill:#fff; }
-#collectors-hub .fm-link.disc.linked { background:#3a6b40; }
+/* X + Discord as pills: colored logo box + the connected handle (truncated) */
+#collectors-hub .fm-links { display:flex; flex-wrap:wrap; gap:10px; max-width:100%; }
+#collectors-hub .fm-link { display:inline-flex; align-items:center; height:46px; border:2.5px solid #000; border-radius:12px; cursor:pointer; box-shadow:2px 2px 0 0 rgba(20,16,30,.24); padding:0; background:#fff; text-decoration:none; overflow:hidden; transition:filter .15s; }
+#collectors-hub .fm-link .fm-ic { width:44px; height:44px; display:grid; place-items:center; flex:none; }
+#collectors-hub .fm-link .fm-ic svg { width:22px; height:22px; }
+#collectors-hub .fm-link.x .fm-ic svg { fill:#000; }
+#collectors-hub .fm-link.disc .fm-ic { background:var(--blurple); }
+#collectors-hub .fm-link.disc .fm-ic svg { fill:#fff; }
+#collectors-hub .fm-link.disc.linked .fm-ic { background:#3a6b40; }
+#collectors-hub .fm-link .fm-handle { padding:0 12px; font:700 12.5px/1 var(--mono); color:#161616; max-width:12ch; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 #collectors-hub .fm-link.unset { opacity:.35; box-shadow:none; cursor:default; }
-#collectors-hub .fm-link:not(.unset):hover { filter:brightness(1.06); }
+#collectors-hub .fm-link:not(.unset):hover { filter:brightness(1.05); }
 #collectors-hub .fm-err { font:600 10.5px/1.4 var(--sans); color:#9a3b3b; }
 #collectors-hub .fm-signin { display:flex; flex-direction:column; align-items:center; gap:12px; }
 #collectors-hub .fm-signin .sub { font:400 12.5px/1.5 var(--sans); color:var(--label); text-align:center; max-width:24ch; }
@@ -542,6 +544,11 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
   const galleryArt = profile?.gallery && profile.gallery.length ? profile.gallery : artworks;
   const displayName = profile?.username || shortWallet(wallet);
   const avatarImage = profile?.avatar?.image || '/assets/images/aboutProfilePicture.png';
+  const xHandle = (() => {
+    if (!profile?.socialUrl) return '';
+    try { return new URL(profile.socialUrl).pathname.replace(/^\/+|\/+$/g, ''); } catch { return ''; }
+  })();
+  const discordHandle = discordConnection?.discordUsername || '';
   const rank = session?.rank || dashboard?.rank || 'Unscored';
   const statusLabel = STATUS_LABELS[rank] || rank;
   const targetScore = dashboard?.score ?? session?.score ?? 0;
@@ -623,11 +630,12 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
                   <div className="fm-links">
                     {profile?.socialUrl ? (
                       <a className="fm-link x" href={profile.socialUrl} target="_blank" rel="noopener noreferrer nofollow" title={socialLabel(profile.socialUrl)}>
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+                        <span className="fm-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg></span>
+                        {xHandle && <span className="fm-handle">{xHandle}</span>}
                       </a>
                     ) : (
                       <span className="fm-link x unset" title="No X linked — add it in Edit page">
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+                        <span className="fm-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg></span>
                       </span>
                     )}
                     <button
@@ -637,7 +645,8 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
                       title={discordCap}
                       aria-label={discordCap}
                     >
-                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.317 4.369a19.79 19.79 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.211.375-.445.865-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.6 12.6 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.1 13.1 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.126-.094.252-.192.371-.291a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.009c.12.099.245.198.372.292a.077.077 0 0 1-.006.127 12.3 12.3 0 0 1-1.873.891.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.84 19.84 0 0 0 6.002-3.03.077.077 0 0 0 .032-.055c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.331c-1.183 0-2.157-1.086-2.157-2.419 0-1.333.955-2.42 2.157-2.42 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.955 2.419-2.157 2.419zm7.975 0c-1.183 0-2.157-1.086-2.157-2.419 0-1.333.955-2.42 2.157-2.42 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.419-2.157 2.419z" /></svg>
+                      <span className="fm-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.317 4.369a19.79 19.79 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.211.375-.445.865-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.6 12.6 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.1 13.1 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.126-.094.252-.192.371-.291a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.009c.12.099.245.198.372.292a.077.077 0 0 1-.006.127 12.3 12.3 0 0 1-1.873.891.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.84 19.84 0 0 0 6.002-3.03.077.077 0 0 0 .032-.055c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.331c-1.183 0-2.157-1.086-2.157-2.419 0-1.333.955-2.42 2.157-2.42 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.955 2.419-2.157 2.419zm7.975 0c-1.183 0-2.157-1.086-2.157-2.419 0-1.333.955-2.42 2.157-2.42 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.419-2.157 2.419z" /></svg></span>
+                      {discordHandle && <span className="fm-handle">{discordHandle}</span>}
                     </button>
                   </div>
                   {error && <div className="fm-err">{error}</div>}
