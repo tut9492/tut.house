@@ -72,7 +72,7 @@ export default function DesignAgencyWindow({ title, onClose, onClick, zIndex }: 
           {TEAMS.map((team) => {
             const inner = (
               <>
-                <div className="card-bar"><span className="card-t">{team.name}</span><span className="card-dot" aria-hidden="true" /></div>
+                <div className="card-bar"><span className="card-t">{team.name}</span></div>
                 <div className="card-art" style={team.cover ? { backgroundImage: `url(${team.cover})` } : undefined}>
                   {!team.cover && <span className="ph">{team.name}</span>}
                 </div>
@@ -91,7 +91,7 @@ export default function DesignAgencyWindow({ title, onClose, onClick, zIndex }: 
 
         {/* WRITE-UP */}
         <div className="win">
-          <div className="bar"><span className="t">Tut Agency</span><span className="dot" aria-hidden="true" /></div>
+          <div className="bar"><span className="t">Tut Agency</span></div>
           <div className="writeup">
             <h2>Full go-to-market for teams who need eyes on their product.</h2>
             <p>

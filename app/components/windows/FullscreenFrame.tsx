@@ -11,6 +11,8 @@ interface Props {
   onClick: () => void;
   zIndex: number;
   onBack?: () => void;
+  /** Override the titlebar background (e.g. a gold gradient for the leaderboard). */
+  barBg?: string;
   children: ReactNode;
 }
 
@@ -35,12 +37,12 @@ const FSW_CSS = `
 .fsw .fsw-center { min-height:100%; display:grid; place-items:center; text-align:center; }
 `;
 
-export default function FullscreenFrame({ title, onClose, onClick, zIndex, onBack, children }: Props) {
+export default function FullscreenFrame({ title, onClose, onClick, zIndex, onBack, barBg, children }: Props) {
   return (
     <div className="fsw" style={{ zIndex }} onClick={onClick}>
       <style>{FSW_CSS}</style>
       <div className="fsw-frame">
-        <div className="fsw-bar">
+        <div className="fsw-bar" style={barBg ? { background: barBg } : undefined}>
           {onBack && (
             <button className="fsw-chip fsw-back window-controls" onClick={onBack} aria-label="Back" title="Back">‹ Back</button>
           )}

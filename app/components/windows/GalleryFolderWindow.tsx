@@ -70,8 +70,7 @@ export default function GalleryFolderWindow({ title, collections, onOpen, onClos
                 <>
                   <div className="card-bar">
                     <span className="card-t">{c.name}</span>
-                    <span className="card-dot" aria-hidden="true" />
-                  </div>
+                                      </div>
                   <div className="card-art">
                     {c.cover
                       ? <div className="card-img" style={{ backgroundImage: `url(${c.cover})` }} />

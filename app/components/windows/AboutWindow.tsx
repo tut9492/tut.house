@@ -68,7 +68,7 @@ export default function AboutWindow({ title, onClose, onClick, onImageClick, zIn
       <div className="about-grid">
         {/* PROFILE — top left */}
         <div className="win">
-          <div className="bar"><span className="t">Profile</span><span className="dot" aria-hidden="true" /></div>
+          <div className="bar"><span className="t">Profile</span></div>
           <div
             className="about-img"
             style={{ backgroundImage: 'url(/assets/images/aboutProfilePicture.png)' }}
@@ -79,7 +79,7 @@ export default function AboutWindow({ title, onClose, onClick, onImageClick, zIn
 
         {/* BIO — right */}
         <div className="win">
-          <div className="bar"><span className="t">Bio</span><span className="dot" aria-hidden="true" /></div>
+          <div className="bar"><span className="t">Bio</span></div>
           <div className="about-bio">
             {blocks.map((block, i) => {
               const isHeading = /^[A-Z0-9][A-Z0-9 ]+$/.test(block) && block.length < 30;
@@ -90,7 +90,7 @@ export default function AboutWindow({ title, onClose, onClick, onImageClick, zIn
 
         {/* SOCIAL LINKS — below */}
         <div className="win social">
-          <div className="bar"><span className="t">Links</span><span className="dot" aria-hidden="true" /></div>
+          <div className="bar"><span className="t">Links</span></div>
           <div className="links">
             {LINKS.map((l) => (
               <a

@@ -38,7 +38,7 @@ export default function PhysicalArtWindow({ title, onClose, onClick, zIndex }: P
           {PIECES.map((p) => {
             const inner = (
               <>
-                <div className="card-bar"><span className="card-t">{p.name}</span><span className="card-dot" aria-hidden="true" /></div>
+                <div className="card-bar"><span className="card-t">{p.name}</span></div>
                 <div className="card-art" style={p.cover ? { backgroundImage: `url(${p.cover})` } : undefined}>
                   {!p.cover && <span className="ph">{p.name}</span>}
                 </div>
