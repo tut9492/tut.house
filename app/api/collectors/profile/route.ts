@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getTutCollectionHoldings, normalizeWallet, verifyCollectorProof } from '@/app/lib/collectorScore';
+import { calculateScoreBreakdown, collectionBadges, getTutCollectionHoldings, normalizeWallet, scoreRank, verifyCollectorProof, type ScoreCollection } from '@/app/lib/collectorScore';
 import {
   artTokenKey,
   isValidSocialUrl,
@@ -15,6 +15,7 @@ import {
   getProfileByWallet,
   isUsernameTaken,
   profileStoreEnabled,
+  updateProfileScore,
   UsernameTakenError,
   upsertProfile,
 } from '@/app/lib/db';
@@ -29,7 +30,7 @@ type PutBody = {
 // Resolve the wallet's owned pieces into a tokenKey -> ArtRef map. This is the source of
 // truth for a profile: the client only sends tokenKeys, never image URLs, so a collector
 // can never pin art they don't own or inject an arbitrary image.
-async function ownedArtByKey(wallet: string): Promise<Map<string, ArtRef>> {
+async function ownedArt(wallet: string): Promise<{ map: Map<string, ArtRef>; collections: ScoreCollection[] }> {
   const collections = await getTutCollectionHoldings(wallet);
   const map = new Map<string, ArtRef>();
   for (const c of collections) {
@@ -46,7 +47,7 @@ async function ownedArtByKey(wallet: string): Promise<Map<string, ArtRef>> {
       });
     }
   }
-  return map;
+  return { map, collections };
 }
 
 export async function GET(request: NextRequest) {
@@ -111,7 +112,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'That username is taken.' }, { status: 409 });
     }
 
-    const owned = await ownedArtByKey(wallet);
+    const { map: owned, collections } = await ownedArt(wallet);
 
     const avatarRef = input.avatarTokenKey ? owned.get(input.avatarTokenKey) : undefined;
     const avatar = avatarRef ? { tokenKey: avatarRef.tokenKey, image: avatarRef.image } : null;
@@ -139,6 +140,15 @@ export async function PUT(request: NextRequest) {
       gallery,
       updatedAt: new Date().toISOString(),
     });
+
+    // Store the collector's score at save time (reusing the holdings we already fetched) so they
+    // appear on the leaderboard immediately — without needing to reload their Hub afterward.
+    try {
+      const breakdown = calculateScoreBreakdown({ collections });
+      await updateProfileScore(wallet, breakdown.calculatedScore, scoreRank(breakdown.calculatedScore), collectionBadges(breakdown));
+    } catch {
+      // best-effort — a failed score write never blocks saving the page
+    }
 
     return NextResponse.json({ profile: saved, storeEnabled: true });
   } catch (error) {
