@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Folder from './Folder';
 import CollectionWindow from './windows/CollectionWindow';
 import CollectorsHubWindow from './windows/CollectorsHubWindow';
+import AbstractProviders from './AbstractProviders';
 import PhysicalArtWindow from './windows/PhysicalArtWindow';
 import ImageViewerWindow from './windows/ImageViewerWindow';
 import TextViewerWindow from './windows/TextViewerWindow';
@@ -311,16 +312,19 @@ export default function Desktop() {
         }
 
         if (folder.contentType === 'collectors-hub') {
+          // AbstractProviders (wagmi + AGW) is scoped to the Hub so it only loads when this window
+          // opens — the landing page never mounts the AGW stack, containing any provider fault here.
           return (
-            <CollectorsHubWindow
-              key={folder.id}
-              id={folder.id}
-              title={folder.name}
-              onClose={() => handleCloseWindow(folder.id)}
-              isActive={activeWindow === folder.id}
-              onClick={() => handleWindowClick(folder.id)}
-              zIndex={getZIndex(folder.id)}
-            />
+            <AbstractProviders key={folder.id}>
+              <CollectorsHubWindow
+                id={folder.id}
+                title={folder.name}
+                onClose={() => handleCloseWindow(folder.id)}
+                isActive={activeWindow === folder.id}
+                onClick={() => handleWindowClick(folder.id)}
+                zIndex={getZIndex(folder.id)}
+              />
+            </AbstractProviders>
           );
         }
 
