@@ -96,6 +96,21 @@ export async function getStoredLeaderboard(limit: number): Promise<StoredLeaderb
   return rows.map((r) => ({ ...r, badges: Array.isArray(r.badges) ? r.badges : [] }));
 }
 
+// Wallets whose stored score is stale (never scored, or older than `olderThanMs`), oldest first.
+// Used to self-heal the leaderboard: the board rescoring a few of these on each (uncached) read
+// keeps scores fresh without depending on the daily cron actually firing.
+export async function getStaleProfileWallets(limit: number, olderThanMs: number): Promise<string[]> {
+  const sql = client();
+  const cutoff = new Date(Date.now() - olderThanMs).toISOString();
+  const rows = (await sql`
+    SELECT wallet FROM collector_profiles
+    WHERE score_updated_at IS NULL OR score_updated_at < ${cutoff}
+    ORDER BY score_updated_at ASC NULLS FIRST
+    LIMIT ${limit}
+  `) as { wallet: string }[];
+  return rows.map((r) => r.wallet);
+}
+
 export async function getProfileByUsername(username: string): Promise<CollectorProfile | null> {
   const sql = client();
   const rows = (await sql`
