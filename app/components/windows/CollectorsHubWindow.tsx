@@ -256,10 +256,13 @@ const HUB_CSS = `
 #collectors-hub .btn-navy { border:3px solid #000; border-radius:9px; background:var(--navy); color:#fff; font:600 13.5px/1 var(--sans); padding:12px 22px; cursor:pointer; box-shadow:3px 3px 0 0 rgba(20,16,30,.24); }
 #collectors-hub .btn-navy:hover { background:#171d28; }
 #collectors-hub .btn-navy:disabled { opacity:.6; cursor:default; }
-#collectors-hub .btn-agw { margin-top:8px; border:3px solid #000; border-radius:9px; background:#4caf6e; color:#06210f; font:700 13.5px/1 var(--sans); padding:12px 22px; cursor:pointer; box-shadow:3px 3px 0 0 rgba(20,16,30,.24); }
-#collectors-hub .btn-agw:hover { background:#43a063; }
-#collectors-hub .btn-agw:disabled { opacity:.6; cursor:default; }
-#collectors-hub .signin-hint { margin-top:8px; font:500 10.5px/1.4 var(--sans); color:#8a8a93; max-width:230px; }
+/* Abstract sign-in — same pill size/style as the Discord button (.fm-link.disc), green icon box. */
+#collectors-hub .fm-link.agw { background:#fff; }
+#collectors-hub .fm-link.agw .fm-ic { background:#1dc46a; }
+#collectors-hub .fm-link.agw .fm-ic svg { fill:#fff; }
+#collectors-hub .fm-link.agw:disabled { opacity:.6; cursor:default; }
+#collectors-hub .fm-signin-or { font:600 10px/1 var(--sans); letter-spacing:.14em; text-transform:uppercase; color:#a8a8b0; margin:2px 0; }
+#collectors-hub .signin-hint { margin-top:2px; font:500 10.5px/1.4 var(--sans); color:#8a8a93; max-width:230px; text-align:center; }
 #collectors-hub .fm-social { font:600 11.5px/1 var(--mono); color:var(--navy); text-decoration:none; border-bottom:1.5px solid rgba(29,37,50,.3); padding-bottom:1px; max-width:22ch; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 #collectors-hub .fm-social:hover { border-bottom-color:var(--navy); }
 #collectors-hub .fm-edit { margin-top:6px; padding:9px 18px; font-size:12.5px; }
@@ -762,8 +765,18 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
                   <button className="btn-navy" onClick={connectAndVerify} disabled={busy}>
                     {walletActionLabel}
                   </button>
-                  <button className="btn-agw" onClick={connectAbstract} disabled={busy}>
-                    {agwPending ? (status === 'signing' ? 'Check wallet…' : 'Connecting…') : 'Sign in with Abstract'}
+                  <div className="fm-signin-or">or</div>
+                  <button
+                    className="fm-link agw"
+                    onClick={connectAbstract}
+                    disabled={busy}
+                    title="Sign in with Abstract Global Wallet"
+                    aria-label="Sign in with Abstract Global Wallet"
+                  >
+                    <span className="fm-ic">
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.2l2.53 6.75L21.8 12l-7.27 3.05L12 21.8l-2.53-6.75L2.2 12l7.27-3.05z" /></svg>
+                    </span>
+                    <span className="fm-handle">{agwPending ? (status === 'signing' ? 'Check wallet…' : 'Connecting…') : 'Abstract'}</span>
                   </button>
                   <div className="signin-hint">Abstract Global Wallet holds Abstractions and other Abstract-chain work.</div>
                   {error && <div className="note err">{error}</div>}
