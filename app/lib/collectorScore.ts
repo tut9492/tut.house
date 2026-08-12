@@ -1,5 +1,28 @@
-import { verifyMessage } from 'viem';
+import { createPublicClient, http } from 'viem';
+import { abstract } from 'viem/chains';
 import { getBreadioTokens } from './db';
+
+// Abstract Global Wallet (AGW) is a smart-contract wallet, so its signatures are ERC-1271
+// (`isValidSignature`), not EOA `ecrecover` — and EIP-6492 for wallets not yet deployed on-chain.
+// A public client's `verifyMessage` action validates all three (EOA → 1271 → 6492): the ecrecover
+// path runs off-chain first, so EOAs never touch this RPC; only smart-wallet proofs do. (The bare
+// `verifyMessage` exported from 'viem' is offline/ecrecover-only and would reject every AGW proof.)
+// AGW lives on Abstract, so we point the client there.
+function createAbstractClient() {
+  return createPublicClient({
+    chain: abstract,
+    transport: http(
+      process.env.ALCHEMY_API_KEY
+        ? `https://abstract-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`
+        : undefined, // falls back to the chain's default public RPC
+    ),
+  });
+}
+let abstractClient: ReturnType<typeof createAbstractClient> | undefined;
+function getAbstractClient() {
+  if (!abstractClient) abstractClient = createAbstractClient();
+  return abstractClient;
+}
 
 // Holdings are read from Alchemy. Each collection's `chain` maps to an Alchemy subdomain.
 // Ethereum + Abstract expose the NFT API (metadata + images). MegaETH has RPC only, so
@@ -155,7 +178,9 @@ export async function verifyCollectorProof(proof: CollectorProof): Promise<`0x${
   const requestedWallet = normalizeWallet(proof.wallet);
   if (requestedWallet !== parsed.wallet) throw new Error('Wallet mismatch');
 
-  const valid = await verifyMessage({
+  // Client action (not the offline helper) so ERC-1271/EIP-6492 smart wallets (AGW) verify too.
+  // EOAs verify via ecrecover before this client is ever consulted.
+  const valid = await getAbstractClient().verifyMessage({
     address: parsed.wallet,
     message: proof.message,
     signature: proof.signature,
@@ -191,7 +216,7 @@ export async function verifyDiscordWalletProof({
   if (Math.abs(Date.now() - timestamp) > MESSAGE_TTL_MS) throw new Error('Signature expired');
 
   const message = buildDiscordVerifyMessage(normalized, discordUserId, timestamp);
-  const valid = await verifyMessage({ address: normalized, message, signature });
+  const valid = await getAbstractClient().verifyMessage({ address: normalized, message, signature });
   if (!valid) throw new Error('Invalid signature');
   return normalized;
 }
