@@ -166,6 +166,35 @@ export async function removeLinkedWallet(primary: string, linked: string): Promi
   return getLinkedWallets(p);
 }
 
+// ---- Discord linkage (persisted so "connected" survives reloads / new sessions) ----
+
+export type DiscordLink = { discordUserId: string; discordUsername: string | null; roles: unknown[] };
+
+export async function getDiscordLink(wallet: string): Promise<DiscordLink | null> {
+  if (!process.env.DATABASE_URL) return null;
+  const sql = client();
+  const rows = (await sql`
+    SELECT discord_user_id, discord_username, roles FROM collector_discord WHERE wallet = ${wallet.toLowerCase()}
+  `) as { discord_user_id: string; discord_username: string | null; roles: unknown[] | null }[];
+  const r = rows[0];
+  return r ? { discordUserId: r.discord_user_id, discordUsername: r.discord_username, roles: Array.isArray(r.roles) ? r.roles : [] } : null;
+}
+
+export async function upsertDiscordLink(
+  wallet: string, discordUserId: string, discordUsername: string | null, roles: unknown[],
+): Promise<void> {
+  const sql = client();
+  await sql`
+    INSERT INTO collector_discord (wallet, discord_user_id, discord_username, roles, updated_at)
+    VALUES (${wallet.toLowerCase()}, ${discordUserId}, ${discordUsername}, ${JSON.stringify(roles)}::jsonb, now())
+    ON CONFLICT (wallet) DO UPDATE SET
+      discord_user_id = EXCLUDED.discord_user_id,
+      discord_username = EXCLUDED.discord_username,
+      roles = EXCLUDED.roles,
+      updated_at = now()
+  `;
+}
+
 export async function getProfileByUsername(username: string): Promise<CollectorProfile | null> {
   const sql = client();
   const rows = (await sql`

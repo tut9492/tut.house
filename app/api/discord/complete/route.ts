@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCollectorScoreBreakdown, scoreRank, verifyDiscordWalletProof } from '@/app/lib/collectorScore';
+import { getCollectorScoreBreakdownForWallets, scoreRank, verifyDiscordWalletProof } from '@/app/lib/collectorScore';
 import { assignCollectionRoles, fetchDiscordUser, takeDiscordToken } from '@/app/lib/discordVerify';
+import { getLinkedWallets, profileStoreEnabled, upsertDiscordLink } from '@/app/lib/db';
 
 type Body = {
   wallet?: string;
@@ -33,7 +34,9 @@ export async function POST(request: NextRequest) {
       signature: body.signature,
     });
 
-    const breakdown = await getCollectorScoreBreakdown(wallet);
+    // Score + role eligibility across the wallet's linked wallets too (e.g. AGW-held collections).
+    const linked = profileStoreEnabled() ? await getLinkedWallets(wallet) : [];
+    const breakdown = await getCollectorScoreBreakdownForWallets([wallet, ...linked]);
     const score = breakdown.calculatedScore;
     if (score <= 0) {
       return NextResponse.json({
@@ -52,6 +55,13 @@ export async function POST(request: NextRequest) {
     const ownedSlugs = breakdown.collections.filter((c) => c.count > 0).map((c) => c.slug);
     const roles = await assignCollectionRoles(discordUser.id, ownedSlugs);
     const failedRoles = roles.filter((role) => !role.ok);
+
+    // Persist the linkage so the Hub shows "connected" on later loads (best-effort).
+    if (profileStoreEnabled()) {
+      try {
+        await upsertDiscordLink(wallet, discordUser.id, discordUser.global_name || discordUser.username, roles);
+      } catch { /* persistence is best-effort — don't fail the verification response */ }
+    }
 
     return NextResponse.json({
       ok: failedRoles.length === 0,

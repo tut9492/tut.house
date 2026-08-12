@@ -413,6 +413,8 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
   const [session, setSession] = useState<CollectorSession | null>(null);
   const [discordConnection, setDiscordConnection] = useState<DiscordConnection | null>(null);
   const [discordResult, setDiscordResult] = useState<DiscordResult | null>(null);
+  const [discordLinked, setDiscordLinked] = useState(false);        // persisted (survives reloads)
+  const [discordLinkedName, setDiscordLinkedName] = useState('');
   const [status, setStatus] = useState<'idle' | 'connecting' | 'signing' | 'verified' | 'discord_connected' | 'assigning' | 'discord'>('idle');
   const [error, setError] = useState('');
   const [dashboard, setDashboard] = useState<CollectorDashboard | null>(null);
@@ -498,6 +500,19 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
     }
   };
 
+  // Persisted Discord state so the card shows "connected" across reloads (not just in-session).
+  const loadDiscordStatus = async (primary: string) => {
+    try {
+      const res = await fetch(`/api/discord/status?wallet=${encodeURIComponent(primary)}`);
+      if (!res.ok) return;
+      const data = (await res.json()) as { connected?: boolean; discordUsername?: string | null };
+      setDiscordLinked(!!data.connected);
+      if (data.discordUsername) setDiscordLinkedName(data.discordUsername);
+    } catch {
+      // Non-blocking chrome.
+    }
+  };
+
   // Restore the signed-in view across reloads: we remember the verified wallet locally and
   // re-hydrate profile + score from public reads (no re-signing needed just to view).
   useEffect(() => {
@@ -510,6 +525,7 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
     void loadCollectorDashboard(w);
     void loadProfile(w);
     void loadLinked(w);
+    void loadDiscordStatus(w);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -518,6 +534,8 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
     if (agwConnected) { try { agwLogout(); } catch { /* best-effort */ } }
     setAgwPending(false);
     setLinkedWallets([]);
+    setDiscordLinked(false);
+    setDiscordLinkedName('');
     setSession(null);
     setWallet('');
     setDashboard(null);
@@ -544,6 +562,7 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
     await loadCollectorDashboard(selected);
     void loadProfile(selected);
     void loadLinked(selected);
+    void loadDiscordStatus(selected);
   };
 
   const connectAndVerify = async () => {
@@ -638,6 +657,11 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agwPending, agwConnected, agwAddress]);
 
+  // A successful in-session Discord verify is now persisted server-side — reflect it as connected.
+  useEffect(() => {
+    if (discordResult?.ok) setDiscordLinked(true);
+  }, [discordResult]);
+
   const linkDiscord = () => {
     if (!session?.discordLink) return;
     setError('');
@@ -697,7 +721,7 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
     if (!profile?.socialUrl) return '';
     try { return new URL(profile.socialUrl).pathname.replace(/^\/+|\/+$/g, ''); } catch { return ''; }
   })();
-  const discordHandle = discordConnection?.discordUsername || '';
+  const discordHandle = discordConnection?.discordUsername || discordLinkedName || '';
   const rank = session?.rank || dashboard?.rank || 'Unscored';
   const statusLabel = STATUS_LABELS[rank] || rank;
   const targetScore = dashboard?.score ?? session?.score ?? 0;
@@ -730,7 +754,7 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
   const goldStars = signedIn ? displayScore.toLocaleString() : '—';
 
   // Discord affordance (now a single icon under the pfp, no full card).
-  const discordDone = !!discordResult?.ok || status === 'discord';
+  const discordDone = discordLinked || !!discordResult?.ok || status === 'discord';
   const discordAction = discordConnection ? signAndAssignRole : linkDiscord;
   const discordCap = discordDone
     ? 'Role active'
