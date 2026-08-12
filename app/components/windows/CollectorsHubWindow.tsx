@@ -434,6 +434,7 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
   const [agwPending, setAgwPending] = useState(false);
   const [linkedWallets, setLinkedWallets] = useState<string[]>([]);
   const agwFinishing = useRef(false);
+  const discordAssigning = useRef(false);
 
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
@@ -674,6 +675,8 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
 
   const signAndAssignRole = async () => {
     if (!wallet || !discordConnection?.code || !discordConnection.discordUserId) return;
+    if (discordAssigning.current) return;
+    discordAssigning.current = true;
     setError('');
     setStatus('assigning');
 
@@ -706,8 +709,19 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
     } catch (err) {
       setStatus('discord_connected');
       setError(err instanceof Error ? err.message : 'Could not assign Discord role.');
+    } finally {
+      discordAssigning.current = false;
     }
   };
+
+  // Auto-sign the role assignment the instant the OAuth popup connects, so the two-step flow is
+  // seamless and the short-lived Discord token can't expire in the gap. Manual click still works.
+  useEffect(() => {
+    if (discordConnection?.code && wallet && !discordResult?.ok && !discordAssigning.current) {
+      void signAndAssignRole();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [discordConnection, wallet]);
 
   const signedIn = !!session;
   const artworks = dashboard?.holdings.assets.artworks || [];
