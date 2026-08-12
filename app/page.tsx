@@ -1,5 +1,10 @@
 import Desktop from './components/Desktop';
+import AbstractProviders from './components/AbstractProviders';
 
 export default function Home() {
-  return <Desktop />;
+  return (
+    <AbstractProviders>
+      <Desktop />
+    </AbstractProviders>
+  );
 }

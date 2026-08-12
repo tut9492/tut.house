@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useLoginWithAbstract } from '@abstract-foundation/agw-react';
+import { useAccount, useSignMessage } from 'wagmi';
 import AudioControls from '../audio/AudioControls';
 import { cdnImg } from '../../lib/img';
 import DesignPageWizard, { type WizardArt } from './DesignPageWizard';
@@ -254,6 +256,10 @@ const HUB_CSS = `
 #collectors-hub .btn-navy { border:3px solid #000; border-radius:9px; background:var(--navy); color:#fff; font:600 13.5px/1 var(--sans); padding:12px 22px; cursor:pointer; box-shadow:3px 3px 0 0 rgba(20,16,30,.24); }
 #collectors-hub .btn-navy:hover { background:#171d28; }
 #collectors-hub .btn-navy:disabled { opacity:.6; cursor:default; }
+#collectors-hub .btn-agw { margin-top:8px; border:3px solid #000; border-radius:9px; background:#4caf6e; color:#06210f; font:700 13.5px/1 var(--sans); padding:12px 22px; cursor:pointer; box-shadow:3px 3px 0 0 rgba(20,16,30,.24); }
+#collectors-hub .btn-agw:hover { background:#43a063; }
+#collectors-hub .btn-agw:disabled { opacity:.6; cursor:default; }
+#collectors-hub .signin-hint { margin-top:8px; font:500 10.5px/1.4 var(--sans); color:#8a8a93; max-width:230px; }
 #collectors-hub .fm-social { font:600 11.5px/1 var(--mono); color:var(--navy); text-decoration:none; border-bottom:1.5px solid rgba(29,37,50,.3); padding-bottom:1px; max-width:22ch; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 #collectors-hub .fm-social:hover { border-bottom-color:var(--navy); }
 #collectors-hub .fm-edit { margin-top:6px; padding:9px 18px; font-size:12.5px; }
@@ -394,6 +400,14 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
 
+  // Abstract Global Wallet (AGW) sign-in — a smart-contract wallet via its own SDK, parallel to the
+  // window.ethereum path. Its ERC-1271 signature is verified server-side by /api/collectors/session.
+  const { login: agwLogin, logout: agwLogout } = useLoginWithAbstract();
+  const { address: agwAddress, isConnected: agwConnected } = useAccount();
+  const { signMessageAsync } = useSignMessage();
+  const [agwPending, setAgwPending] = useState(false);
+  const agwFinishing = useRef(false);
+
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return;
@@ -465,6 +479,8 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
 
   const signOut = () => {
     if (typeof window !== 'undefined') window.localStorage.removeItem('tut_collector_wallet');
+    if (agwConnected) { try { agwLogout(); } catch { /* best-effort */ } }
+    setAgwPending(false);
     setSession(null);
     setWallet('');
     setDashboard(null);
@@ -473,6 +489,24 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
     setDiscordResult(null);
     setStatus('idle');
     setError('');
+  };
+
+  // Verify a wallet+signature with the backend, then hydrate the signed-in view. Shared by both the
+  // injected-wallet (personal_sign) and AGW (ERC-1271) paths — the endpoint accepts either.
+  const submitProof = async (selected: string, message: string, signature: `0x${string}`) => {
+    const res = await fetch('/api/collectors/session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ wallet: selected, message, signature }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error || 'Could not verify collector score.');
+
+    setSession(data);
+    if (typeof window !== 'undefined') window.localStorage.setItem('tut_collector_wallet', selected);
+    setStatus('verified');
+    await loadCollectorDashboard(selected);
+    void loadProfile(selected);
   };
 
   const connectAndVerify = async () => {
@@ -499,24 +533,63 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
         params: [message, selected],
       })) as `0x${string}`;
 
-      const res = await fetch('/api/collectors/session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ wallet: selected, message, signature }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || 'Could not verify collector score.');
-
-      setSession(data);
-      if (typeof window !== 'undefined') window.localStorage.setItem('tut_collector_wallet', selected);
-      setStatus('verified');
-      await loadCollectorDashboard(selected);
-      void loadProfile(selected);
+      await submitProof(selected, message, signature);
     } catch (err) {
       setStatus('idle');
       setError(err instanceof Error ? err.message : 'Wallet verification failed.');
     }
   };
+
+  // Once the AGW connects, sign the collector message and verify. Guarded so it runs once per attempt
+  // (the effect below may fire on the same state change that a direct call already handled).
+  const finishAgw = async (address: string) => {
+    if (agwFinishing.current) return;
+    agwFinishing.current = true;
+    try {
+      const selected = address.toLowerCase();
+      setWallet(selected);
+      setStatus('signing');
+      const message = buildMessage(selected);
+      const signature = await signMessageAsync({ message });
+      await submitProof(selected, message, signature);
+    } catch (err) {
+      setStatus('idle');
+      setError(err instanceof Error ? err.message : 'Abstract verification failed.');
+    } finally {
+      setAgwPending(false);
+      agwFinishing.current = false;
+    }
+  };
+
+  const connectAbstract = async () => {
+    setError('');
+    setDiscordResult(null);
+    setDiscordConnection(null);
+    setDashboard(null);
+    setAgwPending(true);
+    setStatus('connecting');
+    try {
+      // Already connected (restored session) → skip the modal and go straight to signing.
+      if (agwConnected && agwAddress) {
+        await finishAgw(agwAddress);
+        return;
+      }
+      await agwLogin(); // opens the AGW modal; the effect below finishes once an address arrives
+    } catch (err) {
+      setAgwPending(false);
+      setStatus('idle');
+      setError(err instanceof Error ? err.message : 'Abstract sign-in cancelled.');
+    }
+  };
+
+  // After agwLogin() connects the wallet, useAccount() surfaces the address on a later render —
+  // complete the sign-in here rather than racing the login() promise against the hook update.
+  useEffect(() => {
+    if (agwPending && agwConnected && agwAddress && !agwFinishing.current) {
+      void finishAgw(agwAddress);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agwPending, agwConnected, agwAddress]);
 
   const linkDiscord = () => {
     if (!session?.discordLink) return;
@@ -602,8 +675,10 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
       ? dashboard.holdings.collections
       : null;
 
+  const busy = status === 'connecting' || status === 'signing';
   const walletActionLabel =
-    status === 'connecting' ? 'Connecting…' : status === 'signing' ? 'Check wallet…' : 'Sign in with wallet';
+    agwPending ? 'Sign in with wallet' // an AGW attempt is in flight — keep the injected button idle-labelled
+      : status === 'connecting' ? 'Connecting…' : status === 'signing' ? 'Check wallet…' : 'Sign in with wallet';
 
   const goldStars = signedIn ? displayScore.toLocaleString() : '—';
 
@@ -684,9 +759,13 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
                 <div className="fm-signin">
                   <div className="ch-avatar empty" />
                   <div className="sub">Sign with the wallet that holds your tut™ work — a signature, never a transaction.</div>
-                  <button className="btn-navy" onClick={connectAndVerify} disabled={status === 'connecting' || status === 'signing'}>
+                  <button className="btn-navy" onClick={connectAndVerify} disabled={busy}>
                     {walletActionLabel}
                   </button>
+                  <button className="btn-agw" onClick={connectAbstract} disabled={busy}>
+                    {agwPending ? (status === 'signing' ? 'Check wallet…' : 'Connecting…') : 'Sign in with Abstract'}
+                  </button>
+                  <div className="signin-hint">Abstract Global Wallet holds Abstractions and other Abstract-chain work.</div>
                   {error && <div className="note err">{error}</div>}
                 </div>
               )}
