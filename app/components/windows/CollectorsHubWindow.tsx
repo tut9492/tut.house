@@ -271,14 +271,18 @@ const HUB_CSS = `
 #collectors-hub .btn-navy { border:3px solid #000; border-radius:9px; background:var(--navy); color:#fff; font:600 13.5px/1 var(--sans); padding:12px 22px; cursor:pointer; box-shadow:3px 3px 0 0 rgba(20,16,30,.24); }
 #collectors-hub .btn-navy:hover { background:#171d28; }
 #collectors-hub .btn-navy:disabled { opacity:.6; cursor:default; }
-/* Add-Abstract — icon-only pill (same size/style as .fm-link.disc), the Abstract green + white mark. */
+/* Add-Abstract — icon-only pill (same size/style as .fm-link.disc), the official Abstract logo. */
 #collectors-hub .fm-link.agw { background:#fff; }
-#collectors-hub .fm-link.agw .fm-ic { background:#3ecf7e; }
-#collectors-hub .fm-link.agw .fm-ic svg { fill:none; }
-#collectors-hub .fm-link.agw.linked .fm-ic { background:#2aa862; }
+#collectors-hub .fm-link.agw .fm-ic { padding:0; }
+#collectors-hub .fm-link.agw .fm-ic img { width:100%; height:100%; object-fit:cover; display:block; }
 #collectors-hub .fm-link.agw:disabled { cursor:default; }
 #collectors-hub .fm-link.agw.loading { animation:agwPulse 1s ease-in-out infinite; }
 @keyframes agwPulse { 0%,100% { opacity:1; } 50% { opacity:.5; } }
+/* Connect chips (Discord / Abstract) with a state caption underneath. */
+#collectors-hub .fm-links { align-items:flex-start; }
+#collectors-hub .fm-connect { display:flex; flex-direction:column; align-items:center; gap:5px; }
+#collectors-hub .fm-cap { font:700 8.5px/1 var(--sans); letter-spacing:.06em; text-transform:uppercase; color:#9a9aa4; }
+#collectors-hub .fm-cap.on { color:#2aa862; }
 #collectors-hub .fm-social { font:600 11.5px/1 var(--mono); color:var(--navy); text-decoration:none; border-bottom:1.5px solid rgba(29,37,50,.3); padding-bottom:1px; max-width:22ch; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 #collectors-hub .fm-social:hover { border-bottom-color:var(--navy); }
 #collectors-hub .fm-edit { margin-top:6px; padding:9px 18px; font-size:12.5px; }
@@ -785,34 +789,32 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
                         <span className="fm-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg></span>
                       </span>
                     )}
-                    <button
-                      className={`fm-link disc${discordDone ? ' linked' : ''}`}
-                      onClick={discordAction}
-                      disabled={discordDone || status === 'assigning'}
-                      title={discordCap}
-                      aria-label={discordCap}
-                    >
-                      <span className="fm-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.317 4.369a19.79 19.79 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.211.375-.445.865-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.6 12.6 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.1 13.1 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.126-.094.252-.192.371-.291a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.009c.12.099.245.198.372.292a.077.077 0 0 1-.006.127 12.3 12.3 0 0 1-1.873.891.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.84 19.84 0 0 0 6.002-3.03.077.077 0 0 0 .032-.055c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.331c-1.183 0-2.157-1.086-2.157-2.419 0-1.333.955-2.42 2.157-2.42 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.955 2.419-2.157 2.419zm7.975 0c-1.183 0-2.157-1.086-2.157-2.419 0-1.333.955-2.42 2.157-2.42 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.419-2.157 2.419z" /></svg></span>
-                      {discordHandle && <span className="fm-handle">{discordHandle}</span>}
-                    </button>
+                    <div className="fm-connect">
+                      <button
+                        className={`fm-link disc${discordDone ? ' linked' : ''}`}
+                        onClick={discordAction}
+                        disabled={discordDone || status === 'assigning'}
+                        title={discordCap}
+                        aria-label={discordCap}
+                      >
+                        <span className="fm-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.317 4.369a19.79 19.79 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.211.375-.445.865-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.6 12.6 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.1 13.1 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.126-.094.252-.192.371-.291a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.009c.12.099.245.198.372.292a.077.077 0 0 1-.006.127 12.3 12.3 0 0 1-1.873.891.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.84 19.84 0 0 0 6.002-3.03.077.077 0 0 0 .032-.055c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.331c-1.183 0-2.157-1.086-2.157-2.419 0-1.333.955-2.42 2.157-2.42 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.955 2.419-2.157 2.419zm7.975 0c-1.183 0-2.157-1.086-2.157-2.419 0-1.333.955-2.42 2.157-2.42 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.419-2.157 2.419z" /></svg></span>
+                      </button>
+                      <span className={`fm-cap${discordDone ? ' on' : ''}`}>{discordDone ? 'connected' : 'connect now'}</span>
+                    </div>
                     {/* Add AGW: link an Abstract Global Wallet so its Abstract-chain holdings fold into the score. */}
-                    <button
-                      className={`fm-link agw${linkedWallets.length ? ' linked' : ''}${agwPending ? ' loading' : ''}`}
-                      onClick={addAbstract}
-                      disabled={agwPending}
-                      title={linkedWallets.length ? `${linkedWallets.length} Abstract wallet${linkedWallets.length > 1 ? 's' : ''} added — add another` : 'Add your Abstract Global Wallet to include its assets'}
-                      aria-label="Add Abstract wallet"
-                    >
-                      <span className="fm-ic">
-                        <svg viewBox="0 0 40 40" aria-hidden="true">
-                          <g fill="none" stroke="#fff" strokeWidth="5.2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M12.5 16 L20 8.5 L27.5 16" />
-                            <path d="M12.5 16 L20 8.5 L27.5 16" transform="rotate(120 20 20)" />
-                            <path d="M12.5 16 L20 8.5 L27.5 16" transform="rotate(240 20 20)" />
-                          </g>
-                        </svg>
-                      </span>
-                    </button>
+                    <div className="fm-connect">
+                      <button
+                        className={`fm-link agw${linkedWallets.length ? ' linked' : ''}${agwPending ? ' loading' : ''}`}
+                        onClick={addAbstract}
+                        disabled={agwPending}
+                        title={linkedWallets.length ? `${linkedWallets.length} Abstract wallet${linkedWallets.length > 1 ? 's' : ''} added — add another` : 'Add your Abstract Global Wallet to include its assets'}
+                        aria-label="Add Abstract wallet"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <span className="fm-ic"><img src="/assets/images/abstract-logo.png" alt="Abstract" /></span>
+                      </button>
+                      <span className={`fm-cap${linkedWallets.length ? ' on' : ''}`}>{agwPending ? 'connecting…' : linkedWallets.length ? 'connected' : 'connect now'}</span>
+                    </div>
                   </div>
                   {error && <div className="fm-err">{error}</div>}
                 </>
