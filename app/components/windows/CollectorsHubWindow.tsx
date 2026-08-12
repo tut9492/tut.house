@@ -125,6 +125,21 @@ function buildMessage(wallet: string) {
   ].join('\n');
 }
 
+// Must match the server's parseLinkMessage (LINK_MESSAGE_PREFIX + Primary/Linked/Timestamp/Nonce).
+function buildLinkMessage(primary: string, linked: string) {
+  const nonce =
+    typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  return [
+    'Add wallet to tut.house collector',
+    `Primary: ${primary.toLowerCase()}`,
+    `Linked: ${linked.toLowerCase()}`,
+    `Timestamp: ${Date.now()}`,
+    `Nonce: ${nonce}`,
+  ].join('\n');
+}
+
 function buildDiscordMessage(wallet: string, discordUserId: string, timestamp: number) {
   return [
     'Verify tut.house Discord collector role',
@@ -256,13 +271,12 @@ const HUB_CSS = `
 #collectors-hub .btn-navy { border:3px solid #000; border-radius:9px; background:var(--navy); color:#fff; font:600 13.5px/1 var(--sans); padding:12px 22px; cursor:pointer; box-shadow:3px 3px 0 0 rgba(20,16,30,.24); }
 #collectors-hub .btn-navy:hover { background:#171d28; }
 #collectors-hub .btn-navy:disabled { opacity:.6; cursor:default; }
-/* Abstract sign-in — same pill size/style as the Discord button (.fm-link.disc), green icon box. */
+/* Add-Abstract — same pill size/style as the Discord button (.fm-link.disc), green icon box. */
 #collectors-hub .fm-link.agw { background:#fff; }
 #collectors-hub .fm-link.agw .fm-ic { background:#1dc46a; }
 #collectors-hub .fm-link.agw .fm-ic svg { fill:#fff; }
+#collectors-hub .fm-link.agw.linked .fm-ic { background:#158a4a; }
 #collectors-hub .fm-link.agw:disabled { opacity:.6; cursor:default; }
-#collectors-hub .fm-signin-or { font:600 10px/1 var(--sans); letter-spacing:.14em; text-transform:uppercase; color:#a8a8b0; margin:2px 0; }
-#collectors-hub .signin-hint { margin-top:2px; font:500 10.5px/1.4 var(--sans); color:#8a8a93; max-width:230px; text-align:center; }
 #collectors-hub .fm-social { font:600 11.5px/1 var(--mono); color:var(--navy); text-decoration:none; border-bottom:1.5px solid rgba(29,37,50,.3); padding-bottom:1px; max-width:22ch; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 #collectors-hub .fm-social:hover { border-bottom-color:var(--navy); }
 #collectors-hub .fm-edit { margin-top:6px; padding:9px 18px; font-size:12.5px; }
@@ -409,6 +423,7 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
   const { address: agwAddress, isConnected: agwConnected } = useAccount();
   const { signMessageAsync } = useSignMessage();
   const [agwPending, setAgwPending] = useState(false);
+  const [linkedWallets, setLinkedWallets] = useState<string[]>([]);
   const agwFinishing = useRef(false);
 
   useEffect(() => {
@@ -466,6 +481,17 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
     }
   };
 
+  const loadLinked = async (primary: string) => {
+    try {
+      const res = await fetch(`/api/collectors/link?wallet=${encodeURIComponent(primary)}`);
+      if (!res.ok) return;
+      const data = (await res.json()) as { linkedWallets?: string[] };
+      setLinkedWallets(Array.isArray(data.linkedWallets) ? data.linkedWallets : []);
+    } catch {
+      // Linked wallets are additive chrome — a load failure never blocks the Hub.
+    }
+  };
+
   // Restore the signed-in view across reloads: we remember the verified wallet locally and
   // re-hydrate profile + score from public reads (no re-signing needed just to view).
   useEffect(() => {
@@ -477,6 +503,7 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
     setSession({ wallet: w, score: 0, rank: 'Unscored', discordLink: '/api/discord/link' });
     void loadCollectorDashboard(w);
     void loadProfile(w);
+    void loadLinked(w);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -484,6 +511,7 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
     if (typeof window !== 'undefined') window.localStorage.removeItem('tut_collector_wallet');
     if (agwConnected) { try { agwLogout(); } catch { /* best-effort */ } }
     setAgwPending(false);
+    setLinkedWallets([]);
     setSession(null);
     setWallet('');
     setDashboard(null);
@@ -494,8 +522,7 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
     setError('');
   };
 
-  // Verify a wallet+signature with the backend, then hydrate the signed-in view. Shared by both the
-  // injected-wallet (personal_sign) and AGW (ERC-1271) paths — the endpoint accepts either.
+  // Verify the primary EVM wallet's signature with the backend, then hydrate the signed-in view.
   const submitProof = async (selected: string, message: string, signature: `0x${string}`) => {
     const res = await fetch('/api/collectors/session', {
       method: 'POST',
@@ -510,6 +537,7 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
     setStatus('verified');
     await loadCollectorDashboard(selected);
     void loadProfile(selected);
+    void loadLinked(selected);
   };
 
   const connectAndVerify = async () => {
@@ -543,53 +571,63 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
     }
   };
 
-  // Once the AGW connects, sign the collector message and verify. Guarded so it runs once per attempt
-  // (the effect below may fire on the same state change that a direct call already handled).
-  const finishAgw = async (address: string) => {
+  // Once the AGW connects, sign a link message (bound to the signed-in primary) and attach it so its
+  // Abstract holdings fold into the score. Guarded so it runs once per attempt (the effect below may
+  // fire on the same state change a direct call already handled).
+  const linkAgw = async (address: string) => {
     if (agwFinishing.current) return;
     agwFinishing.current = true;
     try {
-      const selected = address.toLowerCase();
-      setWallet(selected);
+      const primary = (session?.wallet || wallet).toLowerCase();
+      const linked = address.toLowerCase();
+      if (!/^0x[a-f0-9]{40}$/.test(primary)) throw new Error('Sign in with your main wallet first, then add Abstract.');
+      if (primary === linked) throw new Error('That Abstract wallet is already your primary wallet.');
       setStatus('signing');
-      const message = buildMessage(selected);
+      const message = buildLinkMessage(primary, linked);
       const signature = await signMessageAsync({ message });
-      await submitProof(selected, message, signature);
+      const res = await fetch('/api/collectors/link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ primary, linked, message, signature, chain: 'abstract' }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || 'Could not add Abstract wallet.');
+      setLinkedWallets(Array.isArray(data.linkedWallets) ? data.linkedWallets : []);
+      setStatus('verified');
+      await loadCollectorDashboard(primary); // recompute combined EVM + Abstract score/holdings
     } catch (err) {
-      setStatus('idle');
-      setError(err instanceof Error ? err.message : 'Abstract verification failed.');
+      setStatus(session ? 'verified' : 'idle');
+      setError(err instanceof Error ? err.message : 'Could not add Abstract wallet.');
     } finally {
       setAgwPending(false);
       agwFinishing.current = false;
+      try { if (agwConnected) agwLogout(); } catch { /* reset AGW connection for the next add */ }
     }
   };
 
-  const connectAbstract = async () => {
+  const addAbstract = async () => {
+    if (!session) { setError('Sign in with your main wallet first, then add Abstract.'); return; }
     setError('');
-    setDiscordResult(null);
-    setDiscordConnection(null);
-    setDashboard(null);
     setAgwPending(true);
     setStatus('connecting');
     try {
-      // Already connected (restored session) → skip the modal and go straight to signing.
       if (agwConnected && agwAddress) {
-        await finishAgw(agwAddress);
+        await linkAgw(agwAddress);
         return;
       }
-      await agwLogin(); // opens the AGW modal; the effect below finishes once an address arrives
+      await agwLogin(); // opens the AGW modal; the effect below links once an address arrives
     } catch (err) {
       setAgwPending(false);
-      setStatus('idle');
-      setError(err instanceof Error ? err.message : 'Abstract sign-in cancelled.');
+      setStatus(session ? 'verified' : 'idle');
+      setError(err instanceof Error ? err.message : 'Abstract connection cancelled.');
     }
   };
 
-  // After agwLogin() connects the wallet, useAccount() surfaces the address on a later render —
-  // complete the sign-in here rather than racing the login() promise against the hook update.
+  // After agwLogin() connects, useAccount() surfaces the address on a later render — do the linking
+  // here rather than racing the login() promise against the hook update.
   useEffect(() => {
     if (agwPending && agwConnected && agwAddress && !agwFinishing.current) {
-      void finishAgw(agwAddress);
+      void linkAgw(agwAddress);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agwPending, agwConnected, agwAddress]);
@@ -678,10 +716,10 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
       ? dashboard.holdings.collections
       : null;
 
+  // Signed-out sign-in is EVM-only (AGW is an additive link shown only when signed in).
   const busy = status === 'connecting' || status === 'signing';
   const walletActionLabel =
-    agwPending ? 'Sign in with wallet' // an AGW attempt is in flight — keep the injected button idle-labelled
-      : status === 'connecting' ? 'Connecting…' : status === 'signing' ? 'Check wallet…' : 'Sign in with wallet';
+    status === 'connecting' ? 'Connecting…' : status === 'signing' ? 'Check wallet…' : 'Sign in with wallet';
 
   const goldStars = signedIn ? displayScore.toLocaleString() : '—';
 
@@ -755,30 +793,29 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
                       <span className="fm-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.317 4.369a19.79 19.79 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.211.375-.445.865-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.6 12.6 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.1 13.1 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.126-.094.252-.192.371-.291a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.009c.12.099.245.198.372.292a.077.077 0 0 1-.006.127 12.3 12.3 0 0 1-1.873.891.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.84 19.84 0 0 0 6.002-3.03.077.077 0 0 0 .032-.055c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.331c-1.183 0-2.157-1.086-2.157-2.419 0-1.333.955-2.42 2.157-2.42 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.955 2.419-2.157 2.419zm7.975 0c-1.183 0-2.157-1.086-2.157-2.419 0-1.333.955-2.42 2.157-2.42 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.419-2.157 2.419z" /></svg></span>
                       {discordHandle && <span className="fm-handle">{discordHandle}</span>}
                     </button>
+                    {/* Add AGW: link an Abstract Global Wallet so its Abstract-chain holdings fold into the score. */}
+                    <button
+                      className={`fm-link agw${linkedWallets.length ? ' linked' : ''}`}
+                      onClick={addAbstract}
+                      disabled={agwPending}
+                      title={linkedWallets.length ? `${linkedWallets.length} Abstract wallet${linkedWallets.length > 1 ? 's' : ''} added — add another` : 'Add your Abstract Global Wallet to include its assets'}
+                      aria-label="Add Abstract wallet"
+                    >
+                      <span className="fm-ic">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.2l2.53 6.75L21.8 12l-7.27 3.05L12 21.8l-2.53-6.75L2.2 12l7.27-3.05z" /></svg>
+                      </span>
+                      <span className="fm-handle">{agwPending ? (status === 'signing' ? 'Check wallet…' : 'Connecting…') : linkedWallets.length ? `Abstract ×${linkedWallets.length}` : 'Add Abstract'}</span>
+                    </button>
                   </div>
                   {error && <div className="fm-err">{error}</div>}
                 </>
               ) : (
                 <div className="fm-signin">
                   <div className="ch-avatar empty" />
-                  <div className="sub">Sign with the wallet that holds your tut™ work — a signature, never a transaction.</div>
+                  <div className="sub">Sign with the wallet that holds your tut™ work — a signature, never a transaction. Add an Abstract wallet after to include its assets.</div>
                   <button className="btn-navy" onClick={connectAndVerify} disabled={busy}>
                     {walletActionLabel}
                   </button>
-                  <div className="fm-signin-or">or</div>
-                  <button
-                    className="fm-link agw"
-                    onClick={connectAbstract}
-                    disabled={busy}
-                    title="Sign in with Abstract Global Wallet"
-                    aria-label="Sign in with Abstract Global Wallet"
-                  >
-                    <span className="fm-ic">
-                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.2l2.53 6.75L21.8 12l-7.27 3.05L12 21.8l-2.53-6.75L2.2 12l7.27-3.05z" /></svg>
-                    </span>
-                    <span className="fm-handle">{agwPending ? (status === 'signing' ? 'Check wallet…' : 'Connecting…') : 'Abstract'}</span>
-                  </button>
-                  <div className="signin-hint">Abstract Global Wallet holds Abstractions and other Abstract-chain work.</div>
                   {error && <div className="note err">{error}</div>}
                 </div>
               )}
