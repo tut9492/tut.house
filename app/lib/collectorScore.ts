@@ -523,16 +523,21 @@ function mergeHoldings(lists: ScoreCollection[][], maxPerCollection: number): Sc
   });
 }
 
-// Combined score across a collector's primary wallet + any linked wallets (e.g. an AGW that holds
-// their Abstract-chain work). Holdings are unioned before breadth/depth so bonuses reflect the whole
-// collection, not one wallet. De-dupes addresses; a single wallet takes the plain single-wallet path.
-export async function getCollectorScoreBreakdownForWallets(wallets: string[], maxPerCollection = 100): Promise<ScoreBreakdown> {
+// Combined holdings across a collector's primary wallet + any linked wallets (e.g. an AGW that holds
+// their Abstract-chain work), merged per collection. De-dupes addresses; a single wallet is a passthrough.
+export async function getTutCollectionHoldingsForWallets(wallets: string[], maxPerCollection = 100): Promise<ScoreCollection[]> {
   const unique = Array.from(new Set(wallets.map((w) => normalizeWallet(w))));
   if (unique.length <= 1) {
-    return getCollectorScoreBreakdown(unique[0] ?? wallets[0]);
+    return getTutCollectionHoldings(unique[0] ?? wallets[0], maxPerCollection);
   }
   const lists = await Promise.all(unique.map((w) => getTutCollectionHoldings(w, maxPerCollection)));
-  return calculateScoreBreakdown({ collections: mergeHoldings(lists, maxPerCollection) });
+  return mergeHoldings(lists, maxPerCollection);
+}
+
+// Combined score across primary + linked wallets. Holdings are unioned before breadth/depth so
+// bonuses reflect the whole collection, not one wallet.
+export async function getCollectorScoreBreakdownForWallets(wallets: string[], maxPerCollection = 100): Promise<ScoreBreakdown> {
+  return calculateScoreBreakdown({ collections: await getTutCollectionHoldingsForWallets(wallets, maxPerCollection) });
 }
 
 // Owned collections (with an image) → leaderboard/badge shape.

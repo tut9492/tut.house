@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { calculateScoreBreakdown, collectionBadges, getTutCollectionHoldings, normalizeWallet, scoreRank, verifyCollectorProof, type ScoreCollection } from '@/app/lib/collectorScore';
+import { calculateScoreBreakdown, collectionBadges, getTutCollectionHoldingsForWallets, normalizeWallet, scoreRank, verifyCollectorProof, type ScoreCollection } from '@/app/lib/collectorScore';
 import {
   artTokenKey,
   isValidSocialUrl,
@@ -11,6 +11,7 @@ import {
   type ProfileInput,
 } from '@/app/lib/collectorProfile';
 import {
+  getLinkedWallets,
   getProfileByUsername,
   getProfileByWallet,
   isUsernameTaken,
@@ -30,8 +31,10 @@ type PutBody = {
 // Resolve the wallet's owned pieces into a tokenKey -> ArtRef map. This is the source of
 // truth for a profile: the client only sends tokenKeys, never image URLs, so a collector
 // can never pin art they don't own or inject an arbitrary image.
-async function ownedArt(wallet: string): Promise<{ map: Map<string, ArtRef>; collections: ScoreCollection[] }> {
-  const collections = await getTutCollectionHoldings(wallet);
+// Owned art across the collector's primary wallet + any linked wallets (e.g. an AGW holding their
+// Abstractions), so a page can display/pick pieces held in either.
+async function ownedArt(wallets: string[]): Promise<{ map: Map<string, ArtRef>; collections: ScoreCollection[] }> {
+  const collections = await getTutCollectionHoldingsForWallets(wallets);
   const map = new Map<string, ArtRef>();
   for (const c of collections) {
     for (const a of c.artworks) {
@@ -112,7 +115,10 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'That username is taken.' }, { status: 409 });
     }
 
-    const { map: owned, collections } = await ownedArt(wallet);
+    // Include any linked wallets (e.g. an AGW) so the collector can display/pick their Abstractions
+    // and other cross-wallet art, and so the saved score reflects combined holdings.
+    const linked = await getLinkedWallets(wallet);
+    const { map: owned, collections } = await ownedArt([wallet, ...linked]);
 
     const avatarRef = input.avatarTokenKey ? owned.get(input.avatarTokenKey) : undefined;
     const avatar = avatarRef ? { tokenKey: avatarRef.tokenKey, image: avatarRef.image } : null;

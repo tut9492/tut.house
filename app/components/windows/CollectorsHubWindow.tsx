@@ -271,12 +271,14 @@ const HUB_CSS = `
 #collectors-hub .btn-navy { border:3px solid #000; border-radius:9px; background:var(--navy); color:#fff; font:600 13.5px/1 var(--sans); padding:12px 22px; cursor:pointer; box-shadow:3px 3px 0 0 rgba(20,16,30,.24); }
 #collectors-hub .btn-navy:hover { background:#171d28; }
 #collectors-hub .btn-navy:disabled { opacity:.6; cursor:default; }
-/* Add-Abstract — same pill size/style as the Discord button (.fm-link.disc), green icon box. */
+/* Add-Abstract — icon-only pill (same size/style as .fm-link.disc), the Abstract green + white mark. */
 #collectors-hub .fm-link.agw { background:#fff; }
-#collectors-hub .fm-link.agw .fm-ic { background:#1dc46a; }
-#collectors-hub .fm-link.agw .fm-ic svg { fill:#fff; }
-#collectors-hub .fm-link.agw.linked .fm-ic { background:#158a4a; }
-#collectors-hub .fm-link.agw:disabled { opacity:.6; cursor:default; }
+#collectors-hub .fm-link.agw .fm-ic { background:#3ecf7e; }
+#collectors-hub .fm-link.agw .fm-ic svg { fill:none; }
+#collectors-hub .fm-link.agw.linked .fm-ic { background:#2aa862; }
+#collectors-hub .fm-link.agw:disabled { cursor:default; }
+#collectors-hub .fm-link.agw.loading { animation:agwPulse 1s ease-in-out infinite; }
+@keyframes agwPulse { 0%,100% { opacity:1; } 50% { opacity:.5; } }
 #collectors-hub .fm-social { font:600 11.5px/1 var(--mono); color:var(--navy); text-decoration:none; border-bottom:1.5px solid rgba(29,37,50,.3); padding-bottom:1px; max-width:22ch; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 #collectors-hub .fm-social:hover { border-bottom-color:var(--navy); }
 #collectors-hub .fm-edit { margin-top:6px; padding:9px 18px; font-size:12.5px; }
@@ -795,16 +797,21 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
                     </button>
                     {/* Add AGW: link an Abstract Global Wallet so its Abstract-chain holdings fold into the score. */}
                     <button
-                      className={`fm-link agw${linkedWallets.length ? ' linked' : ''}`}
+                      className={`fm-link agw${linkedWallets.length ? ' linked' : ''}${agwPending ? ' loading' : ''}`}
                       onClick={addAbstract}
                       disabled={agwPending}
                       title={linkedWallets.length ? `${linkedWallets.length} Abstract wallet${linkedWallets.length > 1 ? 's' : ''} added — add another` : 'Add your Abstract Global Wallet to include its assets'}
                       aria-label="Add Abstract wallet"
                     >
                       <span className="fm-ic">
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.2l2.53 6.75L21.8 12l-7.27 3.05L12 21.8l-2.53-6.75L2.2 12l7.27-3.05z" /></svg>
+                        <svg viewBox="0 0 40 40" aria-hidden="true">
+                          <g fill="none" stroke="#fff" strokeWidth="5.2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12.5 16 L20 8.5 L27.5 16" />
+                            <path d="M12.5 16 L20 8.5 L27.5 16" transform="rotate(120 20 20)" />
+                            <path d="M12.5 16 L20 8.5 L27.5 16" transform="rotate(240 20 20)" />
+                          </g>
+                        </svg>
                       </span>
-                      <span className="fm-handle">{agwPending ? (status === 'signing' ? 'Check wallet…' : 'Connecting…') : linkedWallets.length ? `Abstract ×${linkedWallets.length}` : 'Add Abstract'}</span>
                     </button>
                   </div>
                   {error && <div className="fm-err">{error}</div>}
