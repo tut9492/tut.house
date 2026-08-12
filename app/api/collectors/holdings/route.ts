@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { collectionBadges, getCollectorScoreBreakdown, normalizeWallet, scoreRank } from '@/app/lib/collectorScore';
-import { profileStoreEnabled, updateProfileScore } from '@/app/lib/db';
+import { collectionBadges, getCollectorScoreBreakdownForWallets, normalizeWallet, scoreRank } from '@/app/lib/collectorScore';
+import { getLinkedWallets, profileStoreEnabled, updateProfileScore } from '@/app/lib/db';
 
 type CachedHoldings = { ts: number; body: unknown };
 
@@ -23,7 +23,10 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const breakdown = await getCollectorScoreBreakdown(wallet);
+    // Score the collector's primary wallet unioned with any linked wallets (e.g. an added AGW),
+    // so combined EVM + Abstract holdings all count.
+    const linked = profileStoreEnabled() ? await getLinkedWallets(wallet) : [];
+    const breakdown = await getCollectorScoreBreakdownForWallets([wallet, ...linked]);
 
     // Keep the stored leaderboard score fresh: no-ops unless this wallet has a collector page.
     if (profileStoreEnabled()) {

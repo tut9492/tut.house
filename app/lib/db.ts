@@ -111,6 +111,61 @@ export async function getStaleProfileWallets(limit: number, olderThanMs: number)
   return rows.map((r) => r.wallet);
 }
 
+// ---- Linked wallets (a collector can attach extra addresses, e.g. an AGW, to combine holdings) ----
+// Stored in `collector_links` (linked_wallet PK → one primary), independent of whether the collector
+// has designed a profile page, so linking works right after a plain sign-in.
+
+// Addresses linked to a primary collector wallet (lowercased). Empty if none.
+export async function getLinkedWallets(primary: string): Promise<string[]> {
+  if (!process.env.DATABASE_URL) return [];
+  const sql = client();
+  const rows = (await sql`
+    SELECT linked_wallet FROM collector_links WHERE primary_wallet = ${primary.toLowerCase()} ORDER BY created_at
+  `) as { linked_wallet: string }[];
+  return rows.map((r) => r.linked_wallet.toLowerCase());
+}
+
+// True if `candidate` is already spoken for by a DIFFERENT collector — it's someone else's primary
+// (has a profile or owns links) or already linked elsewhere — so one wallet's holdings can't be
+// double-counted across two collectors.
+export async function isWalletClaimed(candidate: string, exceptPrimary: string): Promise<boolean> {
+  const sql = client();
+  const c = candidate.toLowerCase();
+  const except = exceptPrimary.toLowerCase();
+  const rows = (await sql`
+    SELECT 1 FROM collector_links WHERE linked_wallet = ${c} AND primary_wallet <> ${except}
+    UNION ALL
+    SELECT 1 FROM collector_links WHERE primary_wallet = ${c}
+    UNION ALL
+    SELECT 1 FROM collector_profiles WHERE wallet = ${c} AND wallet <> ${except}
+    LIMIT 1
+  `) as unknown[];
+  return rows.length > 0;
+}
+
+// Link a wallet to a primary (idempotent). Returns the primary's full linked list.
+// Throws if the linked wallet is already claimed by another collector.
+export async function addLinkedWallet(primary: string, linked: string, chain?: string): Promise<string[]> {
+  const sql = client();
+  const p = primary.toLowerCase();
+  const l = linked.toLowerCase();
+  await sql`
+    INSERT INTO collector_links (linked_wallet, primary_wallet, chain)
+    VALUES (${l}, ${p}, ${chain ?? null})
+    ON CONFLICT (linked_wallet) DO UPDATE SET primary_wallet = EXCLUDED.primary_wallet, chain = EXCLUDED.chain
+    WHERE collector_links.primary_wallet = ${p}
+  `;
+  return getLinkedWallets(p);
+}
+
+// Remove a linked wallet from a primary. Returns the remaining linked list.
+export async function removeLinkedWallet(primary: string, linked: string): Promise<string[]> {
+  const sql = client();
+  const p = primary.toLowerCase();
+  await sql`DELETE FROM collector_links WHERE primary_wallet = ${p} AND linked_wallet = ${linked.toLowerCase()}`;
+  return getLinkedWallets(p);
+}
+
 export async function getProfileByUsername(username: string): Promise<CollectorProfile | null> {
   const sql = client();
   const rows = (await sql`

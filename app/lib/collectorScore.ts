@@ -38,6 +38,7 @@ const OPENSEA_PERMALINK_CHAINS = new Set(['ethereum', 'abstract']);
 
 export const SCORE_MESSAGE_PREFIX = 'Verify tut.house collector access';
 export const DISCORD_VERIFY_MESSAGE_PREFIX = 'Verify tut.house Discord collector role';
+export const LINK_MESSAGE_PREFIX = 'Add wallet to tut.house collector';
 const MESSAGE_TTL_MS = 5 * 60 * 1000;
 
 export type CollectorProof = {
@@ -188,6 +189,45 @@ export async function verifyCollectorProof(proof: CollectorProof): Promise<`0x${
   if (!valid) throw new Error('Invalid signature');
 
   return parsed.wallet;
+}
+
+// ---- Linking an additional wallet (e.g. AGW) to a signed-in collector ----
+// The message binds primary+linked so a captured sign-in signature can't be replayed to link a
+// wallet, and so the signer is declaring which collector profile to attach to.
+export type LinkProof = { primary: string; linked: string; message: string; signature: `0x${string}` };
+
+export function buildLinkMessage(primary: string, linked: string, timestamp: number, nonce: string): string {
+  return [
+    LINK_MESSAGE_PREFIX,
+    `Primary: ${normalizeWallet(primary)}`,
+    `Linked: ${normalizeWallet(linked)}`,
+    `Timestamp: ${timestamp}`,
+    `Nonce: ${nonce}`,
+  ].join('\n');
+}
+
+export function parseLinkMessage(message: string): { primary: `0x${string}`; linked: `0x${string}` } {
+  const lines = String(message || '').split('\n');
+  if (lines[0] !== LINK_MESSAGE_PREFIX) throw new Error('Invalid message prefix');
+  const primary = normalizeWallet((lines.find((l) => l.startsWith('Primary: ')) || '').replace('Primary: ', ''));
+  const linked = normalizeWallet((lines.find((l) => l.startsWith('Linked: ')) || '').replace('Linked: ', ''));
+  const timestamp = Number((lines.find((l) => l.startsWith('Timestamp: ')) || '').replace('Timestamp: ', ''));
+  const nonce = (lines.find((l) => l.startsWith('Nonce: ')) || '').replace('Nonce: ', '').trim();
+  if (!Number.isFinite(timestamp)) throw new Error('Invalid timestamp');
+  if (!nonce || nonce.length > 128) throw new Error('Invalid nonce');
+  if (Math.abs(Date.now() - timestamp) > MESSAGE_TTL_MS) throw new Error('Signature expired');
+  if (primary === linked) throw new Error('Cannot link a wallet to itself');
+  return { primary, linked };
+}
+
+// Verify the LINKED wallet signed the link message (ERC-1271 aware for AGW). Returns {primary,linked}.
+export async function verifyLinkProof(proof: LinkProof): Promise<{ primary: `0x${string}`; linked: `0x${string}` }> {
+  const { primary, linked } = parseLinkMessage(proof.message);
+  if (normalizeWallet(proof.primary) !== primary) throw new Error('Primary wallet mismatch');
+  if (normalizeWallet(proof.linked) !== linked) throw new Error('Linked wallet mismatch');
+  const valid = await getAbstractClient().verifyMessage({ address: linked, message: proof.message, signature: proof.signature });
+  if (!valid) throw new Error('Invalid signature');
+  return { primary, linked };
 }
 
 export function buildDiscordVerifyMessage(wallet: string, discordUserId: string, timestamp: number): string {
@@ -469,6 +509,30 @@ export async function getCollectorScoreBreakdown(wallet: string): Promise<ScoreB
   return calculateScoreBreakdown({
     collections: await getTutCollectionHoldings(wallet),
   });
+}
+
+// Merge per-wallet holdings into one combined set. Each list is in TUT_COLLECTIONS order (getTut…
+// maps over it), so we can merge index-by-index: sum counts, concat + cap artworks, keep a logo.
+function mergeHoldings(lists: ScoreCollection[][], maxPerCollection: number): ScoreCollection[] {
+  return TUT_COLLECTIONS.map((_, i) => {
+    const parts = lists.map((l) => l[i]);
+    const base = parts[0];
+    const count = parts.reduce((sum, c) => sum + c.count, 0);
+    const artworks = parts.flatMap((c) => c.artworks).slice(0, maxPerCollection);
+    return { ...base, count, score: count * base.weight, artworks, logo: parts.find((c) => c.logo)?.logo };
+  });
+}
+
+// Combined score across a collector's primary wallet + any linked wallets (e.g. an AGW that holds
+// their Abstract-chain work). Holdings are unioned before breadth/depth so bonuses reflect the whole
+// collection, not one wallet. De-dupes addresses; a single wallet takes the plain single-wallet path.
+export async function getCollectorScoreBreakdownForWallets(wallets: string[], maxPerCollection = 100): Promise<ScoreBreakdown> {
+  const unique = Array.from(new Set(wallets.map((w) => normalizeWallet(w))));
+  if (unique.length <= 1) {
+    return getCollectorScoreBreakdown(unique[0] ?? wallets[0]);
+  }
+  const lists = await Promise.all(unique.map((w) => getTutCollectionHoldings(w, maxPerCollection)));
+  return calculateScoreBreakdown({ collections: mergeHoldings(lists, maxPerCollection) });
 }
 
 // Owned collections (with an image) → leaderboard/badge shape.

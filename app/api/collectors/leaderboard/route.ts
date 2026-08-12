@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { collectionBadges, getCollectorScoreBreakdown, scoreRank } from '@/app/lib/collectorScore';
+import { collectionBadges, getCollectorScoreBreakdownForWallets, scoreRank } from '@/app/lib/collectorScore';
 import {
-  getAllProfiles, getStaleProfileWallets, getStoredLeaderboard, profileStoreEnabled, updateProfileScore,
+  getAllProfiles, getLinkedWallets, getStaleProfileWallets, getStoredLeaderboard, profileStoreEnabled, updateProfileScore,
 } from '@/app/lib/db';
 
 // The board reads straight from stored scores (fast, no Alchemy). Scores are kept fresh three ways:
@@ -20,9 +20,11 @@ declare global {
 const SELF_HEAL_BATCH = 8;
 const STALE_WINDOW_MS = 15 * 60 * 1000;
 
-// Rescore + persist one wallet's score. Isolated so a single failure can't abort a batch.
+// Rescore + persist one wallet's score (union of primary + any linked wallets). Isolated so a single
+// failure can't abort a batch.
 async function rescoreWallet(wallet: string): Promise<void> {
-  const bd = await getCollectorScoreBreakdown(wallet);
+  const linked = await getLinkedWallets(wallet);
+  const bd = await getCollectorScoreBreakdownForWallets([wallet, ...linked]);
   await updateProfileScore(wallet, bd.calculatedScore, scoreRank(bd.calculatedScore), collectionBadges(bd));
 }
 
