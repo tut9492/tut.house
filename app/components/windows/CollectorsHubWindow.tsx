@@ -125,6 +125,26 @@ function buildMessage(wallet: string) {
   ].join('\n');
 }
 
+// AGW login is a Privy cross-app POPUP. In-app browsers (Discord/X/Telegram/Instagram/Facebook
+// webviews) block window.open, so the popup can't open and Privy throws "Failed to initialize
+// request". Detect those up front and guide the user to a real browser instead of a raw error.
+function isRestrictedBrowser() {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent || '';
+  return /(Discord|Twitter|FBAN|FBAV|FB_IAB|Instagram|Telegram|Line\/|MicroMessenger|GSA\/|Snapchat|TikTok|Musical)/i.test(ua);
+}
+
+const ABSTRACT_BROWSER_MSG =
+  'Abstract sign-in opens a secure popup, which in-app browsers (Discord, X, Telegram) block. Open tut.house in Safari or Chrome, then add Abstract.';
+
+// Turn Privy/popup failures into something actionable instead of "Failed to initialize request".
+function friendlyAbstractError(err: unknown): string {
+  const msg = err instanceof Error ? err.message : String(err || '');
+  if (/initialize request|popup|window|blocked|timeout/i.test(msg)) return ABSTRACT_BROWSER_MSG;
+  if (/reject|cancel|denied|closed/i.test(msg)) return 'Abstract sign-in was cancelled.';
+  return msg || 'Could not add Abstract wallet.';
+}
+
 // Must match the server's parseLinkMessage (LINK_MESSAGE_PREFIX + Primary/Linked/Timestamp/Nonce).
 function buildLinkMessage(primary: string, linked: string) {
   const nonce =
@@ -624,7 +644,7 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
       await loadCollectorDashboard(primary); // recompute combined EVM + Abstract score/holdings
     } catch (err) {
       setStatus(session ? 'verified' : 'idle');
-      setError(err instanceof Error ? err.message : 'Could not add Abstract wallet.');
+      setError(friendlyAbstractError(err));
     } finally {
       setAgwPending(false);
       agwFinishing.current = false;
@@ -634,6 +654,8 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
 
   const addAbstract = async () => {
     if (!session) { setError('Sign in with your main wallet first, then add Abstract.'); return; }
+    // In-app browsers can't open the Privy popup — tell the user before it fails with a raw error.
+    if (isRestrictedBrowser()) { setError(ABSTRACT_BROWSER_MSG); return; }
     setError('');
     setAgwPending(true);
     setStatus('connecting');
@@ -646,7 +668,7 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
     } catch (err) {
       setAgwPending(false);
       setStatus(session ? 'verified' : 'idle');
-      setError(err instanceof Error ? err.message : 'Abstract connection cancelled.');
+      setError(friendlyAbstractError(err));
     }
   };
 
