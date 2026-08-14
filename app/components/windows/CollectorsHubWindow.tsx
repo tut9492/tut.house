@@ -301,8 +301,9 @@ const HUB_CSS = `
 /* Connect chips (Discord / Abstract) with a state caption underneath. */
 #collectors-hub .fm-links { align-items:flex-start; }
 #collectors-hub .fm-connect { display:flex; flex-direction:column; align-items:center; gap:5px; }
-#collectors-hub .fm-cap { font:700 8.5px/1 var(--sans); letter-spacing:.06em; text-transform:uppercase; color:#9a9aa4; }
+#collectors-hub .fm-cap { font:700 8.5px/1 var(--sans); letter-spacing:.06em; text-transform:uppercase; color:#9a9aa4; max-width:70px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:center; }
 #collectors-hub .fm-cap.on { color:#2aa862; }
+#collectors-hub .fm-link.x:disabled { opacity:.35; cursor:default; box-shadow:none; }
 #collectors-hub .fm-cap.pending { color:#c98a1e; }
 #collectors-hub .fm-social { font:600 11.5px/1 var(--mono); color:var(--navy); text-decoration:none; border-bottom:1.5px solid rgba(29,37,50,.3); padding-bottom:1px; max-width:22ch; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 #collectors-hub .fm-social:hover { border-bottom-color:var(--navy); }
@@ -850,16 +851,20 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
                   </div>
                   <div className="fm-name">{displayName}</div>
                   <div className="fm-links">
-                    {profile?.socialUrl ? (
-                      <a className="fm-link x" href={profile.socialUrl} target="_blank" rel="noopener noreferrer nofollow" title={socialLabel(profile.socialUrl)}>
-                        <span className="fm-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg></span>
-                        {xHandle && <span className="fm-handle">{xHandle}</span>}
-                      </a>
-                    ) : (
-                      <span className="fm-link x unset" title="No X linked — add it in Edit page">
-                        <span className="fm-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg></span>
-                      </span>
-                    )}
+                    <div className="fm-connect">
+                      {profile?.socialUrl ? (
+                        <a className="fm-link x" href={profile.socialUrl} target="_blank" rel="noopener noreferrer nofollow" title={socialLabel(profile.socialUrl)} aria-label={socialLabel(profile.socialUrl)}>
+                          <span className="fm-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg></span>
+                        </a>
+                      ) : (
+                        // Unset X isn't an OAuth connect — it's a link set on your page. Make the chip
+                        // open the page editor so it's actionable, not a dead grey square.
+                        <button className="fm-link x" onClick={() => setWizardOpen(true)} disabled={!profileStoreReady} title="Add your X — opens your page editor" aria-label="Add your X link">
+                          <span className="fm-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg></span>
+                        </button>
+                      )}
+                      <span className={`fm-cap${profile?.socialUrl ? ' on' : ''}`}>{profile?.socialUrl ? (xHandle || 'connected') : 'add X'}</span>
+                    </div>
                     <div className="fm-connect">
                       <button
                         className={`fm-link disc${discordDone ? ' linked' : ''}`}
