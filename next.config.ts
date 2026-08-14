@@ -17,6 +17,9 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'breadio.tuthopium.store' },
     ],
   },
+  async rewrites() {
+    return [{ source: '/raise', destination: '/raise.html' }];
+  },
 };
 
 export default nextConfig;
