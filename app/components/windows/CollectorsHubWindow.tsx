@@ -135,14 +135,21 @@ function isRestrictedBrowser() {
   return /(Discord|Twitter|FBAN|FBAV|FB_IAB|Instagram|Telegram|Line\/|MicroMessenger|GSA\/|Snapchat|TikTok|Musical)/i.test(ua);
 }
 
-const ABSTRACT_BROWSER_MSG =
-  'Abstract sign-in opens a secure popup, which in-app browsers (Discord, X, Telegram) block. Open tut.house in Safari or Chrome, then add Abstract.';
+// In-app webviews (Discord/X/Telegram/etc.) can't open the Privy popup at all — send them to a real browser.
+const ABSTRACT_INAPP_MSG =
+  'Abstract sign-in opens a secure popup that in-app browsers (Discord, X, Telegram, Instagram) block. Open tut.house in Safari or Chrome, then add Abstract.';
+// Desktop Chrome/Brave (and Brave Shields) block the popup by default — the fix is to allow it, not switch browsers.
+const ABSTRACT_POPUP_MSG =
+  'Your browser blocked the Abstract sign-in popup. Allow pop-ups for tut.house — click the blocked-popup icon in the address bar (Brave: also lower Shields) — then press Add Abstract again.';
 
 // Turn Privy/popup failures into something actionable instead of "Failed to initialize request".
+// A blocked popup in a normal browser means "allow pop-ups"; in an in-app webview it means "open a real browser".
 function friendlyAbstractError(err: unknown): string {
   const msg = err instanceof Error ? err.message : String(err || '');
-  if (/initialize request|popup|window|blocked|timeout/i.test(msg)) return ABSTRACT_BROWSER_MSG;
-  if (/reject|cancel|denied|closed/i.test(msg)) return 'Abstract sign-in was cancelled.';
+  if (/reject|cancel|denied|closed by user/i.test(msg)) return 'Abstract sign-in was cancelled.';
+  if (/initialize request|pop-?up|window|blocked|timeout|open/i.test(msg)) {
+    return isRestrictedBrowser() ? ABSTRACT_INAPP_MSG : ABSTRACT_POPUP_MSG;
+  }
   return msg || 'Could not add Abstract wallet.';
 }
 
@@ -694,7 +701,7 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
   const addAbstract = async () => {
     if (!session) { setError('Sign in with your main wallet first, then add Abstract.'); return; }
     // In-app browsers can't open the Privy popup — tell the user before it fails with a raw error.
-    if (isRestrictedBrowser()) { setError(ABSTRACT_BROWSER_MSG); return; }
+    if (isRestrictedBrowser()) { setError(ABSTRACT_INAPP_MSG); return; }
     setError('');
     setAgwPending(true);
     setStatus('connecting');
