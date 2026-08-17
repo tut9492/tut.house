@@ -46,8 +46,12 @@ async function rebuildAll(): Promise<void> {
   }
 }
 
-async function buildBody(limit: number) {
-  const rows = await getStoredLeaderboard(limit);
+// The board shows EVERY scored collector, not a top-N. The ceiling is just a safety valve so a
+// runaway store can never blow the payload/render; bump it if the collector base ever approaches it.
+const MAX_BOARD = 1000;
+
+async function buildBody() {
+  const rows = await getStoredLeaderboard(MAX_BOARD);
   const leaderboard = rows.map((r, i) => ({
     rank: i + 1,
     username: r.username,
@@ -74,13 +78,11 @@ export async function GET(request: NextRequest) {
     ? request.headers.get('authorization') === `Bearer ${secret}`
     : /vercel-cron/i.test(ua);
 
-  const limit = Math.min(Number(request.nextUrl.searchParams.get('limit')) || 50, 100);
-
   try {
     if (isCron) {
       await rebuildAll();
       globalThis.__collectorLeaderboardCache = undefined;
-      const body = await buildBody(limit);
+      const body = await buildBody();
       return NextResponse.json(body);
     }
 
@@ -96,13 +98,13 @@ export async function GET(request: NextRequest) {
     // even when the nightly cron doesn't run. Guarded — a healing failure must not break the board.
     try { await selfHealStale(); } catch { /* best-effort */ }
 
-    let body = await buildBody(limit);
+    let body = await buildBody();
     // Nothing stored yet but profiles exist → self-seed once so the board is never empty.
     if (body.total === 0) {
       const profiles = await getAllProfiles();
       if (profiles.length > 0) {
         await rebuildAll();
-        body = await buildBody(limit);
+        body = await buildBody();
       }
     }
 

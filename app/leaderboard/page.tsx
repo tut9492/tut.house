@@ -71,7 +71,7 @@ export default function LeaderboardPage() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/collectors/leaderboard?limit=100');
+        const res = await fetch('/api/collectors/leaderboard');
         const data = await res.json();
         if (cancelled) return;
         setRows(Array.isArray(data.leaderboard) ? data.leaderboard : []);

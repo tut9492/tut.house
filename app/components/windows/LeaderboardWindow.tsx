@@ -66,7 +66,7 @@ export default function LeaderboardWindow({ title, onClose, onClick, zIndex, onO
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/collectors/leaderboard?limit=50');
+        const res = await fetch('/api/collectors/leaderboard');
         const data = await res.json();
         if (!res.ok) throw new Error(data?.error || 'Could not load the leaderboard.');
         if (!cancelled) setEntries(data.leaderboard || []);
