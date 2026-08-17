@@ -334,6 +334,8 @@ const HUB_CSS = `
 #collectors-hub .ch-badge .lock { position:absolute; inset:0; display:none; place-items:center; font-size:20px; }
 #collectors-hub .ch-badge.locked { filter:grayscale(1) brightness(.92); opacity:.5; }
 #collectors-hub .ch-badge.locked .lock { display:grid; }
+/* Held-count pill — how many of this collection the collector holds. */
+#collectors-hub .ch-badge .cnt { position:absolute; right:-4px; bottom:-4px; min-width:22px; height:22px; padding:0 6px; display:grid; place-items:center; border-radius:12px; border:2px solid #000; background:#161616; color:#fff; font:800 11.5px/1 var(--mono); box-shadow:0 1px 3px rgba(0,0,0,.4); }
 
 /* ESTEEMED WORKS */
 #collectors-hub .esteem-body { flex:1; display:flex; flex-direction:column; padding:18px 22px 18px; background:linear-gradient(#fff,#fbfbfa); }
@@ -1060,6 +1062,7 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
                   <div key={c.slug} className={`ch-badge${owned ? '' : ' locked'}`} title={`${c.name}${owned ? ` · ×${c.count}` : ''}`}>
                     <i style={owned && img ? { backgroundImage: `url(${cdnImg(img, 128)})` } : { background: `radial-gradient(circle at 35% 30%, ${tint}, rgba(0,0,0,.5))` }} />
                     <span className="lock">🔒</span>
+                    {owned && <b className="cnt">{c.count}</b>}
                   </div>
                 );
               })}

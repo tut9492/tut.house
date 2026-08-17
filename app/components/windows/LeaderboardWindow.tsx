@@ -29,7 +29,8 @@ const LB_CSS = `
 .lb-name { font:700 17px/1.1 var(--mono); color:#161616; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .lb-tier { font:600 11px/1 var(--sans); color:#6f8600; text-transform:uppercase; letter-spacing:.06em; margin-top:5px; }
 .lb-badges { display:flex; gap:6px; }
-.lb-badge { width:30px; height:30px; border-radius:50%; border:2px solid rgba(0,0,0,.5); background:#dcdce0 center/150% no-repeat; box-shadow:inset 0 -2px 4px rgba(0,0,0,.3); flex:none; }
+.lb-badge { position:relative; width:30px; height:30px; border-radius:50%; border:2px solid rgba(0,0,0,.5); background:#dcdce0 center/150% no-repeat; box-shadow:inset 0 -2px 4px rgba(0,0,0,.3); flex:none; }
+.lb-badge .cnt { position:absolute; right:-4px; bottom:-4px; min-width:16px; height:16px; padding:0 3px; display:grid; place-items:center; border-radius:9px; border:1.5px solid #000; background:#161616; color:#fff; font:800 9px/1 var(--mono); }
 .lb-score { font:800 18px/1 var(--mono); color:#161616; font-variant-numeric:tabular-nums; text-align:right; white-space:nowrap; }
 .lb-score .st { color:#6f8600; }
 .lb-msg { text-align:center; color:#8a8a93; font:500 14px/1.6 var(--sans); padding:48px 16px; }
@@ -105,7 +106,9 @@ export default function LeaderboardWindow({ title, onClose, onClick, zIndex, onO
                       className="lb-badge"
                       style={b.image ? { backgroundImage: `url(${cdnImg(b.image, 96)})` } : undefined}
                       title={`${b.name} · ×${b.count}`}
-                    />
+                    >
+                      <b className="cnt">{b.count}</b>
+                    </div>
                   ))}
                 </div>
                 <div className="lb-score">{e.score.toLocaleString()} <span className="st">★</span></div>

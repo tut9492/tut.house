@@ -36,7 +36,8 @@ const PP_CSS = `
 .pp .meta { font:700 12px/1 var(--mono); color:#6f8600; margin-top:8px; text-transform:uppercase; letter-spacing:.05em; }
 .pp .social { display:inline-block; margin-top:8px; font:600 12px/1 var(--mono); color:#1d2532; text-decoration:none; border-bottom:1.5px solid rgba(29,37,50,.3); }
 .pp .badges { display:flex; flex-wrap:wrap; gap:12px; padding:16px 18px; }
-.pp .badge { width:52px; height:52px; border-radius:50%; border:2px solid rgba(0,0,0,.4); background:#dcdce0 center/150% no-repeat; box-shadow:inset 0 -3px 6px rgba(0,0,0,.3); flex:none; }
+.pp .badge { position:relative; width:52px; height:52px; border-radius:50%; border:2px solid rgba(0,0,0,.4); background:#dcdce0 center/150% no-repeat; box-shadow:inset 0 -3px 6px rgba(0,0,0,.3); flex:none; }
+.pp .badge .cnt { position:absolute; right:-4px; bottom:-4px; min-width:20px; height:20px; padding:0 5px; display:grid; place-items:center; border-radius:11px; border:2px solid #000; background:#161616; color:#fff; font:800 11px/1 ui-monospace,Menlo,monospace; }
 .pp .frame-body { padding:20px; display:flex; flex-direction:column; align-items:center; background:#fff; }
 .pp .frame-mat { background:#fff; padding:18px; border-radius:4px; box-shadow:0 20px 44px -20px rgba(0,0,0,.45), 0 0 0 1px #eee; }
 .pp .frame-img { width:min(70vw,440px); height:min(46vh,440px); background:center/contain no-repeat; }
@@ -131,7 +132,9 @@ export default function PublicProfileWindow({ wallet, username, onClose, onClick
                 <div className="bar gray"><span className="t">Badges</span></div>
                 <div className="badges">
                   {badges.map((b) => (
-                    <div key={b.slug} className="badge" style={b.image ? { backgroundImage: `url(${cdnImg(b.image, 96)})` } : undefined} title={`${b.name} · ×${b.count}`} />
+                    <div key={b.slug} className="badge" style={b.image ? { backgroundImage: `url(${cdnImg(b.image, 96)})` } : undefined} title={`${b.name} · ×${b.count}`}>
+                      <b className="cnt">{b.count}</b>
+                    </div>
                   ))}
                 </div>
               </div>
