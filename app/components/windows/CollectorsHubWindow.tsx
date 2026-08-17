@@ -298,6 +298,18 @@ const HUB_CSS = `
 #collectors-hub .fm-link.agw:disabled { cursor:default; }
 #collectors-hub .fm-link.agw.loading { animation:agwPulse 1s ease-in-out infinite; }
 @keyframes agwPulse { 0%,100% { opacity:1; } 50% { opacity:.5; } }
+/* Add-EVM — link a second injected wallet (MetaMask/Rabby/hardware). */
+#collectors-hub .fm-link.evm .fm-ic { background:#1c1830; }
+#collectors-hub .fm-link.evm .fm-ic svg { fill:#fff; }
+#collectors-hub .fm-link.evm.linked .fm-ic { background:#3a6b40; }
+#collectors-hub .fm-link.evm:disabled { cursor:default; }
+#collectors-hub .fm-link.evm.loading { animation:agwPulse 1s ease-in-out infinite; }
+/* Linked-wallet chips — the full list of attached addresses, each removable. */
+#collectors-hub .fm-linked-list { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; width:100%; }
+#collectors-hub .fm-linked-chip { display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 6px 0 10px; border:2px solid #000; border-radius:10px; background:#fff; box-shadow:2px 2px 0 0 rgba(20,16,30,.18); font:700 11.5px/1 var(--mono); color:#161616; }
+#collectors-hub .fm-linked-chip .fm-x { display:grid; place-items:center; width:20px; height:20px; border:none; border-radius:6px; background:#eee; cursor:pointer; font:700 14px/1 var(--sans); color:#7a2020; }
+#collectors-hub .fm-linked-chip .fm-x:hover { background:#e2b6b6; }
+#collectors-hub .fm-linked-chip .fm-x:disabled { opacity:.4; cursor:default; }
 /* Connect chips (Discord / Abstract) with a state caption underneath. */
 #collectors-hub .fm-links { align-items:flex-start; }
 #collectors-hub .fm-connect { display:flex; flex-direction:column; align-items:center; gap:5px; }
@@ -453,6 +465,8 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
   const { address: agwAddress, isConnected: agwConnected } = useAccount();
   const { signMessageAsync } = useSignMessage();
   const [agwPending, setAgwPending] = useState(false);
+  const [evmPending, setEvmPending] = useState(false);   // linking a second injected EVM wallet
+  const [unlinking, setUnlinking] = useState('');        // address currently being removed
   const [linkedWallets, setLinkedWallets] = useState<string[]>([]);
   const agwFinishing = useRef(false);
   const discordAssigning = useRef(false);
@@ -556,6 +570,8 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
     if (typeof window !== 'undefined') window.localStorage.removeItem('tut_collector_wallet');
     if (agwConnected) { try { agwLogout(); } catch { /* best-effort */ } }
     setAgwPending(false);
+    setEvmPending(false);
+    setUnlinking('');
     setLinkedWallets([]);
     setDiscordLinked(false);
     setDiscordLinkedName('');
@@ -681,6 +697,92 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agwPending, agwConnected, agwAddress]);
+
+  // Link an additional injected EVM wallet (a second MetaMask/Rabby account, a hardware wallet, etc.)
+  // so its holdings fold into the combined score. We open the wallet's account picker so the user can
+  // pick a DIFFERENT account than the primary; that account signs the bind message, and the backend
+  // verifies it (EOA ecrecover, or ERC-1271 for smart wallets) before attaching it.
+  const addEvmWallet = async () => {
+    if (!session) { setError('Sign in with your main wallet first, then add another wallet.'); return; }
+    if (!window.ethereum) { setError('No EVM wallet found. Open this with MetaMask, Rabby, or another wallet.'); return; }
+    const primary = (session.wallet || wallet).toLowerCase();
+    setError('');
+    setEvmPending(true);
+    setStatus('connecting');
+    try {
+      // Force the account picker so the user can choose an account other than the primary.
+      try {
+        await window.ethereum.request({ method: 'wallet_requestPermissions', params: [{ eth_accounts: {} }] });
+      } catch { /* not all wallets support this — fall back to eth_requestAccounts */ }
+      const accounts = (await window.ethereum.request({ method: 'eth_requestAccounts' })) as string[];
+      const linked = (accounts?.[0] || '').toLowerCase();
+      if (!linked) throw new Error('Wallet connection cancelled.');
+      if (linked === primary) throw new Error('That’s already your primary wallet — switch to a different account in your wallet, then try again.');
+      if (linkedWallets.includes(linked)) throw new Error('That wallet is already linked.');
+
+      setStatus('signing');
+      const message = buildLinkMessage(primary, linked);
+      const signature = (await window.ethereum.request({
+        method: 'personal_sign',
+        params: [message, linked],
+      })) as `0x${string}`;
+
+      const res = await fetch('/api/collectors/link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ primary, linked, message, signature, chain: 'ethereum' }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || 'Could not link wallet.');
+      setLinkedWallets(Array.isArray(data.linkedWallets) ? data.linkedWallets : []);
+      setStatus('verified');
+      await loadCollectorDashboard(primary); // recompute combined holdings/score across all wallets
+    } catch (err) {
+      setStatus(session ? 'verified' : 'idle');
+      setError(err instanceof Error ? err.message : 'Could not link wallet.');
+    } finally {
+      setEvmPending(false);
+    }
+  };
+
+  // Unlink a wallet (AGW or EVM). The PRIMARY wallet signs a standard collector proof to authorize it,
+  // so removal can't be forged from the linked side. We surface the account picker so the user can
+  // select the primary if their wallet is currently on a different account.
+  const unlinkWallet = async (linked: string) => {
+    if (!session) return;
+    if (!window.ethereum) { setError('Connect your primary wallet to remove a linked wallet.'); return; }
+    const primary = (session.wallet || wallet).toLowerCase();
+    setError('');
+    setUnlinking(linked);
+    try {
+      try {
+        await window.ethereum.request({ method: 'wallet_requestPermissions', params: [{ eth_accounts: {} }] });
+      } catch { /* fall back to eth_requestAccounts */ }
+      const accounts = (await window.ethereum.request({ method: 'eth_requestAccounts' })) as string[];
+      const active = (accounts?.[0] || '').toLowerCase();
+      if (active !== primary) throw new Error(`Switch to your primary wallet (${shortWallet(primary)}) to remove a linked wallet.`);
+
+      const message = buildMessage(primary);
+      const signature = (await window.ethereum.request({
+        method: 'personal_sign',
+        params: [message, primary],
+      })) as `0x${string}`;
+
+      const res = await fetch('/api/collectors/link', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ primary, linked, message, signature }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || 'Could not unlink wallet.');
+      setLinkedWallets(Array.isArray(data.linkedWallets) ? data.linkedWallets : []);
+      await loadCollectorDashboard(primary);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not unlink wallet.');
+    } finally {
+      setUnlinking('');
+    }
+  };
 
   // A successful in-session Discord verify is now persisted server-side — reflect it as connected.
   useEffect(() => {
@@ -891,7 +993,36 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
                       </button>
                       <span className={`fm-cap${linkedWallets.length ? ' on' : ''}`}>{agwPending ? 'connecting…' : linkedWallets.length ? 'connected' : 'connect now'}</span>
                     </div>
+                    {/* Add EVM: link another injected wallet (a second account / hardware wallet) so its holdings fold in. */}
+                    <div className="fm-connect">
+                      <button
+                        className={`fm-link evm${linkedWallets.length ? ' linked' : ''}${evmPending ? ' loading' : ''}`}
+                        onClick={addEvmWallet}
+                        disabled={evmPending}
+                        title="Link another EVM wallet to include its assets"
+                        aria-label="Add another EVM wallet"
+                      >
+                        <span className="fm-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6.5A2.5 2.5 0 0 1 5.5 4H17a1 1 0 0 1 0 2H5.5a.5.5 0 0 0 0 1H19a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5.5A2.5 2.5 0 0 1 3 14.5v-8Zm13 5.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Z" /></svg></span>
+                      </button>
+                      <span className={`fm-cap${evmPending ? ' pending' : ''}`}>{evmPending ? 'connecting…' : 'add wallet'}</span>
+                    </div>
                   </div>
+                  {linkedWallets.length > 0 && (
+                    <div className="fm-linked-list">
+                      {linkedWallets.map((lw) => (
+                        <span className="fm-linked-chip" key={lw}>
+                          {shortWallet(lw)}
+                          <button
+                            className="fm-x"
+                            onClick={() => unlinkWallet(lw)}
+                            disabled={unlinking === lw}
+                            title="Unlink this wallet"
+                            aria-label={`Unlink ${shortWallet(lw)}`}
+                          >{unlinking === lw ? '…' : '×'}</button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
                   {error && <div className="fm-err">{error}</div>}
                 </>
               ) : (

@@ -96,6 +96,18 @@ export const TUT_COLLECTIONS = [
     chain: 'ethereum',
     contract: '0x6d4ecf5c26b2a6537cb9b290fc46a3f6439e4dfc',
   },
+  {
+    // The Tut Tee lives inside DYLI's shared ERC-1155 merch contract, so it MUST be scoped by
+    // tokenId — otherwise every DYLI item a wallet holds would count. Add future Tut DYLI drops
+    // by appending their token IDs here.
+    slug: 'tut-tee',
+    name: 'Tut Tee',
+    weight: 2500,
+    kind: 'Merch',
+    chain: 'abstract',
+    contract: '0x458422e93bf89a109afc4fac00aacf2f18fcf541',
+    tokenIds: ['14935'],
+  },
 ] as const;
 
 export const TUT_DEPTH_BONUSES = [
@@ -318,6 +330,13 @@ async function fetchHoldingsViaNftApi(
   let count = 0;
   let pageKey: string | null = null;
 
+  // Scoped collections (e.g. the Tut Tee inside DYLI's shared ERC-1155 contract) only count the
+  // listed token IDs — never the whole contract. `matched` tracks which scoped tokens the wallet
+  // actually holds, so count reflects Tut items only and can't be gamed with unrelated DYLI merch.
+  const scopeIds = (collection as { tokenIds?: readonly string[] }).tokenIds;
+  const scope = scopeIds && scopeIds.length ? new Set(scopeIds.map(String)) : null;
+  const matched = new Set<string>();
+
   do {
     const url = new URL(`https://${subdomain}.g.alchemy.com/nft/v3/${apiKey}/getNFTsForOwner`);
     url.searchParams.set('owner', wallet);
@@ -330,12 +349,18 @@ async function fetchHoldingsViaNftApi(
     if (!res.ok) break;
 
     const data = await res.json();
-    // totalCount reflects the full filtered set; trust it over paginated artwork length.
-    if (typeof data?.totalCount === 'number') count = data.totalCount;
+    // Unscoped: totalCount reflects the full filtered set; trust it over paginated artwork length.
+    if (!scope && typeof data?.totalCount === 'number') count = data.totalCount;
 
     for (const nft of data?.ownedNfts || []) {
-      if (artworks.length >= maxPerCollection) break;
       const tokenId = String(nft?.tokenId ?? '');
+      if (scope) {
+        // Only scoped token IDs the wallet actually holds; count each distinct token once (owning
+        // qty 3 of a shirt is still one Tut Tee for breadth), so quantity can't inflate the score.
+        if (!scope.has(tokenId) || matched.has(tokenId)) continue;
+        matched.add(tokenId);
+      }
+      if (artworks.length >= maxPerCollection) { if (scope) continue; else break; }
       const image = normalizeIpfsUrl(
         nft?.image?.cachedUrl || nft?.image?.originalUrl || nft?.image?.pngUrl || nft?.raw?.metadata?.image || '',
       );
@@ -353,8 +378,11 @@ async function fetchHoldingsViaNftApi(
     }
 
     pageKey = data?.pageKey || null;
-  } while (pageKey && artworks.length < maxPerCollection);
+    // Scoped: keep paging until every listed token is found (or pages run out), so a scoped token on
+    // a later page isn't missed. Unscoped: stop once we've filled the artwork cap.
+  } while (pageKey && (scope ? matched.size < scope.size : artworks.length < maxPerCollection));
 
+  if (scope) return { count: matched.size, artworks };
   if (count === 0 && artworks.length > 0) count = artworks.length;
   return { count, artworks };
 }
