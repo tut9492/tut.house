@@ -38,6 +38,18 @@ const PP_CSS = `
 .pp .badges { display:flex; flex-wrap:wrap; gap:12px; padding:16px 18px; }
 .pp .badge { position:relative; width:52px; height:52px; border-radius:50%; border:2px solid rgba(0,0,0,.4); background:#dcdce0 center/150% no-repeat; box-shadow:inset 0 -3px 6px rgba(0,0,0,.3); flex:none; }
 .pp .badge .cnt { position:absolute; right:-4px; bottom:-4px; min-width:20px; height:20px; padding:0 5px; display:grid; place-items:center; border-radius:11px; border:2px solid #000; background:#161616; color:#fff; font:800 11px/1 ui-monospace,Menlo,monospace; }
+/* Hover: badge grows and a name card reveals (matches the Hub). Panel goes overflow-visible so
+   the enlarged badge and card aren't clipped. */
+.pp .win.badges-win { overflow:visible; }
+.pp .badge { transition:transform .18s cubic-bezier(.2,.8,.3,1); transform-origin:center bottom; z-index:1; }
+.pp .badge:hover, .pp .badge:focus-visible { transform:scale(1.5); z-index:30; outline:none; }
+.pp .badge:hover .cnt, .pp .badge:focus-visible .cnt { transform:scale(.72); }
+.pp .badge .card { position:absolute; left:50%; bottom:calc(100% + 11px); transform:translate(-50%,6px); min-width:140px; max-width:190px; padding:8px 11px 9px; background:#fff; border:2.5px solid #000; border-radius:10px; box-shadow:4px 4px 0 0 rgba(20,16,30,.28); opacity:0; pointer-events:none; transition:opacity .16s ease, transform .16s ease; z-index:40; text-align:left; }
+.pp .badge .card .nm { font:800 12.5px/1.15 ui-monospace,Menlo,monospace; color:#161616; }
+.pp .badge .card .held { margin-top:5px; font:800 10.5px/1 ui-monospace,Menlo,monospace; color:#161616; }
+.pp .badge .card::after { content:""; position:absolute; left:50%; top:100%; transform:translateX(-50%) rotate(45deg); margin-top:-6.5px; width:11px; height:11px; background:#fff; border-right:2.5px solid #000; border-bottom:2.5px solid #000; }
+.pp .badge:hover .card, .pp .badge:focus-visible .card { opacity:1; transform:translate(-50%,0); }
+@media (prefers-reduced-motion:reduce) { .pp .badge, .pp .badge .card, .pp .badge .cnt { transition:none; } }
 .pp .frame-body { padding:20px; display:flex; flex-direction:column; align-items:center; background:#fff; }
 .pp .frame-mat { background:#fff; padding:18px; border-radius:4px; box-shadow:0 20px 44px -20px rgba(0,0,0,.45), 0 0 0 1px #eee; }
 .pp .frame-img { width:min(70vw,440px); height:min(46vh,440px); background:center/contain no-repeat; }
@@ -128,12 +140,16 @@ export default function PublicProfileWindow({ wallet, username, onClose, onClick
             </div>
 
             {badges.length > 0 && (
-              <div className="win">
+              <div className="win badges-win">
                 <div className="bar gray"><span className="t">Badges</span></div>
                 <div className="badges">
                   {badges.map((b) => (
-                    <div key={b.slug} className="badge" style={b.image ? { backgroundImage: `url(${cdnImg(b.image, 96)})` } : undefined} title={`${b.name} · ×${b.count}`}>
+                    <div key={b.slug} className="badge" tabIndex={0} style={b.image ? { backgroundImage: `url(${cdnImg(b.image, 96)})` } : undefined} title={`${b.name} · ×${b.count}`}>
                       <b className="cnt">{b.count}</b>
+                      <div className="card">
+                        <div className="nm">{b.name}</div>
+                        <div className="held">{b.count} held</div>
+                      </div>
                     </div>
                   ))}
                 </div>

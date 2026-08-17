@@ -31,6 +31,16 @@ const LB_CSS = `
 .lb-badges { display:flex; gap:6px; }
 .lb-badge { position:relative; width:30px; height:30px; border-radius:50%; border:2px solid rgba(0,0,0,.5); background:#dcdce0 center/150% no-repeat; box-shadow:inset 0 -2px 4px rgba(0,0,0,.3); flex:none; }
 .lb-badge .cnt { position:absolute; right:-4px; bottom:-4px; min-width:16px; height:16px; padding:0 3px; display:grid; place-items:center; border-radius:9px; border:1.5px solid #000; background:#161616; color:#fff; font:800 9px/1 var(--mono); }
+/* Hover: badge grows and a name card reveals (matches the Hub). */
+.lb-badge { transition:transform .18s cubic-bezier(.2,.8,.3,1); transform-origin:center bottom; z-index:1; }
+.lb-badge:hover, .lb-badge:focus-visible { transform:scale(1.5); z-index:30; outline:none; }
+.lb-badge:hover .cnt, .lb-badge:focus-visible .cnt { transform:scale(.72); }
+.lb-badge .card { position:absolute; left:50%; bottom:calc(100% + 10px); transform:translate(-50%,5px); min-width:118px; max-width:168px; padding:7px 10px 8px; background:#fff; border:2px solid #000; border-radius:9px; box-shadow:3px 3px 0 0 rgba(20,16,30,.28); opacity:0; pointer-events:none; transition:opacity .15s ease, transform .15s ease; z-index:40; text-align:left; }
+.lb-badge .card .nm { font:800 12px/1.15 var(--mono); color:#161616; }
+.lb-badge .card .held { margin-top:5px; font:800 10px/1 var(--mono); color:#161616; }
+.lb-badge .card::after { content:""; position:absolute; left:50%; top:100%; transform:translateX(-50%) rotate(45deg); margin-top:-6px; width:10px; height:10px; background:#fff; border-right:2px solid #000; border-bottom:2px solid #000; }
+.lb-badge:hover .card, .lb-badge:focus-visible .card { opacity:1; transform:translate(-50%,0); }
+@media (prefers-reduced-motion:reduce) { .lb-badge, .lb-badge .card, .lb-badge .cnt { transition:none; } }
 .lb-score { font:800 18px/1 var(--mono); color:#161616; font-variant-numeric:tabular-nums; text-align:right; white-space:nowrap; }
 .lb-score .st { color:#6f8600; }
 .lb-msg { text-align:center; color:#8a8a93; font:500 14px/1.6 var(--sans); padding:48px 16px; }
@@ -108,6 +118,10 @@ export default function LeaderboardWindow({ title, onClose, onClick, zIndex, onO
                       title={`${b.name} · ×${b.count}`}
                     >
                       <b className="cnt">{b.count}</b>
+                      <div className="card">
+                        <div className="nm">{b.name}</div>
+                        <div className="held">{b.count} held</div>
+                      </div>
                     </div>
                   ))}
                 </div>

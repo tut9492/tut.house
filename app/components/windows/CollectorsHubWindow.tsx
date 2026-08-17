@@ -45,6 +45,7 @@ type ScoreCollection = {
   slug: string;
   name: string;
   kind: string;
+  chain: string;
   weight: number;
   count: number;
   score: number;
@@ -169,6 +170,9 @@ function buildDiscordMessage(wallet: string, discordUserId: string, timestamp: n
   ].join('\n');
 }
 
+// Pretty chain names for the badge hover card.
+const CHAIN_LABEL: Record<string, string> = { ethereum: 'Ethereum', abstract: 'Abstract', megaeth: 'MegaETH' };
+
 // Collection accent (badge tint + gallery swatch), keyed by collection slug.
 const SWATCH: Record<string, string> = {
   'kingtut-genesis': '#cbf000',
@@ -177,6 +181,7 @@ const SWATCH: Record<string, string> = {
   'breadio': '#c86a4a',
   'tut-loudio': '#4a6f9c',
   'tut-editions': '#6f8a4a',
+  'tut-tee': '#5ac57a',
 };
 
 // STATUS window copy — playful, family-themed, mapped from the collector rank.
@@ -336,6 +341,21 @@ const HUB_CSS = `
 #collectors-hub .ch-badge.locked .lock { display:grid; }
 /* Held-count pill — how many of this collection the collector holds. */
 #collectors-hub .ch-badge .cnt { position:absolute; right:-4px; bottom:-4px; min-width:22px; height:22px; padding:0 6px; display:grid; place-items:center; border-radius:12px; border:2px solid #000; background:#161616; color:#fff; font:800 11.5px/1 var(--mono); box-shadow:0 1px 3px rgba(0,0,0,.4); }
+/* Hover: badge grows and a name card reveals (approved mockup). Panel goes overflow-visible so
+   neither the enlarged badge nor the card is clipped by the window edge. */
+#collectors-hub .badges-win { overflow:visible; }
+#collectors-hub .ch-badge { transition:transform .18s cubic-bezier(.2,.8,.3,1); transform-origin:center bottom; z-index:1; }
+#collectors-hub .ch-badge:hover, #collectors-hub .ch-badge:focus-visible { transform:scale(1.5); z-index:30; outline:none; }
+#collectors-hub .ch-badge.locked:hover, #collectors-hub .ch-badge.locked:focus-visible { opacity:.85; filter:grayscale(.4) brightness(.98); }
+#collectors-hub .ch-badge:hover .cnt, #collectors-hub .ch-badge:focus-visible .cnt { transform:scale(.72); }
+#collectors-hub .ch-badge .card { position:absolute; left:50%; bottom:calc(100% + 12px); transform:translate(-50%,6px); min-width:150px; max-width:200px; padding:9px 12px 10px; background:#fff; border:2.5px solid #000; border-radius:11px; box-shadow:4px 4px 0 0 rgba(20,16,30,.28); opacity:0; pointer-events:none; transition:opacity .16s ease, transform .16s ease; z-index:40; text-align:left; }
+#collectors-hub .ch-badge .card .nm { font:800 13px/1.15 var(--mono); letter-spacing:.01em; color:#161616; }
+#collectors-hub .ch-badge .card .meta { margin-top:3px; font:600 10.5px/1.2 var(--mono); letter-spacing:.06em; text-transform:uppercase; color:#7a7a7a; }
+#collectors-hub .ch-badge .card .held { margin-top:6px; display:inline-flex; align-items:center; gap:5px; font:800 11px/1 var(--mono); color:#161616; }
+#collectors-hub .ch-badge .card .held .k { width:8px; height:8px; border-radius:2px; border:1px solid #000; }
+#collectors-hub .ch-badge .card::after { content:""; position:absolute; left:50%; top:100%; transform:translateX(-50%) rotate(45deg); margin-top:-7px; width:12px; height:12px; background:#fff; border-right:2.5px solid #000; border-bottom:2.5px solid #000; }
+#collectors-hub .ch-badge:hover .card, #collectors-hub .ch-badge:focus-visible .card { opacity:1; transform:translate(-50%,0); }
+@media (prefers-reduced-motion:reduce) { #collectors-hub .ch-badge, #collectors-hub .ch-badge .card, #collectors-hub .ch-badge .cnt { transition:none; } }
 
 /* ESTEEMED WORKS */
 #collectors-hub .esteem-body { flex:1; display:flex; flex-direction:column; padding:18px 22px 18px; background:linear-gradient(#fff,#fbfbfa); }
@@ -1051,18 +1071,25 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
           </div>
 
           {/* BADGES */}
-          <div className="win w-gray mute">
+          <div className="win w-gray mute badges-win">
             <div className="bar"><span className="t">Badges</span><span className="ctl"><b>_</b><b>X</b></span></div>
             <div className="badges">
               {(badgeCollections || []).map((c) => {
                 const owned = c.count > 0;
                 const img = c.artworks?.[0]?.image || c.logo;
                 const tint = SWATCH[c.slug] || '#c9c9cf';
+                const chainName = CHAIN_LABEL[c.chain] || c.chain;
+                const meta = chainName && chainName.toLowerCase() !== c.kind.toLowerCase() ? `${c.kind} · ${chainName}` : c.kind;
                 return (
-                  <div key={c.slug} className={`ch-badge${owned ? '' : ' locked'}`} title={`${c.name}${owned ? ` · ×${c.count}` : ''}`}>
+                  <div key={c.slug} tabIndex={0} className={`ch-badge${owned ? '' : ' locked'}`} title={`${c.name}${owned ? ` · ×${c.count}` : ''}`}>
                     <i style={owned && img ? { backgroundImage: `url(${cdnImg(img, 128)})` } : { background: `radial-gradient(circle at 35% 30%, ${tint}, rgba(0,0,0,.5))` }} />
                     <span className="lock">🔒</span>
                     {owned && <b className="cnt">{c.count}</b>}
+                    <div className="card">
+                      <div className="nm">{c.name}</div>
+                      <div className="meta">{owned ? meta : 'Not held yet'}</div>
+                      {owned && <div className="held"><span className="k" style={{ background: tint }} />{c.count} held</div>}
+                    </div>
                   </div>
                 );
               })}
@@ -1071,6 +1098,7 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
                   <div key={slug} className="ch-badge locked" title="Sign in to reveal">
                     <i style={{ background: `radial-gradient(circle at 35% 30%, ${tint}, rgba(0,0,0,.5))` }} />
                     <span className="lock">🔒</span>
+                    <div className="card"><div className="nm">Sign in to reveal</div></div>
                   </div>
                 ))}
             </div>
