@@ -236,17 +236,21 @@ export default function Desktop() {
       {/* music: play / skip, top-right (shared across every fullscreen window) */}
       <AudioControls className="absolute top-6 right-6 lg:top-8 lg:right-8 z-30" />
 
-      {/* small black tut wordmark, top-left (matches the Hub) */}
+      {/* small black tut wordmark + identity tagline, top-left (matches the Hub). The tagline states
+          plainly this is an artist's portfolio — visible to first-time visitors and crawlers alike. */}
       <div className="absolute top-6 left-6 lg:top-8 lg:left-8 z-10">
         <Image
           src="/assets/images/tutLogo.png"
-          alt="tut"
+          alt="Tut — digital artist"
           width={120}
           height={52}
           className="w-[92px] lg:w-[110px] h-auto"
           style={{ filter: 'brightness(0)' }}
           priority
         />
+        <p className="mt-1.5 font-mono text-[9.5px] lg:text-[11px] font-bold uppercase tracking-[0.16em] text-black/75 whitespace-nowrap">
+          Digital Artist · Official Portfolio
+        </p>
       </div>
 
       <div className="absolute inset-x-0 top-0 bottom-12 z-10 flex items-center justify-center pt-24 pb-6 lg:inset-0 lg:bottom-0 lg:py-0">
