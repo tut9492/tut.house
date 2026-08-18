@@ -1,6 +1,13 @@
 import { createPublicClient, http } from 'viem';
 import { abstract } from 'viem/chains';
 import { getBreadioTokens } from './db';
+import tutTeeRedeemers from './tut-tee-redeemers.json';
+
+// The Tut Tee (tut-tee) is a redeemable RWA: redeeming the physical shirt burns/moves the
+// on-chain ERC-1155, so a redeemer's live balance drops to 0 and they lose the score. This
+// allowlist (DYLI-sourced redeemer wallets) credits them anyway — redeeming never costs score.
+// Regenerate the JSON as more people redeem/verify.
+const TUT_TEE_REDEEMERS = new Set((tutTeeRedeemers as string[]).map((w) => w.toLowerCase()));
 
 // Abstract Global Wallet (AGW) is a smart-contract wallet, so its signatures are ERC-1271
 // (`isValidSignature`), not EOA `ecrecover` — and EIP-6492 for wallets not yet deployed on-chain.
@@ -516,6 +523,12 @@ export async function getTutCollectionHoldings(wallet: string, maxPerCollection 
         count = 0;
         artworks = [];
       }
+    }
+
+    // Redeemable RWA credit: a Tut Tee redeemer no longer holds the token on-chain (count 0),
+    // so restore their single Tut Tee from the redeemer allowlist.
+    if (collection.slug === 'tut-tee' && count === 0 && TUT_TEE_REDEEMERS.has(normalized)) {
+      count = 1;
     }
 
     return {
