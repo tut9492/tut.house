@@ -858,7 +858,13 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
     setStatus('assigning');
 
     try {
-      if (!window.ethereum) throw new Error('No wallet found.');
+      if (!window.ethereum) {
+        throw new Error(
+          'No wallet detected in this browser. Open tut.house inside your wallet app’s browser ' +
+          '(MetaMask/Rabby/etc.) — or install its desktop extension — using the wallet that holds your ' +
+          'Breadio, then tap “Sign” to finish. Your Breadio is verified; this last step just needs a signature.',
+        );
+      }
       // Restored sessions have no live wallet connection — wake the provider before signing.
       try { await window.ethereum.request({ method: 'eth_requestAccounts' }); } catch { /* sign will surface real errors */ }
       const timestamp = Date.now();
