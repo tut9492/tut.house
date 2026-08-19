@@ -37,8 +37,26 @@ function resultPage(payload: Record<string, unknown>, title: string, detail: str
     <button onclick="window.close()">Close</button>
   </main>
   <script>
-    if (window.opener) window.opener.postMessage(${encoded}, ${JSON.stringify(targetOrigin)});
-    setTimeout(function(){ window.close(); }, 1800);
+    (function(){
+      var payload = ${encoded};
+      var target = ${JSON.stringify(targetOrigin)};
+      if (window.opener) {
+        try { window.opener.postMessage(payload, target); } catch (e) {}
+        setTimeout(function(){ window.close(); }, 1800);
+        return;
+      }
+      // No opener means this was a full-page navigation (mobile / popup blocked), so postMessage
+      // has nowhere to go. Hand the Discord code back to the app on the URL so it can finish the
+      // sign step and grant the role instead of stranding the user on this page.
+      if (payload && payload.code) {
+        var qp = new URLSearchParams({
+          discord_code: payload.code,
+          discord_uid: payload.discordUserId || '',
+          discord_name: payload.discordUsername || ''
+        });
+        window.location.replace(target + '/?' + qp.toString() + '#collectors-hub');
+      }
+    })();
   </script>
 </body>
 </html>`;

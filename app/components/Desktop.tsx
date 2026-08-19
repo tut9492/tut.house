@@ -148,6 +148,17 @@ export default function Desktop() {
     };
   }, []);
 
+  // A mobile Discord OAuth return lands on "/?discord_code=…" (no popup opener to hand off to).
+  // Auto-open the Collectors Hub so it mounts, reads the code off the URL, and finishes the role
+  // grant. Without this the Hub stays closed and the redirected code is never picked up.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!new URLSearchParams(window.location.search).has('discord_code')) return;
+    setOpenFolders(prev => (prev.has('collectors-hub') ? prev : new Set(prev).add('collectors-hub')));
+    setActiveWindow('collectors-hub');
+    setWindowStack(prev => [...prev.filter(id => id !== 'collectors-hub'), 'collectors-hub']);
+  }, []);
+
   const handleFolderClick = (folderId: string) => {
     const newOpenFolders = new Set(openFolders);
     if (!newOpenFolders.has(folderId)) {

@@ -595,6 +595,29 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Mobile / popup-blocked OAuth returns via a full-page redirect (no window.opener), so the
+  // Discord code arrives on the URL instead of via postMessage. Pick it up so the auto-sign
+  // effect can finish the role grant — otherwise the user lands "connected but no role, no link".
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('discord_code');
+    const discordUserId = params.get('discord_uid');
+    if (!code || !discordUserId) return;
+    setDiscordConnection({
+      type: 'tut_discord_connected',
+      ok: true,
+      code,
+      discordUserId,
+      discordUsername: params.get('discord_name') || '',
+    });
+    setStatus('discord_connected');
+    // Scrub the one-time code from the URL so a refresh can't replay a spent token.
+    ['discord_code', 'discord_uid', 'discord_name'].forEach((k) => params.delete(k));
+    const qs = params.toString();
+    window.history.replaceState({}, '', window.location.pathname + (qs ? `?${qs}` : '') + window.location.hash);
+  }, []);
+
   const signOut = () => {
     if (typeof window !== 'undefined') window.localStorage.removeItem('tut_collector_wallet');
     if (agwConnected) { try { agwLogout(); } catch { /* best-effort */ } }

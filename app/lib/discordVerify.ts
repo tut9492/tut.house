@@ -27,7 +27,11 @@ type RoleTier = {
 };
 
 const STATE_TTL_MS = 10 * 60 * 1000;
-const TOKEN_TTL_MS = 60 * 1000;
+// 10 min, not 60s: the mobile OAuth flow can't use a popup, so it returns via a full-page
+// redirect — the user reads the callback page, navigates back to tut.house, waits for the Hub
+// to load and the wallet to re-hydrate, then signs. A 60s token expired mid-flow every time.
+// The token stays safe: /complete re-verifies Discord identity AND a fresh wallet signature.
+const TOKEN_TTL_MS = 10 * 60 * 1000;
 
 function base64url(input: Buffer | string): string {
   return Buffer.from(input).toString('base64url');
