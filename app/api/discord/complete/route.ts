@@ -61,7 +61,14 @@ export async function POST(request: NextRequest) {
     ]);
     const seen = new Set<string>();
     const roles = [...scoreRoles, ...collectionRoles].filter((r) => (seen.has(r.roleId) ? false : (seen.add(r.roleId), true)));
-    const failedRoles = roles.filter((role) => !role.ok);
+    // A 403 / code 50013 means the target role sits above the bot in the server's role hierarchy —
+    // a server-config problem, not something the user can fix. It must NOT make an otherwise-successful
+    // verification (they got their qualifying collection role) report as failed. Only treat a role that
+    // failed for some OTHER reason as blocking.
+    const isPermissionError = (r: { status?: number; error?: string }) =>
+      r.status === 403 || /50013|missing permissions/i.test(r.error || '');
+    const blockingFailures = roles.filter((role) => !role.ok && !isPermissionError(role));
+    const gotAnyRole = roles.some((role) => role.ok);
 
     // Persist the linkage so the Hub shows "connected" on later loads (best-effort).
     if (profileStoreEnabled()) {
@@ -71,14 +78,14 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({
-      ok: failedRoles.length === 0,
+      ok: gotAnyRole && blockingFailures.length === 0,
       wallet,
       discordUserId: discordUser.id,
       discordUsername: discordUser.global_name || discordUser.username,
       score,
       rank: scoreRank(score),
       roles,
-      error: failedRoles.length > 0 ? 'Discord linked, but at least one role could not be assigned.' : undefined,
+      error: blockingFailures.length > 0 ? 'Discord linked, but at least one role could not be assigned.' : undefined,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Discord verification failed';
