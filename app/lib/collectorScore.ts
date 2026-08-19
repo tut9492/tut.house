@@ -4,10 +4,12 @@ import { getBreadioTokens } from './db';
 import tutTeeRedeemers from './tut-tee-redeemers.json';
 
 // The Tut Tee (tut-tee) is a redeemable RWA: redeeming the physical shirt burns/moves the
-// on-chain ERC-1155, so a redeemer's live balance drops to 0 and they lose the score. This
-// allowlist (DYLI-sourced redeemer wallets) credits them anyway — redeeming never costs score.
-// Regenerate the JSON as more people redeem/verify.
-const TUT_TEE_REDEEMERS = new Set((tutTeeRedeemers as string[]).map((w) => w.toLowerCase()));
+// on-chain ERC-1155, so a redeemer's live balance drops and they lose the score. This map
+// (DYLI-sourced, wallet -> qty redeemed) credits each redeemer their redeemed quantity so
+// redeeming never costs score, and multiple redeemed Tut Tees stack. Regenerate as more redeem.
+const TUT_TEE_REDEEMERS = new Map(
+  Object.entries(tutTeeRedeemers as Record<string, number>).map(([w, n]) => [w.toLowerCase(), Number(n) || 0]),
+);
 
 // Abstract Global Wallet (AGW) is a smart-contract wallet, so its signatures are ERC-1271
 // (`isValidSignature`), not EOA `ecrecover` — and EIP-6492 for wallets not yet deployed on-chain.
@@ -343,6 +345,7 @@ async function fetchHoldingsViaNftApi(
   const scopeIds = (collection as { tokenIds?: readonly string[] }).tokenIds;
   const scope = scopeIds && scopeIds.length ? new Set(scopeIds.map(String)) : null;
   const matched = new Set<string>();
+  let scopedQty = 0;
 
   do {
     const url = new URL(`https://${subdomain}.g.alchemy.com/nft/v3/${apiKey}/getNFTsForOwner`);
@@ -362,10 +365,11 @@ async function fetchHoldingsViaNftApi(
     for (const nft of data?.ownedNfts || []) {
       const tokenId = String(nft?.tokenId ?? '');
       if (scope) {
-        // Only scoped token IDs the wallet actually holds; count each distinct token once (owning
-        // qty 3 of a shirt is still one Tut Tee for breadth), so quantity can't inflate the score.
+        // Only scoped token IDs the wallet actually holds. Multiple Tut Tees stack: sum the
+        // ERC-1155 balance (qty owned) of each scoped token, deduped per tokenId across pages.
         if (!scope.has(tokenId) || matched.has(tokenId)) continue;
         matched.add(tokenId);
+        scopedQty += Math.max(1, Number(nft?.balance) || 1);
       }
       if (artworks.length >= maxPerCollection) { if (scope) continue; else break; }
       const image = normalizeIpfsUrl(
@@ -389,7 +393,7 @@ async function fetchHoldingsViaNftApi(
     // a later page isn't missed. Unscoped: stop once we've filled the artwork cap.
   } while (pageKey && (scope ? matched.size < scope.size : artworks.length < maxPerCollection));
 
-  if (scope) return { count: matched.size, artworks };
+  if (scope) return { count: scopedQty, artworks };
   if (count === 0 && artworks.length > 0) count = artworks.length;
   return { count, artworks };
 }
@@ -525,10 +529,10 @@ export async function getTutCollectionHoldings(wallet: string, maxPerCollection 
       }
     }
 
-    // Redeemable RWA credit: a Tut Tee redeemer no longer holds the token on-chain (count 0),
-    // so restore their single Tut Tee from the redeemer allowlist.
-    if (collection.slug === 'tut-tee' && count === 0 && TUT_TEE_REDEEMERS.has(normalized)) {
-      count = 1;
+    // Redeemable RWA credit: redeemed shirts are burned on-chain, so add each redeemer's redeemed
+    // quantity to their live (held) Tut Tee count. Held + redeemed both count; multiples stack.
+    if (collection.slug === 'tut-tee' && TUT_TEE_REDEEMERS.has(normalized)) {
+      count += TUT_TEE_REDEEMERS.get(normalized) || 0;
     }
 
     return {
