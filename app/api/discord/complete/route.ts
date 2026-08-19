@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCollectorScoreBreakdownForWallets, scoreRank, verifyDiscordWalletProof } from '@/app/lib/collectorScore';
-import { assignCollectionRoles, fetchDiscordUser, takeDiscordToken } from '@/app/lib/discordVerify';
+import { assignCollectionRoles, assignDiscordRoles, fetchDiscordUser, takeDiscordToken } from '@/app/lib/discordVerify';
 import { getLinkedWallets, profileStoreEnabled, upsertDiscordLink } from '@/app/lib/db';
 
 type Body = {
@@ -51,9 +51,16 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Grant the Discord role for each collection this wallet actually holds.
+    // Grant BOTH the score-tier role (the base "Verified Collector" via DISCORD_ROLE_ID) AND any
+    // per-collection roles the wallet qualifies for. Without the score-tier grant, a holder whose
+    // collection isn't mapped in DISCORD_COLLECTION_ROLES links successfully but gets no role.
     const ownedSlugs = breakdown.collections.filter((c) => c.count > 0).map((c) => c.slug);
-    const roles = await assignCollectionRoles(discordUser.id, ownedSlugs);
+    const [scoreRoles, collectionRoles] = await Promise.all([
+      assignDiscordRoles(discordUser.id, score),
+      assignCollectionRoles(discordUser.id, ownedSlugs),
+    ]);
+    const seen = new Set<string>();
+    const roles = [...scoreRoles, ...collectionRoles].filter((r) => (seen.has(r.roleId) ? false : (seen.add(r.roleId), true)));
     const failedRoles = roles.filter((role) => !role.ok);
 
     // Persist the linkage so the Hub shows "connected" on later loads (best-effort).
