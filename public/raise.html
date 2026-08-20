@@ -547,6 +547,7 @@
   var READ_RPC = 'https://ethereum-rpc.publicnode.com';               // read-only, no wallet needed
   var CONTRIB_SEL='0x6daee7c5', APPROVE_SEL='0x095ea7b3', ALLOWANCE_SEL='0xdd62ed3e';
   var TOTAL_SEL='0xc5c4744c', COUNT_SEL='0x773e3309';                  // totalRaised(), founderCount()
+  var ALLOWONLY_SEL='0x3d141aa3', ALLOWED_SEL='0xd63a8e11', OPEN_SEL='0xfcfff16f'; // allowlistOnly(), allowed(address), open()
   var MAINNET='0x1';
   var account=null;
   var $=function(id){ return document.getElementById(id); };
@@ -595,14 +596,25 @@
   function doConnect(){
     if(!eth()){ alert('No Ethereum wallet found. Install MetaMask or Rabby, then reload.'); return; }
     var b=$('ck-action'); b.disabled=true; b.textContent='Connecting…';
-    eth().request({method:'eth_requestAccounts'}).then(function(a){ account=a[0];
-      return eth().request({method:'eth_chainId'}).then(function(cid){ if(cid!==MAINNET) return eth().request({method:'wallet_switchEthereumChain',params:[{chainId:MAINNET}]}); });
-    }).then(function(){
+    var acct=null;
+    eth().request({method:'eth_requestAccounts'}).then(function(a){ acct=a[0];
+      return eth().request({method:'eth_chainId'});
+    }).then(function(cid){
+      if(cid!==MAINNET) return eth().request({method:'wallet_switchEthereumChain',params:[{chainId:MAINNET}]}).then(function(){ return eth().request({method:'eth_chainId'}); });
+      return cid;
+    }).then(function(cid){
+      if(cid!==MAINNET) throw new Error('Please switch to Ethereum mainnet to continue.'); // F1: never set account off-mainnet
+      account=acct;
       $('ck-addr-txt').textContent='connected '+account.slice(0,6)+'…'+account.slice(-4);
       $('ck-addr-line').hidden=false; updateAction();
-    }).catch(function(e){ alert(friendly(e)); updateAction(); });
+    }).catch(function(e){ account=null; alert(friendly(e)); updateAction(); });
   }
   $('ck-disc').addEventListener('click', function(){ account=null; $('ck-addr-line').hidden=true; updateAction(); });
+  // F1: drop the session on any wallet chain/account switch so a stale mainnet account can't send elsewhere
+  if(eth() && eth().on){
+    var ckReset=function(){ account=null; $('ck-addr-line').hidden=true; view('ck-main'); updateAction(); };
+    eth().on('chainChanged', ckReset); eth().on('accountsChanged', ckReset);
+  }
 
   /* ---- encode + contribute (approve → contribute) ---- */
   function h32(n){ return BigInt(n).toString(16).padStart(64,'0'); }
@@ -611,6 +623,15 @@
   function encContribute(amount,x,d){ var ex=encStr(x),ed=encStr(d); var offd=96+32+Math.ceil(ex.len/32)*32; return CONTRIB_SEL + h32(amount)+h32(96)+h32(offd) + ex.lenHex+ex.dataHex + ed.lenHex+ed.dataHex; }
   function encApprove(spender,amount){ return APPROVE_SEL + h32(BigInt(spender)) + h32(amount); }
   function allowance(){ return eth().request({method:'eth_call',params:[{to:USDC,data:ALLOWANCE_SEL+h32(BigInt(account))+h32(BigInt(FOUNDER_CONTRACT))},'latest']}).then(function(hex){ return BigInt(hex||'0x0'); }); }
+  function ethCall(to,data){ return eth().request({method:'eth_call',params:[{to:to,data:data},'latest']}); }
+  // F1: hard-require mainnet at send time (connect-time switch could have been rejected/changed)
+  function requireMainnet(){ return eth().request({method:'eth_chainId'}).then(function(cid){ if(cid!==MAINNET) throw new Error('Wrong network — switch to Ethereum mainnet and try again.'); }); }
+  // F2: check open()/allowlist state via eth_call BEFORE prompting an approve, so a gated wallet never pays gas for a doomed tx
+  function preflight(){ return Promise.all([ ethCall(FOUNDER_CONTRACT,OPEN_SEL), ethCall(FOUNDER_CONTRACT,ALLOWONLY_SEL), ethCall(FOUNDER_CONTRACT,ALLOWED_SEL+h32(BigInt(account))) ]).then(function(r){
+    var isOpen=BigInt(r[0]||'0x0')!==BigInt(0), gated=BigInt(r[1]||'0x0')!==BigInt(0), ok=BigInt(r[2]||'0x0')!==BigInt(0);
+    if(!isOpen) throw new Error('The raise is closed right now.');
+    if(gated && !ok) throw new Error('This wallet isn’t on the allowlist yet.');
+  }); }
 
   function pend(a,b){ $('ck-pnote').textContent=a; $('ck-psub').textContent=b||''; }
   function waitReceipt(hash){ return new Promise(function(res,rej){ var n=0; (function poll(){
@@ -624,8 +645,8 @@
     var x=$('ck-x').value.trim().replace(/^@/,''), d=$('ck-d').value.trim();
     var amount=toUsdc($('ck-amt').value.trim());
     var contribData=encContribute(amount,x,d);
-    view('ck-pending');
-    allowance().then(function(allow){
+    view('ck-pending'); pend('Checking eligibility…','');
+    requireMainnet().then(function(){ return preflight(); }).then(function(){ return allowance(); }).then(function(allow){
       if(allow < amount){
         pend('Approve USDC…','Let the contract spend '+usd(dollars));
         return eth().request({method:'eth_sendTransaction',params:[{from:account,to:USDC,data:encApprove(FOUNDER_CONTRACT,amount)}]}).then(function(h){ return waitReceipt(h); });
