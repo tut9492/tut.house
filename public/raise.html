@@ -258,7 +258,7 @@
     <div class="wrap">
       <p class="eyebrow rv">The machine</p>
       <h2 class="rv d1">AGNTS <span class="gold">×</span> $AGNTS.</h2>
-      <p class="lead rv d2">Every Founder holds both — the agent and the token — and they're built to run together.</p>
+      <p class="lead rv d2">Everyone in the Circle holds both — the agent and the token — and they're built to run together.</p>
       <div class="duo rv d3">
         <div class="perk"><div class="k">AGNTS · the agent</div><div class="t">Your On-Chain Agent</div><div class="d">A PFP with a real identity, a soul, and its own wallet — fully on-chain. It works for you.</div></div>
         <div class="perk"><div class="k">$AGNTS · the fuel</div><div class="t">The Token</div><div class="d">Activate your AGNTS with $AGNTS to put it to work. Every action runs on it — and every action burns it.</div></div>
@@ -381,21 +381,21 @@
 
       <div class="call-grid">
         <div class="call-pitch">
-          <p class="lead rv d2">Contribute on-chain and mint a soulbound Founder receipt — instant, permanent, bound to your wallet. It carries three things:</p>
+          <p class="lead rv d2">Contribute on-chain and mint a soulbound Inner Circle receipt — instant, permanent, bound to your wallet. It carries three things:</p>
           <ul class="fnd-list rv d3">
-            <li><span class="fk">Founder</span><span class="fv"><b>The seat.</b> A permanent place in the room where AGNT gets built — early access, direct line, real voice. When I eat, you eat.</span></li>
-            <li><span class="fk">NFT</span><span class="fv"><b>Your AGNTS PFP.</b> An on-chain agent that works for you, and your day-one founder mark.</span></li>
+            <li><span class="fk">Circle</span><span class="fv"><b>The seat.</b> A permanent place in the room where AGNT gets built — early access, direct line, real voice. When I eat, you eat.</span></li>
+            <li><span class="fk">NFT</span><span class="fv"><b>Your AGNTS PFP.</b> An on-chain agent that works for you, and your day-one mark.</span></li>
             <li><span class="fk">Token</span><span class="fv"><b>$AGNTS allocation.</b> A piece of the agent economy from the very start.</span></li>
           </ul>
           <div class="raise-stats rv d4">
             <div class="rs"><span class="rsv" id="stat-raised">—</span><span class="rsl">raised on-chain</span></div>
-            <div class="rs"><span class="rsv" id="stat-founders">—</span><span class="rsl">founders</span></div>
+            <div class="rs"><span class="rsv" id="stat-founders">—</span><span class="rsl">in the circle</span></div>
           </div>
         </div>
 
         <div class="checkout rv d3" id="checkout" onkeydown="event.stopPropagation()">
           <div class="ck-view" id="ck-main">
-            <div class="ck-head">Become a Founder <span class="arw">→</span></div>
+            <div class="ck-head">Join the AGNT Inner Circle <span class="arw">→</span></div>
             <div class="ck-chips">
               <button type="button" class="chip" data-amt="100">$100</button>
               <button type="button" class="chip" data-amt="500">$500</button>
@@ -417,9 +417,9 @@
           </div>
           <div class="ck-view" id="ck-success" hidden>
             <div class="ck-check">✓</div>
-            <div class="ck-stitle">You’re a Founder</div>
+            <div class="ck-stitle">You’re in the Inner Circle</div>
             <div class="ck-badge">
-              <div class="bk">AGNT FOUNDER</div>
+              <div class="bk">AGNT · INNER CIRCLE</div>
               <div class="bh" id="ck-bh">@handle</div>
               <div class="ba" id="ck-ba">$0</div>
               <div class="bs">SOULBOUND · NON-TRANSFERABLE</div>
@@ -542,7 +542,7 @@
 <script>
 /* Founder checkout — zero-dependency vanilla web3. USDC on Ethereum mainnet. */
 (function(){
-  var FOUNDER_CONTRACT = '0x16F6D29d39fAdfB7093b62330E321dB42EcE3D6d'; // AGNTFoundersReceipt (mainnet)
+  var FOUNDER_CONTRACT = '0x4CD718fF02D367C2F2F023499114D1778A65df1E'; // AGNT Inner Circle receipt (mainnet)
   var USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';            // Circle USDC (6 decimals)
   var READ_RPC = 'https://ethereum-rpc.publicnode.com';               // read-only, no wallet needed
   var CONTRIB_SEL='0x6daee7c5', APPROVE_SEL='0x095ea7b3', ALLOWANCE_SEL='0xdd62ed3e';

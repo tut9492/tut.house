@@ -59,7 +59,7 @@ contract AGNTFoundersReceipt is ERC721, Ownable, ReentrancyGuard {
     event AllowedSet(address indexed wallet, bool allowed);
     event AllowlistOnlySet(bool allowlistOnly);
 
-    constructor(address usdc_, address treasury_) ERC721("AGNT Founders", "AGNTF") Ownable(msg.sender) {
+    constructor(address usdc_, address treasury_) ERC721("AGNT Inner Circle", "CIRCLE") Ownable(msg.sender) {
         require(usdc_ != address(0) && treasury_ != address(0), "zero");
         USDC = IERC20(usdc_);
         treasury = treasury_;
@@ -136,14 +136,14 @@ contract AGNTFoundersReceipt is ERC721, Ownable, ReentrancyGuard {
             '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="380" viewBox="0 0 600 380">',
             '<rect width="600" height="380" fill="#160a24"/>',
             '<rect x="14" y="14" width="572" height="352" fill="none" stroke="#bfeaf4" stroke-width="3"/>',
-            '<text x="40" y="80" fill="#7ea6bd" font-family="monospace" font-size="15" letter-spacing="4">AGNT FOUNDER</text>',
+            '<text x="40" y="80" fill="#7ea6bd" font-family="monospace" font-size="15" letter-spacing="4">AGNT INNER CIRCLE</text>',
             '<text x="40" y="190" fill="#eef8fc" font-family="Arial,sans-serif" font-weight="bold" font-size="54">@', handle, '</text>',
             '<text x="40" y="270" fill="#bfeaf4" font-family="monospace" font-weight="bold" font-size="40">$', usd, ' USDC</text>',
             '<text x="40" y="330" fill="#57544B" font-family="monospace" font-size="13">SOULBOUND \xC2\xB7 RECEIPT #', tokenId.toString(), '</text>',
             '</svg>'
         ));
         string memory json = string(abi.encodePacked(
-            '{"name":"AGNT Founder #', tokenId.toString(),
+            '{"name":"AGNT Inner Circle #', tokenId.toString(),
             '","description":"Soulbound receipt for a contribution to AGNT. Non-transferable.",',
             '"attributes":[{"trait_type":"X","value":"', f.xName,
             '"},{"trait_type":"Contribution (USDC base units)","value":"', f.amount.toString(),
