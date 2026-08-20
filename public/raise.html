@@ -312,22 +312,13 @@
   <!-- 06 -->
   <section class="scene" data-dur="99999999">
     <div class="wrap">
-      <p class="eyebrow rv">07 · The Call</p>
-      <div class="lockup lockup-sm rv">
-        <span class="tut-mark" role="img" aria-label="tut™"></span>
-        <span class="x">×</span>
-        <svg class="agnt-mark" viewBox="0 0 668 546" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="AGNT">
-          <circle cx="273" cy="273" r="250.5" stroke="currentColor" stroke-width="45"/>
-          <line x1="303.333" y1="189.832" x2="424.666" y2="189.832" stroke="currentColor" stroke-width="45"/>
-          <line x1="546" y1="189.832" x2="667.333" y2="189.832" stroke="currentColor" stroke-width="45"/>
-        </svg>
-      </div>
-      <h2 class="rv d1">Join the <span class="gold">Tut™ raise</span> for AGNT.</h2>
-
       <style>
-        .call-grid{display:grid;grid-template-columns:1fr minmax(330px,400px);gap:clamp(1.2rem,3.5vw,2.6rem);align-items:start;text-align:left;margin-top:clamp(.8rem,2.2vw,1.3rem);}
+        .call-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(340px,400px);gap:clamp(2rem,5.5vw,4.5rem);align-items:center;text-align:left;}
+        .call-pitch{min-width:0;}
+        .call-pitch .eyebrow{margin:0 0 .5rem;}
+        .call-pitch h2{font-size:clamp(2rem,4.4vw,3.3rem);line-height:1;margin:.15rem 0 0;}
         .lockup-sm{transform:scale(.62);transform-origin:left center;margin:0 0 -.4rem -.1rem;}
-        .call-pitch .lead{margin:0;}
+        .call-pitch .lead{margin:.7rem 0 0;}
         .fnd-list{list-style:none;margin:clamp(.9rem,2.2vw,1.3rem) 0 0;padding:0;display:flex;flex-direction:column;gap:.7rem;}
         .fnd-list li{display:grid;grid-template-columns:64px 1fr;gap:.75rem;align-items:baseline;}
         .fnd-list .fk{font-family:var(--data);font-size:.58rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);padding-top:.18rem;}
@@ -381,6 +372,17 @@
 
       <div class="call-grid">
         <div class="call-pitch">
+          <p class="eyebrow rv">07 · The Call</p>
+          <div class="lockup lockup-sm rv">
+            <span class="tut-mark" role="img" aria-label="tut™"></span>
+            <span class="x">×</span>
+            <svg class="agnt-mark" viewBox="0 0 668 546" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="AGNT">
+              <circle cx="273" cy="273" r="250.5" stroke="currentColor" stroke-width="45"/>
+              <line x1="303.333" y1="189.832" x2="424.666" y2="189.832" stroke="currentColor" stroke-width="45"/>
+              <line x1="546" y1="189.832" x2="667.333" y2="189.832" stroke="currentColor" stroke-width="45"/>
+            </svg>
+          </div>
+          <h2 class="rv d1">Join the <span class="gold">Tut™ raise</span> for AGNT.</h2>
           <p class="lead rv d2">Contribute on-chain and mint a soulbound Inner Circle receipt — instant, permanent, bound to your wallet. It carries three things:</p>
           <ul class="fnd-list rv d3">
             <li><span class="fk">Circle</span><span class="fv"><b>The seat.</b> A permanent place in the room where AGNT gets built — early access, direct line, real voice. You're actually in the room.</span></li>
