@@ -313,7 +313,7 @@
   <section class="scene" data-dur="99999999">
     <div class="wrap">
       <p class="eyebrow rv">07 · The Call</p>
-      <div class="lockup rv">
+      <div class="lockup lockup-sm rv">
         <span class="tut-mark" role="img" aria-label="tut™"></span>
         <span class="x">×</span>
         <svg class="agnt-mark" viewBox="0 0 668 546" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="AGNT">
@@ -322,84 +322,110 @@
           <line x1="546" y1="189.832" x2="667.333" y2="189.832" stroke="currentColor" stroke-width="45"/>
         </svg>
       </div>
-      <h2 class="rv d1">Join the <span class="gold">Tut™ raise</span><br>for AGNT.</h2>
-      <p class="lead rv d2">Contribute on-chain and mint your Founder receipt — instant, permanent, and soulbound to your wallet.</p>
-      <div class="perks rv d3">
-        <div class="perk"><div class="k">The Seat · first</div><div class="t">Founder Community</div><div class="d">Your first and biggest return: a permanent seat in the room where AGNT gets built. Direct line, early access, real voice. When I eat, you eat.</div></div>
-        <div class="perk"><div class="k">The Agent</div><div class="t">AGNTS PFP</div><div class="d">Your own AGNTS PFP — an on-chain agent that works for you, and your day-one founder mark.</div></div>
-        <div class="perk"><div class="k">The Stake</div><div class="t">$AGNTS Allocation</div><div class="d">$AGNTS — the token at the center of everything we're building. You hold a piece of the agent economy from the start.</div></div>
-      </div>
-      <button class="cta rv d4" id="ckOpen" type="button">Become a Founder <span class="arw">→</span></button>
+      <h2 class="rv d1">Join the <span class="gold">Tut™ raise</span> for AGNT.</h2>
 
       <style>
-        .checkout{max-width:520px;margin:clamp(1.2rem,3vw,1.8rem) auto 0;border:1px solid var(--gold);
-          background:rgba(42,21,64,.62);padding:clamp(1.1rem,3vw,1.6rem);text-align:left;}
-        .checkout[hidden]{display:none;}
-        .ck-view{display:flex;flex-direction:column;gap:.7rem;}
+        .call-grid{display:grid;grid-template-columns:1fr minmax(330px,400px);gap:clamp(1.2rem,3.5vw,2.6rem);align-items:start;text-align:left;margin-top:clamp(.8rem,2.2vw,1.3rem);}
+        .lockup-sm{transform:scale(.62);transform-origin:left center;margin:0 0 -.4rem -.1rem;}
+        .call-pitch .lead{margin:0;}
+        .fnd-list{list-style:none;margin:clamp(.9rem,2.2vw,1.3rem) 0 0;padding:0;display:flex;flex-direction:column;gap:.7rem;}
+        .fnd-list li{display:grid;grid-template-columns:64px 1fr;gap:.75rem;align-items:baseline;}
+        .fnd-list .fk{font-family:var(--data);font-size:.58rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);padding-top:.18rem;}
+        .fnd-list .fv{font-size:.88rem;color:var(--papyrus-dim);line-height:1.5;}
+        .fnd-list .fv b{color:var(--papyrus);font-weight:700;}
+        .raise-stats{display:flex;gap:clamp(1.6rem,5vw,2.8rem);margin-top:clamp(1rem,2.4vw,1.4rem);border-top:1px solid var(--hair);padding-top:clamp(.9rem,2vw,1.1rem);}
+        .raise-stats .rs{display:flex;flex-direction:column;gap:.25rem;}
+        .raise-stats .rsv{font-family:var(--display);font-weight:900;font-size:clamp(1.7rem,3.6vw,2.3rem);color:var(--papyrus);line-height:1;font-variant-numeric:tabular-nums;}
+        .raise-stats .rsl{font-family:var(--data);font-size:.58rem;letter-spacing:.16em;text-transform:uppercase;color:var(--bronze);}
+
+        .checkout{border:1px solid var(--gold);background:rgba(42,21,64,.55);padding:clamp(1.1rem,2.6vw,1.4rem);text-align:left;}
+        .ck-view{display:flex;flex-direction:column;gap:.6rem;}
         .ck-view[hidden]{display:none;}
-        .ck-note{font-family:var(--data);font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;color:var(--bronze);text-align:center;margin:.4rem 0 0;}
-        .ck-chips{display:flex;gap:.5rem;align-items:center;}
-        .chip{font-family:var(--data);font-weight:700;font-size:.92rem;color:var(--papyrus);background:transparent;
-          border:1px solid var(--hair);padding:.5rem .95rem;cursor:pointer;transition:border-color .15s,color .15s;}
-        .chip:hover{border-color:var(--gold);color:var(--gold);}
-        .ck-eth{font-family:var(--data);font-size:.72rem;letter-spacing:.2em;color:var(--papyrus-dim);margin-left:auto;}
-        .ck-in{font-family:var(--data);font-size:1rem;font-weight:700;color:var(--papyrus);background:var(--ink);
-          border:1px solid var(--hair);padding:.75rem .85rem;outline:none;}
+        .ck-head{font-family:var(--display);font-weight:900;text-transform:uppercase;font-size:1.05rem;letter-spacing:.01em;color:var(--papyrus);}
+        .ck-chips{display:flex;gap:.45rem;align-items:center;}
+        .chip{font-family:var(--data);font-weight:700;font-size:.85rem;color:var(--papyrus);background:transparent;
+          border:1px solid var(--hair);padding:.45rem .8rem;cursor:pointer;transition:border-color .15s,color .15s;}
+        .chip:hover,.chip.on{border-color:var(--gold);color:var(--gold);}
+        .ck-eth{font-family:var(--data);font-size:.66rem;letter-spacing:.2em;color:var(--papyrus-dim);margin-left:auto;}
+        .ck-in{font-family:var(--data);font-size:.95rem;font-weight:700;color:var(--papyrus);background:var(--ink);
+          border:1px solid var(--hair);padding:.68rem .8rem;outline:none;width:100%;}
         .ck-in:focus{border-color:var(--gold);}
-        .ck-warn{font-family:var(--data);font-size:.72rem;color:var(--carnelian);}
+        .ck-in::placeholder{color:var(--papyrus-dim);font-weight:400;}
+        .ck-warn{font-family:var(--data);font-size:.7rem;color:var(--carnelian);}
         .ck-warn[hidden]{display:none;}
-        .ck-ghost{background:none;border:none;color:var(--papyrus-dim);font-family:var(--data);font-size:.68rem;letter-spacing:.06em;cursor:pointer;text-align:center;padding:.2rem;}
-        .checkout .cta{width:100%;justify-content:center;margin-top:.2rem;}
-        .checkout .cta:disabled{opacity:.5;cursor:default;box-shadow:0 0 0 1px var(--gold);transform:none;}
+        .ck-addr-line{font-family:var(--data);font-size:.62rem;letter-spacing:.04em;color:var(--papyrus-dim);}
+        .ck-addr-line[hidden]{display:none;}
+        .ck-addr-line button{background:none;border:none;color:var(--gold);font:inherit;cursor:pointer;text-decoration:underline;padding:0;}
+        .checkout .cta{width:100%;justify-content:center;margin-top:.1rem;}
+        .checkout .cta:disabled{opacity:.45;cursor:default;box-shadow:0 0 0 1px var(--gold);transform:none;}
+        .ck-note{font-family:var(--data);font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--bronze);text-align:center;margin:.1rem 0 0;}
+        .ck-note.bad{color:var(--carnelian);}
         .ck-spin{width:34px;height:34px;border:3px solid rgba(191,234,244,.25);border-top-color:var(--gold);border-radius:50%;margin:.4rem auto;animation:ckspin .8s linear infinite;}
         @keyframes ckspin{to{transform:rotate(360deg);}}
         @media(prefers-reduced-motion:reduce){.ck-spin{animation:none;}}
         .ck-pnote{text-align:center;font-family:var(--data);font-size:.9rem;color:var(--papyrus);letter-spacing:.04em;}
         .ck-psub{text-align:center;font-family:var(--data);font-size:.72rem;color:var(--papyrus-dim);}
-        .ck-check{font-size:2.4rem;color:var(--gold);text-align:center;line-height:1;}
-        .ck-stitle{font-family:var(--display);font-weight:900;text-transform:uppercase;font-size:1.4rem;text-align:center;}
+        .ck-check{font-size:2.2rem;color:var(--gold);text-align:center;line-height:1;}
+        .ck-stitle{font-family:var(--display);font-weight:900;text-transform:uppercase;font-size:1.3rem;text-align:center;}
         .ck-badge{border:1px solid var(--bronze);background:var(--ink);padding:1rem;}
-        .ck-badge .bk{font-family:var(--data);font-size:.6rem;letter-spacing:.24em;color:var(--bronze);}
-        .ck-badge .bh{font-family:var(--display);font-weight:900;font-size:1.5rem;color:var(--papyrus);margin-top:.25rem;line-height:1;word-break:break-all;}
+        .ck-badge .bk{font-family:var(--data);font-size:.58rem;letter-spacing:.24em;color:var(--bronze);}
+        .ck-badge .bh{font-family:var(--display);font-weight:900;font-size:1.4rem;color:var(--papyrus);margin-top:.25rem;line-height:1;word-break:break-all;}
         .ck-badge .ba{font-family:var(--data);font-size:1.05rem;font-weight:700;color:var(--gold);margin-top:.4rem;}
-        .ck-badge .bs{font-family:var(--data);font-size:.6rem;letter-spacing:.14em;color:var(--papyrus-dim);margin-top:.5rem;}
-        .ck-txlink{text-align:center;color:var(--gold);font-family:var(--data);font-size:.75rem;letter-spacing:.06em;text-decoration:none;}
+        .ck-badge .bs{font-family:var(--data);font-size:.58rem;letter-spacing:.14em;color:var(--papyrus-dim);margin-top:.5rem;}
+        .ck-txlink{display:block;text-align:center;color:var(--gold);font-family:var(--data);font-size:.75rem;letter-spacing:.06em;text-decoration:none;}
+        @media(max-width:820px){
+          .call-grid{grid-template-columns:1fr;gap:1.2rem;}
+          .fnd-list li{grid-template-columns:60px 1fr;}
+        }
       </style>
 
-      <div class="checkout rv d4" id="checkout" hidden onkeydown="event.stopPropagation()">
-        <div class="ck-view" id="ck-connect">
-          <button class="cta" type="button" id="ckConnectBtn">Connect Wallet</button>
-          <p class="ck-note">Ethereum mainnet · recorded on-chain · soulbound receipt</p>
-        </div>
-        <div class="ck-view" id="ck-form" hidden>
-          <div class="ck-chips">
-            <button type="button" class="chip" data-amt="100">$100</button>
-            <button type="button" class="chip" data-amt="500">$500</button>
-            <button type="button" class="chip" data-amt="1000">$1K</button>
-            <span class="ck-eth">USDC</span>
+      <div class="call-grid">
+        <div class="call-pitch">
+          <p class="lead rv d2">Contribute on-chain and mint a soulbound Founder receipt — instant, permanent, bound to your wallet. It carries three things:</p>
+          <ul class="fnd-list rv d3">
+            <li><span class="fk">Founder</span><span class="fv"><b>The seat.</b> A permanent place in the room where AGNT gets built — early access, direct line, real voice. When I eat, you eat.</span></li>
+            <li><span class="fk">NFT</span><span class="fv"><b>Your AGNTS PFP.</b> An on-chain agent that works for you, and your day-one founder mark.</span></li>
+            <li><span class="fk">Token</span><span class="fv"><b>$AGNTS allocation.</b> A piece of the agent economy from the very start.</span></li>
+          </ul>
+          <div class="raise-stats rv d4">
+            <div class="rs"><span class="rsv" id="stat-raised">—</span><span class="rsl">raised on-chain</span></div>
+            <div class="rs"><span class="rsv" id="stat-founders">—</span><span class="rsl">founders</span></div>
           </div>
-          <input id="ck-amt" class="ck-in" inputmode="decimal" placeholder="Amount in USDC ($)">
-          <input id="ck-x" class="ck-in" placeholder="@ your X handle">
-          <input id="ck-d" class="ck-in" placeholder="Discord (optional)">
-          <div class="ck-warn" id="ck-warn" hidden></div>
-          <button class="cta" type="button" id="ck-submit" disabled>Contribute &amp; Mint Receipt <span class="arw">→</span></button>
-          <button class="ck-ghost" type="button" id="ck-addr">disconnect</button>
         </div>
-        <div class="ck-view" id="ck-pending" hidden>
-          <div class="ck-spin"></div>
-          <div class="ck-pnote" id="ck-pnote">Confirm in your wallet…</div>
-          <div class="ck-psub" id="ck-psub"></div>
-        </div>
-        <div class="ck-view" id="ck-success" hidden>
-          <div class="ck-check">✓</div>
-          <div class="ck-stitle">You’re a Founder</div>
-          <div class="ck-badge">
-            <div class="bk">AGNT FOUNDER</div>
-            <div class="bh" id="ck-bh">@handle</div>
-            <div class="ba" id="ck-ba">0 ETH</div>
-            <div class="bs">SOULBOUND · NON-TRANSFERABLE</div>
+
+        <div class="checkout rv d3" id="checkout" onkeydown="event.stopPropagation()">
+          <div class="ck-view" id="ck-main">
+            <div class="ck-head">Become a Founder <span class="arw">→</span></div>
+            <div class="ck-chips">
+              <button type="button" class="chip" data-amt="100">$100</button>
+              <button type="button" class="chip" data-amt="500">$500</button>
+              <button type="button" class="chip" data-amt="1000">$1K</button>
+              <span class="ck-eth">USDC</span>
+            </div>
+            <input id="ck-amt" class="ck-in" inputmode="decimal" placeholder="Amount in USDC ($)">
+            <input id="ck-x" class="ck-in" placeholder="@ your X handle">
+            <input id="ck-d" class="ck-in" placeholder="Discord (optional)">
+            <div class="ck-warn" id="ck-warn" hidden></div>
+            <div class="ck-addr-line" id="ck-addr-line" hidden><span id="ck-addr-txt"></span> · <button type="button" id="ck-disc">disconnect</button></div>
+            <button class="cta" type="button" id="ck-action">Connect Wallet <span class="arw">→</span></button>
+            <p class="ck-note" id="ck-note">Ethereum mainnet · soulbound · recorded on-chain</p>
           </div>
-          <a class="ck-txlink" id="ck-txlink" target="_blank" rel="noopener">View transaction ↗</a>
+          <div class="ck-view" id="ck-pending" hidden>
+            <div class="ck-spin"></div>
+            <div class="ck-pnote" id="ck-pnote">Confirm in your wallet…</div>
+            <div class="ck-psub" id="ck-psub"></div>
+          </div>
+          <div class="ck-view" id="ck-success" hidden>
+            <div class="ck-check">✓</div>
+            <div class="ck-stitle">You’re a Founder</div>
+            <div class="ck-badge">
+              <div class="bk">AGNT FOUNDER</div>
+              <div class="bh" id="ck-bh">@handle</div>
+              <div class="ba" id="ck-ba">$0</div>
+              <div class="bs">SOULBOUND · NON-TRANSFERABLE</div>
+            </div>
+            <a class="ck-txlink" id="ck-txlink" target="_blank" rel="noopener">View transaction ↗</a>
+          </div>
         </div>
       </div>
     </div>
@@ -516,46 +542,69 @@
 <script>
 /* Founder checkout — zero-dependency vanilla web3. USDC on Ethereum mainnet. */
 (function(){
-  var FOUNDER_CONTRACT = '0x16F6D29d39fAdfB7093b62330E321dB42EcE3D6d'; // AGNTFoundersReceipt (mainnet, gated)
+  var FOUNDER_CONTRACT = '0x16F6D29d39fAdfB7093b62330E321dB42EcE3D6d'; // AGNTFoundersReceipt (mainnet)
   var USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';            // Circle USDC (6 decimals)
-  var CONTRIB_SEL = '0x6daee7c5';   // contribute(uint256,string,string)
-  var APPROVE_SEL = '0x095ea7b3';   // approve(address,uint256)
-  var ALLOWANCE_SEL = '0xdd62ed3e'; // allowance(address,address)
-  var MAINNET = '0x1';
-  var account = null;
-  var $ = function(id){ return document.getElementById(id); };
+  var READ_RPC = 'https://ethereum-rpc.publicnode.com';               // read-only, no wallet needed
+  var CONTRIB_SEL='0x6daee7c5', APPROVE_SEL='0x095ea7b3', ALLOWANCE_SEL='0xdd62ed3e';
+  var TOTAL_SEL='0xc5c4744c', COUNT_SEL='0x773e3309';                  // totalRaised(), founderCount()
+  var MAINNET='0x1';
+  var account=null;
+  var $=function(id){ return document.getElementById(id); };
   function eth(){ return window.ethereum; }
-  function live(){ return /^0x[0-9a-fA-F]{40}$/.test(FOUNDER_CONTRACT) && FOUNDER_CONTRACT !== '0x0000000000000000000000000000000000000000'; }
-  function view(v){ ['ck-connect','ck-form','ck-pending','ck-success'].forEach(function(x){ $(x).hidden = (x!==v); }); }
-  function warn(m){ var w=$('ck-warn'); if(!m){ w.hidden=true; return; } w.textContent=m; w.hidden=false; }
+  function live(){ return /^0x[0-9a-fA-F]{40}$/.test(FOUNDER_CONTRACT); }
+  function view(v){ ['ck-main','ck-pending','ck-success'].forEach(function(x){ $(x).hidden=(x!==v); }); }
   function friendly(e){ if(!e) return 'Something went wrong.'; if(e.code===4001) return 'Request rejected in wallet.'; var m=(e.message||String(e)); if(/not allowed/i.test(m)) return 'This wallet isn’t on the allowlist yet.'; return m.slice(0,160); }
   function usd(n){ return '$'+Math.round(n).toLocaleString('en-US'); }
 
-  $('ckOpen').addEventListener('click', function(){ $('ckOpen').hidden=true; $('checkout').hidden=false; view('ck-connect'); });
+  /* ---- live stats: read totalRaised + founderCount straight from the contract ---- */
+  function rpcRead(data){ return fetch(READ_RPC,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:1,method:'eth_call',params:[{to:FOUNDER_CONTRACT,data:data},'latest']})}).then(function(r){ return r.json(); }).then(function(j){ return j.result; }); }
+  function refreshStats(){
+    rpcRead(TOTAL_SEL).then(function(h){ if(h && h!=='0x') $('stat-raised').textContent=usd(Number(BigInt(h))/1e6); }).catch(function(){});
+    rpcRead(COUNT_SEL).then(function(h){ if(h && h!=='0x') $('stat-founders').textContent=BigInt(h).toString(); }).catch(function(){});
+  }
+  refreshStats();
 
-  $('ckConnectBtn').addEventListener('click', function(){
-    if(!eth()){ alert('No Ethereum wallet found. Install MetaMask or Rabby, then reload.'); return; }
-    var b=$('ckConnectBtn'); b.textContent='Connecting…'; b.disabled=true;
-    eth().request({method:'eth_requestAccounts'}).then(function(a){
-      account=a[0];
-      return eth().request({method:'eth_chainId'}).then(function(cid){ if(cid!==MAINNET) return eth().request({method:'wallet_switchEthereumChain',params:[{chainId:MAINNET}]}); });
-    }).then(function(){ $('ck-addr').textContent=account.slice(0,6)+'…'+account.slice(-4)+' · disconnect'; view('ck-form'); validate(); })
-    .catch(function(e){ alert(friendly(e)); }).then(function(){ b.textContent='Connect Wallet'; b.disabled=false; });
-  });
+  /* ---- amount chips + live validation ---- */
+  var chips=[].slice.call(document.querySelectorAll('.chip'));
+  chips.forEach(function(c){ c.addEventListener('click', function(){
+    $('ck-amt').value=c.getAttribute('data-amt');
+    chips.forEach(function(k){ k.classList.toggle('on', k===c); });
+    updateAction();
+  }); });
+  ['ck-amt','ck-x','ck-d'].forEach(function(id){ $(id).addEventListener('input', function(){
+    if(id==='ck-amt'){ $(id).value=$(id).value.replace(/[^0-9.]/g,''); chips.forEach(function(k){ k.classList.remove('on'); }); }
+    updateAction();
+  }); });
 
-  Array.prototype.forEach.call(document.querySelectorAll('.chip'), function(c){
-    c.addEventListener('click', function(){ $('ck-amt').value=c.getAttribute('data-amt'); validate(); });
-  });
-  ['ck-amt','ck-x','ck-d'].forEach(function(id){ $(id).addEventListener('input', function(){ if(id==='ck-amt') $(id).value=$(id).value.replace(/[^0-9.]/g,''); validate(); }); });
-
-  function validate(){
+  function formValid(){
     var amt=parseFloat($('ck-amt').value)||0;
-    var x=$('ck-x').value.trim().replace(/^@/,''); var d=$('ck-d').value.trim();
+    var x=$('ck-x').value.trim().replace(/^@/,''), d=$('ck-d').value.trim();
     var xOk=/^[A-Za-z0-9_]{1,32}$/.test(x), dOk=/^[A-Za-z0-9_.#-]{0,40}$/.test(d);
-    if(!live()){ warn('Contribution goes live at launch.'); } else { warn(x.length>0 && !xOk ? 'X handle: letters, numbers, underscore only (max 32).' : ''); }
-    $('ck-submit').disabled = !(amt>0 && xOk && dOk && live());
+    var note=$('ck-note');
+    if(account && x.length>0 && !xOk){ note.textContent='X handle: letters, numbers, underscore only.'; note.className='ck-note bad'; }
+    else { note.textContent='Ethereum mainnet · soulbound · recorded on-chain'; note.className='ck-note'; }
+    return amt>0 && xOk && dOk && live();
+  }
+  function updateAction(){
+    var b=$('ck-action');
+    if(!account){ b.innerHTML='Connect Wallet <span class="arw">→</span>'; b.disabled=false; return; }
+    b.innerHTML='Contribute &amp; Mint <span class="arw">→</span>'; b.disabled=!formValid();
   }
 
+  /* ---- wallet connect ---- */
+  function doConnect(){
+    if(!eth()){ alert('No Ethereum wallet found. Install MetaMask or Rabby, then reload.'); return; }
+    var b=$('ck-action'); b.disabled=true; b.textContent='Connecting…';
+    eth().request({method:'eth_requestAccounts'}).then(function(a){ account=a[0];
+      return eth().request({method:'eth_chainId'}).then(function(cid){ if(cid!==MAINNET) return eth().request({method:'wallet_switchEthereumChain',params:[{chainId:MAINNET}]}); });
+    }).then(function(){
+      $('ck-addr-txt').textContent='connected '+account.slice(0,6)+'…'+account.slice(-4);
+      $('ck-addr-line').hidden=false; updateAction();
+    }).catch(function(e){ alert(friendly(e)); updateAction(); });
+  }
+  $('ck-disc').addEventListener('click', function(){ account=null; $('ck-addr-line').hidden=true; updateAction(); });
+
+  /* ---- encode + contribute (approve → contribute) ---- */
   function h32(n){ return BigInt(n).toString(16).padStart(64,'0'); }
   function toUsdc(s){ var p=String(s).split('.'); var w=p[0]||'0'; var f=(p[1]||''); f=(f+'000000').slice(0,6); return BigInt(w||'0')*BigInt(1000000)+BigInt(f||'0'); }
   function encStr(s){ var b=new TextEncoder().encode(s); var data=''; for(var i=0;i<b.length;i++) data+=b[i].toString(16).padStart(2,'0'); var pad=(64-(data.length%64))%64; data+=Array(pad+1).join('0'); return {len:b.length, lenHex:h32(b.length), dataHex:data}; }
@@ -570,9 +619,9 @@
       if(++n>200){ rej(new Error('Timed out waiting for confirmation.')); return; } setTimeout(poll,3000);
     }).catch(function(){ setTimeout(poll,3000); }); })(); }); }
 
-  $('ck-submit').addEventListener('click', function(){
+  function doContribute(){
     var dollars=parseFloat($('ck-amt').value)||0;
-    var x=$('ck-x').value.trim().replace(/^@/,''); var d=$('ck-d').value.trim();
+    var x=$('ck-x').value.trim().replace(/^@/,''), d=$('ck-d').value.trim();
     var amount=toUsdc($('ck-amt').value.trim());
     var contribData=encContribute(amount,x,d);
     view('ck-pending');
@@ -586,12 +635,14 @@
       return eth().request({method:'eth_sendTransaction',params:[{from:account,to:FOUNDER_CONTRACT,data:contribData}]});
     }).then(function(hash){ pend('Recording on-chain…','Minting your soulbound receipt');
       return waitReceipt(hash).then(function(){
-        $('ck-bh').textContent='@'+x; $('ck-ba').textContent=usd(dollars); $('ck-txlink').href='https://etherscan.io/tx/'+hash; view('ck-success');
+        $('ck-bh').textContent='@'+x; $('ck-ba').textContent=usd(dollars); $('ck-txlink').href='https://etherscan.io/tx/'+hash;
+        view('ck-success'); refreshStats();
       });
-    }).catch(function(e){ view('ck-form'); alert(friendly(e)); });
-  });
+    }).catch(function(e){ view('ck-main'); updateAction(); alert(friendly(e)); });
+  }
 
-  $('ck-addr').addEventListener('click', function(){ account=null; view('ck-connect'); });
+  $('ck-action').addEventListener('click', function(){ if(!account) doConnect(); else doContribute(); });
+  updateAction();
 })();
 </script>
 
