@@ -350,6 +350,9 @@
         .checkout .cta{width:100%;justify-content:center;margin-top:.1rem;}
         .checkout .cta:disabled{opacity:.45;cursor:default;box-shadow:0 0 0 1px var(--gold);transform:none;}
         .ck-note{font-family:var(--data);font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--bronze);text-align:center;margin:.1rem 0 0;}
+        .ck-terms{display:flex;gap:.5rem;align-items:flex-start;font-size:.7rem;line-height:1.4;color:var(--papyrus-dim);cursor:pointer;user-select:none;margin:.1rem 0;}
+        .ck-terms input{margin:.12rem 0 0;flex:0 0 auto;width:15px;height:15px;accent-color:var(--gold);cursor:pointer;}
+        .ck-terms a{color:var(--gold);text-decoration:underline;}
         .ck-note.bad{color:var(--carnelian);}
         .ck-spin{width:34px;height:34px;border:3px solid rgba(191,234,244,.25);border-top-color:var(--gold);border-radius:50%;margin:.4rem auto;animation:ckspin .8s linear infinite;}
         @keyframes ckspin{to{transform:rotate(360deg);}}
@@ -409,6 +412,7 @@
             <input id="ck-d" class="ck-in" placeholder="Discord (optional)">
             <div class="ck-warn" id="ck-warn" hidden></div>
             <div class="ck-addr-line" id="ck-addr-line" hidden><span id="ck-addr-txt"></span> · <button type="button" id="ck-disc">disconnect</button></div>
+            <label class="ck-terms"><input type="checkbox" id="ck-agree"><span>I've read and agree to the <a href="/raise-terms.html" target="_blank" rel="noopener">Terms &amp; risk disclosure</a>. Contributions are final and non-refundable; this is a contribution, not an investment.</span></label>
             <button class="cta" type="button" id="ck-action">Connect Wallet <span class="arw">→</span></button>
             <p class="ck-note" id="ck-note">Ethereum mainnet · soulbound · recorded on-chain</p>
           </div>
@@ -586,7 +590,7 @@
     var note=$('ck-note');
     if(account && x.length>0 && !xOk){ note.textContent='X handle: letters, numbers, underscore only.'; note.className='ck-note bad'; }
     else { note.textContent='Ethereum mainnet · soulbound · recorded on-chain'; note.className='ck-note'; }
-    return amt>0 && xOk && dOk && live();
+    return amt>0 && xOk && dOk && live() && $('ck-agree').checked;
   }
   function updateAction(){
     var b=$('ck-action');
@@ -612,6 +616,7 @@
     }).catch(function(e){ account=null; alert(friendly(e)); updateAction(); });
   }
   $('ck-disc').addEventListener('click', function(){ account=null; $('ck-addr-line').hidden=true; updateAction(); });
+  $('ck-agree').addEventListener('change', updateAction);
   // F1: drop the session on any wallet chain/account switch so a stale mainnet account can't send elsewhere
   if(eth() && eth().on){
     var ckReset=function(){ account=null; $('ck-addr-line').hidden=true; view('ck-main'); updateAction(); };
