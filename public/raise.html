@@ -333,6 +333,9 @@
         .ck-view{display:flex;flex-direction:column;gap:.6rem;}
         .ck-view[hidden]{display:none;}
         .ck-head{font-family:var(--display);font-weight:900;text-transform:uppercase;font-size:1.05rem;letter-spacing:.01em;color:var(--papyrus);}
+        .ck-timer{font-family:var(--data);font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);border:1px solid var(--hair);padding:.45rem .6rem;text-align:center;}
+        .ck-timer #ck-tval{font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:.06em;}
+        .ck-timer.ended{color:var(--carnelian);border-color:var(--carnelian);}
         .ck-chips{display:flex;gap:.45rem;align-items:center;}
         .chip{font-family:var(--data);font-weight:700;font-size:.85rem;color:var(--papyrus);background:transparent;
           border:1px solid var(--hair);padding:.45rem .8rem;cursor:pointer;transition:border-color .15s,color .15s;}
@@ -400,6 +403,7 @@
 
         <div class="checkout rv d3" id="checkout" onkeydown="event.stopPropagation()">
           <div class="ck-view" id="ck-main">
+            <div class="ck-timer" id="ck-timer">Ends in <span id="ck-tval">—</span></div>
             <div class="ck-head">Join the AGNT Inner Circle <span class="arw">→</span></div>
             <div class="ck-chips">
               <button type="button" class="chip" data-amt="250">$250</button>
@@ -556,6 +560,7 @@
   var ALLOWONLY_SEL='0x3d141aa3', ALLOWED_SEL='0xd63a8e11', OPEN_SEL='0xfcfff16f'; // allowlistOnly(), allowed(address), open()
   var FOUNDERS_SEL='0xde6746a5'; // founders(address) -> struct; 2nd word = cumulative amount (6dp)
   var MIN_USD=250, MAX_USD=10000; // contribution limits (min per-tx, max cumulative per contributor)
+  var RAISE_END=1787937530000, ended=false; // 7-day window — ends 2026-08-28 17:18 UTC
   var MAINNET='0x1';
   var account=null, prior=BigInt(0); // prior = this wallet's existing cumulative contribution (USDC base units)
   var $=function(id){ return document.getElementById(id); };
@@ -595,10 +600,11 @@
     else if(account && x.length>0 && !xOk) msg='X handle: letters, numbers, underscore only.';
     if(msg){ note.textContent=msg; note.className='ck-note bad'; }
     else { note.textContent='Ethereum mainnet · soulbound · recorded on-chain'; note.className='ck-note'; }
-    return amt>=MIN_USD && (priorD+amt)<=MAX_USD && xOk && dOk && live() && $('ck-agree').checked;
+    return !ended && amt>=MIN_USD && (priorD+amt)<=MAX_USD && xOk && dOk && live() && $('ck-agree').checked;
   }
   function updateAction(){
     var b=$('ck-action');
+    if(ended){ b.innerHTML='Raise ended'; b.disabled=true; return; }
     if(!account){ b.innerHTML='Connect Wallet <span class="arw">→</span>'; b.disabled=false; return; }
     b.innerHTML='Contribute &amp; Mint <span class="arw">→</span>'; b.disabled=!formValid();
   }
@@ -654,6 +660,7 @@
     }).catch(function(){ setTimeout(poll,3000); }); })(); }); }
 
   function doContribute(){
+    if(ended){ return; }
     var dollars=parseFloat($('ck-amt').value)||0;
     var x=$('ck-x').value.trim().replace(/^@/,''), d=$('ck-d').value.trim();
     var amount=toUsdc($('ck-amt').value.trim());
@@ -676,6 +683,15 @@
   }
 
   $('ck-action').addEventListener('click', function(){ if(!account) doConnect(); else doContribute(); });
+
+  /* ---- 7-day countdown; disables the checkout at zero (on-chain setOpen(false) handled at deadline) ---- */
+  function tick(){
+    var ms=RAISE_END - Date.now(), el=$('ck-tval'), box=$('ck-timer');
+    if(ms<=0){ if(!ended){ ended=true; box.className='ck-timer ended'; box.firstChild.nodeValue='This raise has '; el.textContent='ended'; updateAction(); } return; }
+    var s=Math.floor(ms/1000), d=Math.floor(s/86400), h=Math.floor(s%86400/3600), m=Math.floor(s%3600/60), sec=s%60;
+    el.textContent = d>0 ? (d+'d '+h+'h '+m+'m') : (h+'h '+m+'m '+sec+'s');
+  }
+  tick(); setInterval(tick,1000);
   updateAction();
 })();
 </script>
