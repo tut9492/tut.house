@@ -18,7 +18,12 @@ const nextConfig: NextConfig = {
     ],
   },
   async rewrites() {
-    return [{ source: '/raise', destination: '/raise.html' }];
+    return [
+      { source: '/raise', destination: '/raise.html' },
+      // Clean alias: raise.agnt.social/ (and its root) serves the raise directly — used to route
+      // around X/Chrome's reputation flag on the tut.house domain. Same deployment, clean hostname.
+      { source: '/', has: [{ type: 'host', value: 'raise.agnt.social' }], destination: '/raise.html' },
+    ];
   },
 };
 
