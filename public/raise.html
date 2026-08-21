@@ -402,12 +402,12 @@
           <div class="ck-view" id="ck-main">
             <div class="ck-head">Join the AGNT Inner Circle <span class="arw">→</span></div>
             <div class="ck-chips">
-              <button type="button" class="chip" data-amt="100">$100</button>
-              <button type="button" class="chip" data-amt="500">$500</button>
+              <button type="button" class="chip" data-amt="250">$250</button>
               <button type="button" class="chip" data-amt="1000">$1K</button>
+              <button type="button" class="chip" data-amt="10000">$10K</button>
               <span class="ck-eth">USDC</span>
             </div>
-            <input id="ck-amt" class="ck-in" inputmode="decimal" placeholder="Amount in USDC ($)">
+            <input id="ck-amt" class="ck-in" inputmode="decimal" placeholder="Amount in USDC ($250–$10,000)">
             <input id="ck-x" class="ck-in" placeholder="@ your X handle">
             <input id="ck-d" class="ck-in" placeholder="Discord (optional)">
             <div class="ck-warn" id="ck-warn" hidden></div>
@@ -554,8 +554,10 @@
   var CONTRIB_SEL='0x6daee7c5', APPROVE_SEL='0x095ea7b3', ALLOWANCE_SEL='0xdd62ed3e';
   var TOTAL_SEL='0xc5c4744c', COUNT_SEL='0x773e3309';                  // totalRaised(), founderCount()
   var ALLOWONLY_SEL='0x3d141aa3', ALLOWED_SEL='0xd63a8e11', OPEN_SEL='0xfcfff16f'; // allowlistOnly(), allowed(address), open()
+  var FOUNDERS_SEL='0xde6746a5'; // founders(address) -> struct; 2nd word = cumulative amount (6dp)
+  var MIN_USD=250, MAX_USD=10000; // contribution limits (min per-tx, max cumulative per contributor)
   var MAINNET='0x1';
-  var account=null;
+  var account=null, prior=BigInt(0); // prior = this wallet's existing cumulative contribution (USDC base units)
   var $=function(id){ return document.getElementById(id); };
   function eth(){ return window.ethereum; }
   function live(){ return /^0x[0-9a-fA-F]{40}$/.test(FOUNDER_CONTRACT); }
@@ -587,10 +589,13 @@
     var amt=parseFloat($('ck-amt').value)||0;
     var x=$('ck-x').value.trim().replace(/^@/,''), d=$('ck-d').value.trim();
     var xOk=/^[A-Za-z0-9_]{1,32}$/.test(x), dOk=/^[A-Za-z0-9_.#-]{0,40}$/.test(d);
-    var note=$('ck-note');
-    if(account && x.length>0 && !xOk){ note.textContent='X handle: letters, numbers, underscore only.'; note.className='ck-note bad'; }
+    var priorD=Number(prior)/1e6, note=$('ck-note'), msg='';
+    if(account && amt>0 && amt<MIN_USD) msg='Minimum contribution is $'+MIN_USD+'.';
+    else if(account && amt>0 && priorD+amt>MAX_USD) msg=(priorD>0?('You have $'+Math.round(priorD)+' in — $'+MAX_USD.toLocaleString('en-US')+' cap total. '):'Cap is $'+MAX_USD.toLocaleString('en-US')+' — ')+'DM @Tuteth_ for more.';
+    else if(account && x.length>0 && !xOk) msg='X handle: letters, numbers, underscore only.';
+    if(msg){ note.textContent=msg; note.className='ck-note bad'; }
     else { note.textContent='Ethereum mainnet · soulbound · recorded on-chain'; note.className='ck-note'; }
-    return amt>0 && xOk && dOk && live() && $('ck-agree').checked;
+    return amt>=MIN_USD && (priorD+amt)<=MAX_USD && xOk && dOk && live() && $('ck-agree').checked;
   }
   function updateAction(){
     var b=$('ck-action');
@@ -613,13 +618,14 @@
       account=acct;
       $('ck-addr-txt').textContent='connected '+account.slice(0,6)+'…'+account.slice(-4);
       $('ck-addr-line').hidden=false; updateAction();
+      ethCall(FOUNDER_CONTRACT, FOUNDERS_SEL+h32(BigInt(account))).then(function(hex){ hex=(hex||'').replace(/^0x/,''); prior = hex.length>=128 ? BigInt('0x'+hex.slice(64,128)) : BigInt(0); updateAction(); }).catch(function(){});
     }).catch(function(e){ account=null; alert(friendly(e)); updateAction(); });
   }
-  $('ck-disc').addEventListener('click', function(){ account=null; $('ck-addr-line').hidden=true; updateAction(); });
+  $('ck-disc').addEventListener('click', function(){ account=null; prior=BigInt(0); $('ck-addr-line').hidden=true; updateAction(); });
   $('ck-agree').addEventListener('change', updateAction);
   // F1: drop the session on any wallet chain/account switch so a stale mainnet account can't send elsewhere
   if(eth() && eth().on){
-    var ckReset=function(){ account=null; $('ck-addr-line').hidden=true; view('ck-main'); updateAction(); };
+    var ckReset=function(){ account=null; prior=BigInt(0); $('ck-addr-line').hidden=true; view('ck-main'); updateAction(); };
     eth().on('chainChanged', ckReset); eth().on('accountsChanged', ckReset);
   }
 
