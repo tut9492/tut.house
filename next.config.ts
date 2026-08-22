@@ -18,12 +18,17 @@ const nextConfig: NextConfig = {
     ],
   },
   async rewrites() {
-    return [
-      { source: '/raise', destination: '/raise.html' },
-      // Clean alias: raise.agnt.social/ (and its root) serves the raise directly — used to route
-      // around X/Chrome's reputation flag on the tut.house domain. Same deployment, clean hostname.
-      { source: '/', has: [{ type: 'host', value: 'raise.agnt.social' }], destination: '/raise.html' },
-    ];
+    return {
+      // beforeFiles runs BEFORE page routes, so the host-match can override the home page for
+      // raise.agnt.social/ — serving the raise at the clean domain's root (routes around the
+      // X/Safe-Browsing reputation flag on tut.house). Same deployment, clean hostname.
+      beforeFiles: [
+        { source: '/', has: [{ type: 'host', value: 'raise.agnt.social' }], destination: '/raise.html' },
+      ],
+      afterFiles: [
+        { source: '/raise', destination: '/raise.html' },
+      ],
+    };
   },
 };
 
