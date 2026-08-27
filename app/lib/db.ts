@@ -195,6 +195,45 @@ export async function upsertDiscordLink(
   `;
 }
 
+// ---- Raise contributions (manual "send it yourself" card on /raise.html) ----
+// A contributor sends USDC to the treasury on their own, then submits X / Discord / amount / tx
+// here so we can reconcile off-chain. Keyed by tx_hash (idempotent re-submits).
+
+let raiseTableReady: Promise<void> | null = null;
+function ensureRaiseTable(sql: ReturnType<typeof client>): Promise<void> {
+  if (!raiseTableReady) {
+    raiseTableReady = (sql`
+      CREATE TABLE IF NOT EXISTS raise_contributions (
+        id BIGSERIAL PRIMARY KEY,
+        x_handle TEXT NOT NULL,
+        discord TEXT,
+        amount_usd NUMERIC,
+        tx_hash TEXT UNIQUE,
+        wallet TEXT,
+        created_at TIMESTAMPTZ DEFAULT now()
+      )
+    ` as Promise<unknown>).then(() => undefined).catch((e) => { raiseTableReady = null; throw e; });
+  }
+  return raiseTableReady;
+}
+
+export type RaiseContribution = {
+  xHandle: string; discord: string | null; amountUsd: number | null; txHash: string; wallet?: string | null;
+};
+
+// Insert a submission; idempotent on tx_hash. Returns true when a new row was stored, false on a dup.
+export async function insertRaiseContribution(c: RaiseContribution): Promise<boolean> {
+  const sql = client();
+  await ensureRaiseTable(sql);
+  const rows = (await sql`
+    INSERT INTO raise_contributions (x_handle, discord, amount_usd, tx_hash, wallet)
+    VALUES (${c.xHandle}, ${c.discord}, ${c.amountUsd}, ${c.txHash.toLowerCase()}, ${c.wallet ?? null})
+    ON CONFLICT (tx_hash) DO NOTHING
+    RETURNING id
+  `) as { id: number }[];
+  return rows.length > 0;
+}
+
 export async function getProfileByUsername(username: string): Promise<CollectorProfile | null> {
   const sql = client();
   const rows = (await sql`

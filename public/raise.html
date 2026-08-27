@@ -229,6 +229,19 @@
         .ck-or{display:flex;align-items:center;gap:.7rem;color:var(--bronze);font-family:var(--data);font-size:.6rem;letter-spacing:.24em;text-transform:uppercase;margin:.15rem 0;}
         .ck-or::before,.ck-or::after{content:"";height:1px;flex:1;background:var(--hair);}
         .ck-or[hidden]{display:none;}
+        .checkout-col{display:flex;flex-direction:column;gap:clamp(.9rem,2.4vw,1.3rem);}
+        .ck-or2{display:flex;align-items:center;gap:.8rem;color:var(--bronze);font-family:var(--data);font-size:.6rem;letter-spacing:.24em;text-transform:uppercase;}
+        .ck-or2::before,.ck-or2::after{content:"";height:1px;flex:1;background:var(--hair);}
+        .manualcard{border-color:var(--bronze);}
+        .mc-view[hidden]{display:none;}
+        .mc-sub{font-family:var(--data);font-size:.72rem;line-height:1.5;color:var(--papyrus-dim);margin:.1rem 0 .2rem;}
+        .mc-sub b{color:var(--papyrus);}
+        .mc-addr-lbl{font-family:var(--data);font-size:.58rem;letter-spacing:.16em;text-transform:uppercase;color:var(--bronze);}
+        .mc-addr-row{display:flex;align-items:center;gap:.5rem;border:1px solid var(--hair);background:var(--ink);padding:.55rem .6rem;}
+        .mc-addr-row code{font-family:var(--data);font-size:.66rem;color:var(--papyrus);word-break:break-all;flex:1;line-height:1.3;}
+        #mc-copy{font-family:var(--data);font-weight:700;font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);background:transparent;border:1px solid var(--gold);padding:.4rem .6rem;cursor:pointer;white-space:nowrap;transition:background .15s;}
+        #mc-copy:hover{background:rgba(191,234,244,.08);}
+        #mc-copy.done{color:var(--papyrus);border-color:var(--bronze);}
         .ck-note{font-family:var(--data);font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--bronze);text-align:center;margin:.1rem 0 0;}
         .ck-terms{display:flex;gap:.5rem;align-items:flex-start;font-size:.7rem;line-height:1.4;color:var(--papyrus-dim);cursor:pointer;user-select:none;margin:.1rem 0;}
         .ck-terms input{margin:.12rem 0 0;flex:0 0 auto;width:15px;height:15px;accent-color:var(--gold);cursor:pointer;}
@@ -278,7 +291,8 @@
           </div>
         </div>
 
-        <div class="checkout rv d3" id="checkout" onkeydown="event.stopPropagation()">
+        <div class="checkout-col rv d3">
+        <div class="checkout" id="checkout" onkeydown="event.stopPropagation()">
           <div class="ck-view" id="ck-main">
             <div class="ck-timer" id="ck-timer">Ends in <span id="ck-tval">—</span></div>
             <div class="ck-head">Join the AGNT Inner Circle <span class="arw">→</span></div>
@@ -295,8 +309,6 @@
             <div class="ck-addr-line" id="ck-addr-line" hidden><span id="ck-addr-txt"></span> · <button type="button" id="ck-disc">disconnect</button></div>
             <label class="ck-terms"><input type="checkbox" id="ck-agree"><span>I've read and agree to the <a href="/raise-terms.html" target="_blank" rel="noopener">Terms &amp; risk disclosure</a>. Contributions are final and non-refundable; this is a contribution, not an investment.</span></label>
             <button class="cta" type="button" id="ck-action">Connect Wallet <span class="arw">→</span></button>
-            <div class="ck-or" id="ck-or" hidden><span>or</span></div>
-            <button class="cta ck-ghost" type="button" id="ck-send" hidden>Send USDC directly <span class="arw">→</span></button>
             <p class="ck-note" id="ck-note">Ethereum mainnet · soulbound · recorded on-chain</p>
           </div>
           <div class="ck-view" id="ck-pending" hidden>
@@ -315,6 +327,34 @@
             </div>
             <a class="ck-txlink" id="ck-txlink" target="_blank" rel="noopener">View transaction ↗</a>
           </div>
+        </div>
+
+        <div class="ck-or2"><span>or send it yourself</span></div>
+
+        <div class="checkout manualcard" id="manualcard" onkeydown="event.stopPropagation()">
+          <div class="mc-view" id="mc-form">
+            <div class="ck-head">Send USDC yourself <span class="arw">→</span></div>
+            <p class="mc-sub">Send USDC on <b>Ethereum mainnet</b> to the treasury from any wallet or exchange, then drop your details so we log your spot.</p>
+            <div class="mc-addr-lbl">Treasury address · USDC (Ethereum)</div>
+            <div class="mc-addr-row">
+              <code id="mc-addr">0x585b685414D6ff141Ed1A4A0dD0837423e440598</code>
+              <button type="button" id="mc-copy">Copy</button>
+            </div>
+            <input id="mc-amt" class="ck-in" inputmode="decimal" placeholder="Amount in USDC ($250–$10,000)">
+            <input id="mc-x" class="ck-in" placeholder="@ your X handle">
+            <input id="mc-d" class="ck-in" placeholder="Discord (optional)">
+            <input id="mc-tx" class="ck-in" placeholder="Transaction hash (0x…)">
+            <label class="ck-terms"><input type="checkbox" id="mc-agree"><span>I've read and agree to the <a href="/raise-terms.html" target="_blank" rel="noopener">Terms &amp; risk disclosure</a>. Contributions are final and non-refundable; this is a contribution, not an investment.</span></label>
+            <button class="cta ck-ghost" type="button" id="mc-submit" disabled>Submit contribution <span class="arw">→</span></button>
+            <p class="ck-note" id="mc-note">We reconcile by transaction hash · @Tuteth_ confirms your Circle spot</p>
+          </div>
+          <div class="mc-view" id="mc-done" hidden>
+            <div class="ck-check">✓</div>
+            <div class="ck-stitle">Logged — you’re on the list</div>
+            <p class="ck-psub" id="mc-done-sub"></p>
+            <a class="ck-txlink" id="mc-txlink" target="_blank" rel="noopener">View transaction ↗</a>
+          </div>
+        </div>
         </div>
       </div>
     </div>
@@ -375,21 +415,11 @@
     else { note.textContent='Ethereum mainnet · soulbound · recorded on-chain'; note.className='ck-note'; }
     return !ended && amt>=MIN_USD && (priorD+amt)<=MAX_USD && xOk && dOk && live() && $('ck-agree').checked;
   }
-  // Direct-send validity — same field rules as the contract path, minus the on-chain cap/allowlist checks
-  function directValid(){
-    var amt=parseFloat($('ck-amt').value)||0;
-    var x=$('ck-x').value.trim().replace(/^@/,''), d=$('ck-d').value.trim();
-    var xOk=/^[A-Za-z0-9_]{1,32}$/.test(x), dOk=/^[A-Za-z0-9_.#-]{0,40}$/.test(d);
-    return !ended && !!account && amt>=MIN_USD && amt<=MAX_USD && xOk && dOk && $('ck-agree').checked;
-  }
   function updateAction(){
-    var b=$('ck-action'), s=$('ck-send'), or=$('ck-or');
-    if(ended){ b.innerHTML='Raise ended'; b.disabled=true; s.hidden=true; or.hidden=true; return; }
-    // direct-send option is always visible (pre-connect it just triggers wallet connect on click)
-    or.hidden=false; s.hidden=false; s.innerHTML='Send USDC directly <span class="arw">→</span>';
-    if(!account){ b.innerHTML='Connect Wallet <span class="arw">→</span>'; b.disabled=false; s.disabled=false; return; }
+    var b=$('ck-action');
+    if(ended){ b.innerHTML='Raise ended'; b.disabled=true; return; }
+    if(!account){ b.innerHTML='Connect Wallet <span class="arw">→</span>'; b.disabled=false; return; }
     b.innerHTML='Contribute &amp; Mint <span class="arw">→</span>'; b.disabled=!formValid();
-    s.disabled=!directValid();
   }
 
   /* ---- wallet connect ---- */
@@ -466,41 +496,56 @@
     }).catch(function(e){ view('ck-main'); updateAction(); alert(friendly(e)); });
   }
 
-  /* ---- direct send: plain USDC transfer to treasury, form captured off-chain (manual) ---- */
-  function doDirectSend(){
-    if(ended || !directValid()){ return; }
-    var dollars=parseFloat($('ck-amt').value)||0;
-    var x=$('ck-x').value.trim().replace(/^@/,'');
-    var amount=toUsdc($('ck-amt').value.trim());
-    view('ck-pending'); pend('Confirm in your wallet…','Send '+usd(dollars)+' USDC to the treasury');
-    requireMainnet().then(function(){
-      return eth().request({method:'eth_sendTransaction',params:[{from:account,to:USDC,data:TRANSFER_SEL+h32(BigInt(TREASURY))+h32(amount)}]});
-    }).then(function(hash){ pend('Sending…','Recording your contribution on-chain');
-      return waitReceipt(hash).then(function(){
-        $('ck-stitle').textContent='Contribution sent';
-        $('ck-bh').textContent='@'+x; $('ck-ba').textContent=usd(dollars);
-        $('ck-bs').textContent='DM @TUTETH_ TO CLAIM YOUR RECEIPT';
-        $('ck-txlink').href='https://etherscan.io/tx/'+hash;
-        view('ck-success');
-      });
-    }).catch(function(e){ view('ck-main'); updateAction(); alert(friendly(e)); });
-  }
-
   $('ck-action').addEventListener('click', function(){ if(!account) doConnect(); else doContribute(); });
-  // Direct send: connect if needed, then flow straight into the send when the form is ready
-  function proceedDirect(){
-    if(directValid()){ doDirectSend(); return; }
-    var amt=parseFloat($('ck-amt').value)||0;
-    if(!(amt>=MIN_USD && amt<=MAX_USD)) $('ck-amt').focus();
-    else if(!/^[A-Za-z0-9_]{1,32}$/.test($('ck-x').value.trim().replace(/^@/,''))) $('ck-x').focus();
-    else if(!$('ck-agree').checked) $('ck-agree').focus();
-    updateAction();
-  }
-  $('ck-send').addEventListener('click', function(){
-    if(ended) return;
-    if(!account){ doConnect().then(function(){ if(account) proceedDirect(); }); return; }
-    proceedDirect();
+
+  /* ---- manual "send it yourself" card: copy treasury, then attest X / Discord / amount / tx ---- */
+  // Copy the treasury address.
+  $('mc-copy').addEventListener('click', function(){
+    var addr=$('mc-addr').textContent.trim(), btn=this;
+    var done=function(){ btn.textContent='Copied ✓'; btn.classList.add('done'); setTimeout(function(){ btn.textContent='Copy'; btn.classList.remove('done'); },1800); };
+    if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(addr).then(done).catch(function(){ fallbackCopy(addr); done(); }); }
+    else { fallbackCopy(addr); done(); }
   });
+  function fallbackCopy(t){ try{ var ta=document.createElement('textarea'); ta.value=t; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); }catch(e){} }
+
+  function mcValid(){
+    var amt=parseFloat($('mc-amt').value)||0;
+    var x=$('mc-x').value.trim().replace(/^@/,''), d=$('mc-d').value.trim();
+    var tx=$('mc-tx').value.trim();
+    var xOk=/^[A-Za-z0-9_]{1,32}$/.test(x), dOk=/^[A-Za-z0-9_.#-]{0,40}$/.test(d), txOk=/^0x[0-9a-fA-F]{64}$/.test(tx);
+    var note=$('mc-note'), msg='';
+    if(amt>0 && (amt<MIN_USD||amt>MAX_USD)) msg='Amount must be $'+MIN_USD+'–$'+MAX_USD.toLocaleString('en-US')+'.';
+    else if(x.length>0 && !xOk) msg='X handle: letters, numbers, underscore only.';
+    else if(tx.length>0 && !txOk) msg='Transaction hash is 0x + 64 hex characters.';
+    if(msg){ note.textContent=msg; note.className='ck-note bad'; }
+    else { note.textContent='We reconcile by transaction hash · @Tuteth_ confirms your Circle spot'; note.className='ck-note'; }
+    return !ended && amt>=MIN_USD && amt<=MAX_USD && xOk && dOk && txOk && $('mc-agree').checked;
+  }
+  function mcUpdate(){ $('mc-submit').disabled=!mcValid(); }
+  ['mc-amt','mc-x','mc-d','mc-tx'].forEach(function(id){ $(id).addEventListener('input', function(){
+    if(id==='mc-amt') $(id).value=$(id).value.replace(/[^0-9.]/g,'');
+    mcUpdate();
+  }); });
+  $('mc-agree').addEventListener('change', mcUpdate);
+
+  function mcSubmit(){
+    if(!mcValid()) return;
+    var btn=$('mc-submit'); btn.disabled=true; btn.innerHTML='Submitting…';
+    var tx=$('mc-tx').value.trim();
+    var dollars=parseFloat($('mc-amt').value)||0;
+    var x=$('mc-x').value.trim().replace(/^@/,'');
+    var payload={ x:x, discord:$('mc-d').value.trim(), amount:dollars, tx:tx };
+    fetch('/api/raise/contribution',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload)})
+      .then(function(r){ return r.json().then(function(j){ return {ok:r.ok, j:j}; }); })
+      .then(function(res){
+        if(!res.ok){ throw new Error((res.j&&res.j.error)||'Could not submit. Try again.'); }
+        $('mc-done-sub').textContent='@'+x+' · '+usd(dollars)+(res.j&&res.j.duplicate?' · already logged':'')+'. We’ll confirm your Circle spot from here.';
+        $('mc-txlink').href='https://etherscan.io/tx/'+tx;
+        $('mc-form').hidden=true; $('mc-done').hidden=false;
+      })
+      .catch(function(e){ $('mc-note').textContent=(e&&e.message)||'Could not submit. Try again.'; $('mc-note').className='ck-note bad'; btn.disabled=false; btn.innerHTML='Submit contribution <span class="arw">→</span>'; });
+  }
+  $('mc-submit').addEventListener('click', mcSubmit);
 
   /* ---- 7-day countdown; disables the checkout at zero (on-chain setOpen(false) handled at deadline) ---- */
   function tick(){
