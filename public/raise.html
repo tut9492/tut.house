@@ -385,9 +385,11 @@
   function updateAction(){
     var b=$('ck-action'), s=$('ck-send'), or=$('ck-or');
     if(ended){ b.innerHTML='Raise ended'; b.disabled=true; s.hidden=true; or.hidden=true; return; }
-    if(!account){ b.innerHTML='Connect Wallet <span class="arw">→</span>'; b.disabled=false; s.hidden=true; or.hidden=true; return; }
+    // direct-send option is always visible (pre-connect it just triggers wallet connect on click)
+    or.hidden=false; s.hidden=false; s.innerHTML='Send USDC directly <span class="arw">→</span>';
+    if(!account){ b.innerHTML='Connect Wallet <span class="arw">→</span>'; b.disabled=false; s.disabled=false; return; }
     b.innerHTML='Contribute &amp; Mint <span class="arw">→</span>'; b.disabled=!formValid();
-    or.hidden=false; s.hidden=false; s.disabled=!directValid();
+    s.disabled=!directValid();
   }
 
   /* ---- wallet connect ---- */
