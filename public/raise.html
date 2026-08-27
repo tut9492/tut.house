@@ -394,10 +394,10 @@
 
   /* ---- wallet connect ---- */
   function doConnect(){
-    if(!eth()){ alert('No Ethereum wallet found. Install MetaMask or Rabby, then reload.'); return; }
+    if(!eth()){ alert('No Ethereum wallet found. Install MetaMask or Rabby, then reload.'); return Promise.resolve(); }
     var b=$('ck-action'); b.disabled=true; b.textContent='Connecting…';
     var acct=null;
-    eth().request({method:'eth_requestAccounts'}).then(function(a){ acct=a[0];
+    return eth().request({method:'eth_requestAccounts'}).then(function(a){ acct=a[0];
       return eth().request({method:'eth_chainId'});
     }).then(function(cid){
       if(cid!==MAINNET) return eth().request({method:'wallet_switchEthereumChain',params:[{chainId:MAINNET}]}).then(function(){ return eth().request({method:'eth_chainId'}); });
@@ -487,7 +487,20 @@
   }
 
   $('ck-action').addEventListener('click', function(){ if(!account) doConnect(); else doContribute(); });
-  $('ck-send').addEventListener('click', function(){ if(!account) doConnect(); else doDirectSend(); });
+  // Direct send: connect if needed, then flow straight into the send when the form is ready
+  function proceedDirect(){
+    if(directValid()){ doDirectSend(); return; }
+    var amt=parseFloat($('ck-amt').value)||0;
+    if(!(amt>=MIN_USD && amt<=MAX_USD)) $('ck-amt').focus();
+    else if(!/^[A-Za-z0-9_]{1,32}$/.test($('ck-x').value.trim().replace(/^@/,''))) $('ck-x').focus();
+    else if(!$('ck-agree').checked) $('ck-agree').focus();
+    updateAction();
+  }
+  $('ck-send').addEventListener('click', function(){
+    if(ended) return;
+    if(!account){ doConnect().then(function(){ if(account) proceedDirect(); }); return; }
+    proceedDirect();
+  });
 
   /* ---- 7-day countdown; disables the checkout at zero (on-chain setOpen(false) handled at deadline) ---- */
   function tick(){
