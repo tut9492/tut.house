@@ -232,7 +232,11 @@
         .checkout-col{display:grid;grid-template-columns:1fr auto 1fr;align-items:start;gap:clamp(1rem,3vw,2rem);}
         .ck-or2{display:flex;flex-direction:column;align-self:stretch;align-items:center;justify-content:center;gap:.8rem;color:var(--bronze);font-family:var(--data);font-size:.6rem;letter-spacing:.24em;text-transform:uppercase;}
         .ck-or2::before,.ck-or2::after{content:"";width:1px;flex:1;min-height:26px;background:var(--hair);}
+        .ck-title{display:flex;align-items:baseline;justify-content:space-between;gap:.6rem;flex-wrap:wrap;padding-bottom:.75rem;margin-bottom:.35rem;border-bottom:1px solid var(--hair);}
+        .ckt-h{font-family:var(--display);font-weight:900;text-transform:uppercase;font-size:1.15rem;line-height:1;color:var(--papyrus);letter-spacing:.01em;}
+        .ckt-tag{font-family:var(--data);font-weight:700;font-size:.55rem;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);border:1px solid var(--hair);padding:.3rem .5rem;white-space:nowrap;}
         .manualcard{border-color:var(--bronze);}
+        .manualcard .ckt-tag{color:var(--bronze);}
         .mc-view[hidden]{display:none;}
         .mc-sub{font-family:var(--data);font-size:.72rem;line-height:1.5;color:var(--papyrus-dim);margin:.1rem 0 .2rem;}
         .mc-sub b{color:var(--papyrus);}
@@ -296,6 +300,7 @@
 
         <div class="checkout-col rv d3">
         <div class="checkout" id="checkout" onkeydown="event.stopPropagation()">
+          <div class="ck-title"><span class="ckt-h">Mint soulbound on-chain</span><span class="ckt-tag">Connect wallet</span></div>
           <div class="ck-view" id="ck-main">
             <div class="ck-timer" id="ck-timer">Ends in <span id="ck-tval">—</span></div>
             <div class="ck-head">Join the AGNT Inner Circle <span class="arw">→</span></div>
@@ -335,8 +340,8 @@
         <div class="ck-or2"><span>or</span></div>
 
         <div class="checkout manualcard" id="manualcard" onkeydown="event.stopPropagation()">
+          <div class="ck-title"><span class="ckt-h">Send manually</span><span class="ckt-tag">No wallet connect</span></div>
           <div class="mc-view" id="mc-form">
-            <div class="ck-head">Send USDC yourself <span class="arw">→</span></div>
             <p class="mc-sub">Send USDC on <b>Ethereum mainnet</b> to the treasury from any wallet or exchange, then drop your details so we log your spot.</p>
             <div class="mc-addr-lbl">Treasury address · USDC (Ethereum)</div>
             <div class="mc-addr-row">
