@@ -184,7 +184,7 @@
   <section class="scene active">
     <div class="wrap">
       <style>
-        .call-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(340px,400px);gap:clamp(2rem,5.5vw,4.5rem);align-items:center;text-align:left;}
+        .call-grid{display:grid;grid-template-columns:1fr;gap:clamp(1.4rem,3.5vw,2.4rem);align-items:start;text-align:left;}
         .call-pitch{min-width:0;}
         .call-pitch .eyebrow{margin:0 0 .5rem;}
         .call-pitch h2{font-size:clamp(2rem,4.4vw,3.3rem);line-height:1;margin:.15rem 0 0;}
@@ -229,9 +229,9 @@
         .ck-or{display:flex;align-items:center;gap:.7rem;color:var(--bronze);font-family:var(--data);font-size:.6rem;letter-spacing:.24em;text-transform:uppercase;margin:.15rem 0;}
         .ck-or::before,.ck-or::after{content:"";height:1px;flex:1;background:var(--hair);}
         .ck-or[hidden]{display:none;}
-        .checkout-col{display:flex;flex-direction:column;gap:clamp(.9rem,2.4vw,1.3rem);}
-        .ck-or2{display:flex;align-items:center;gap:.8rem;color:var(--bronze);font-family:var(--data);font-size:.6rem;letter-spacing:.24em;text-transform:uppercase;}
-        .ck-or2::before,.ck-or2::after{content:"";height:1px;flex:1;background:var(--hair);}
+        .checkout-col{display:grid;grid-template-columns:1fr auto 1fr;align-items:start;gap:clamp(1rem,3vw,2rem);}
+        .ck-or2{display:flex;flex-direction:column;align-self:stretch;align-items:center;justify-content:center;gap:.8rem;color:var(--bronze);font-family:var(--data);font-size:.6rem;letter-spacing:.24em;text-transform:uppercase;}
+        .ck-or2::before,.ck-or2::after{content:"";width:1px;flex:1;min-height:26px;background:var(--hair);}
         .manualcard{border-color:var(--bronze);}
         .mc-view[hidden]{display:none;}
         .mc-sub{font-family:var(--data);font-size:.72rem;line-height:1.5;color:var(--papyrus-dim);margin:.1rem 0 .2rem;}
@@ -262,6 +262,9 @@
         .ck-txlink{display:block;text-align:center;color:var(--gold);font-family:var(--data);font-size:.75rem;letter-spacing:.06em;text-decoration:none;}
         @media(max-width:820px){
           .call-grid{grid-template-columns:1fr;gap:1.2rem;}
+          .checkout-col{grid-template-columns:1fr;}
+          .ck-or2{flex-direction:row;}
+          .ck-or2::before,.ck-or2::after{width:auto;height:1px;min-height:0;}
           .fnd-list li{grid-template-columns:60px 1fr;}
         }
       </style>
@@ -329,7 +332,7 @@
           </div>
         </div>
 
-        <div class="ck-or2"><span>or send it yourself</span></div>
+        <div class="ck-or2"><span>or</span></div>
 
         <div class="checkout manualcard" id="manualcard" onkeydown="event.stopPropagation()">
           <div class="mc-view" id="mc-form">
