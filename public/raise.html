@@ -393,10 +393,13 @@
   function usd(n){ return '$'+Math.round(n).toLocaleString('en-US'); }
 
   /* ---- live stats: read totalRaised + founderCount straight from the contract ---- */
+  // Manual/off-contract contributions (sent straight to the treasury, reconciled by hand).
+  // Bump these as more manual senders come in.
+  var MANUAL_USD=300.83, MANUAL_COUNT=1;
   function rpcRead(data){ return fetch(READ_RPC,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:1,method:'eth_call',params:[{to:FOUNDER_CONTRACT,data:data},'latest']})}).then(function(r){ return r.json(); }).then(function(j){ return j.result; }); }
   function refreshStats(){
-    rpcRead(TOTAL_SEL).then(function(h){ if(h && h!=='0x') $('stat-raised').textContent=usd(Number(BigInt(h))/1e6); }).catch(function(){});
-    rpcRead(COUNT_SEL).then(function(h){ if(h && h!=='0x') $('stat-founders').textContent=BigInt(h).toString(); }).catch(function(){});
+    rpcRead(TOTAL_SEL).then(function(h){ if(h && h!=='0x') $('stat-raised').textContent=usd(Number(BigInt(h))/1e6 + MANUAL_USD); }).catch(function(){});
+    rpcRead(COUNT_SEL).then(function(h){ if(h && h!=='0x') $('stat-founders').textContent=(BigInt(h)+BigInt(MANUAL_COUNT)).toString(); }).catch(function(){});
   }
   refreshStats();
 
