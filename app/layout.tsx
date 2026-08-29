@@ -16,23 +16,23 @@ const SITE_DESCRIPTION =
   "Official website of Tut (@Tuteth_), a digital artist. Explore original digital and physical art, the collections, and the collector leaderboard. An art portfolio — not a store; it never asks for passwords or payment details.";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://www.tut.house"),
+  metadataBase: new URL("https://tut-house.com"),
   title: {
-    default: "Tut — Digital Artist | tut.house",
-    template: "%s | tut.house",
+    default: "Tut — Digital Artist | tut-house.com",
+    template: "%s | tut-house.com",
   },
   description: SITE_DESCRIPTION,
-  applicationName: "tut.house",
+  applicationName: "tut-house.com",
   authors: [{ name: "Tut", url: "https://x.com/Tuteth_" }],
   creator: "Tut",
   publisher: "Tut",
-  keywords: ["Tut", "digital artist", "art portfolio", "NFT art", "art collector", "tut.house", "Tuteth_"],
-  alternates: { canonical: "https://www.tut.house/" },
+  keywords: ["Tut", "digital artist", "art portfolio", "NFT art", "art collector", "tut-house.com", "Tuteth_"],
+  alternates: { canonical: "https://tut-house.com/" },
   robots: { index: true, follow: true },
   openGraph: {
     type: "website",
-    url: "https://www.tut.house/",
-    siteName: "tut.house",
+    url: "https://tut-house.com/",
+    siteName: "tut-house.com",
     title: "Tut — Digital Artist",
     description: SITE_DESCRIPTION,
     images: [{ url: "/assets/images/tutWebsiteWallpaper.png", alt: "Tut — digital artist" }],
@@ -54,20 +54,20 @@ const JSON_LD = {
   "@graph": [
     {
       "@type": "Person",
-      "@id": "https://www.tut.house/#tut",
+      "@id": "https://tut-house.com/#tut",
       name: "Tut",
       alternateName: "@Tuteth_",
-      url: "https://www.tut.house/",
+      url: "https://tut-house.com/",
       jobTitle: "Digital Artist",
       sameAs: ["https://x.com/Tuteth_"],
     },
     {
       "@type": "WebSite",
-      "@id": "https://www.tut.house/#website",
-      url: "https://www.tut.house/",
-      name: "tut.house",
+      "@id": "https://tut-house.com/#website",
+      url: "https://tut-house.com/",
+      name: "tut-house.com",
       description: SITE_DESCRIPTION,
-      publisher: { "@id": "https://www.tut.house/#tut" },
+      publisher: { "@id": "https://tut-house.com/#tut" },
     },
   ],
 };
@@ -102,7 +102,7 @@ export default function RootLayout({
           </p>
           <p>
             Find Tut on X at <a href="https://x.com/Tuteth_">@Tuteth_</a>. Security contact:{" "}
-            <a href="https://www.tut.house/.well-known/security.txt">security.txt</a>.
+            <a href="https://tut-house.com/.well-known/security.txt">security.txt</a>.
           </p>
         </noscript>
         {children}

@@ -7,7 +7,7 @@ export default function SecurityPage() {
         <Link href="/" className="text-sm underline">Back to tut.house</Link>
         <h1 className="mt-6 text-4xl font-black">Security</h1>
         <p className="mt-4 text-gray-700 leading-relaxed">
-          tut.house is the official website for tut™ art and collector tools. The Collectors Hub
+          tut-house.com is the official website for tut™ art and collector tools. The Collectors Hub
           verifies wallet ownership and Discord identity so eligible collectors can receive roles in
           the tut™ Discord.
         </p>
@@ -26,7 +26,7 @@ export default function SecurityPage() {
         </section>
         <section className="mt-6 space-y-3 text-gray-800">
           <h2 className="text-xl font-bold">Official links</h2>
-          <p>Website: https://www.tut.house</p>
+          <p>Website: https://tut-house.com</p>
           <p>Source: https://github.com/tut9492/tut.house</p>
           <p>Discord verifier reference: https://github.com/tut9492/DiscordVerifyBot</p>
         </section>
