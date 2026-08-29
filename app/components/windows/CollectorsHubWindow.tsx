@@ -860,9 +860,9 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
     try {
       if (!window.ethereum) {
         throw new Error(
-          'No wallet detected in this browser. Open tut.house inside your wallet app’s browser ' +
-          '(MetaMask/Rabby/etc.) — or install its desktop extension — using the wallet that holds your ' +
-          'Breadio, then tap “Sign” to finish. Your Breadio is verified; this last step just needs a signature.',
+          'No wallet detected in this browser. Open tut-house.com in the browser where your wallet ' +
+          'already lives (MetaMask/Rabby/etc.), using the wallet that holds your Breadio, then tap ' +
+          '“Sign” to finish. Your Breadio is verified; this last step just needs a signature.',
         );
       }
       // Restored sessions have no live wallet connection — wake the provider before signing.
@@ -897,14 +897,14 @@ export default function CollectorsHubWindow({ onClose, onClick, zIndex }: Collec
     }
   };
 
-  // Auto-sign the role assignment the instant the OAuth popup connects, so the two-step flow is
-  // seamless and the short-lived Discord token can't expire in the gap. Manual click still works.
-  useEffect(() => {
-    if (discordConnection?.code && wallet && !discordResult?.ok && !discordAssigning.current) {
-      void signAndAssignRole();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [discordConnection, wallet]);
+  // AUTO-SIGN REMOVED 2026-08-29 (Google Safe Browsing fix): this useEffect used to fire
+  // `personal_sign` the instant the Discord OAuth popup returned — no user click. That
+  // "connect an account -> unsolicited wallet signature popup" sequence is exactly the
+  // wallet-drainer / social-engineering choreography Safe Browsing flags as "deceptive"
+  // (it flagged both tut.house AND tut-house.com). The signature now happens ONLY on a
+  // deliberate click of the Sign button (`onClick={discordAction}` -> signAndAssignRole,
+  // below). If the short-lived Discord token expires before the user clicks, they just
+  // re-tap Connect Discord — an acceptable trade for not getting the whole site flagged.
 
   const signedIn = !!session;
   const artworks = dashboard?.holdings.assets.artworks || [];
