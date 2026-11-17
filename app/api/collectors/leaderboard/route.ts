@@ -18,7 +18,12 @@ declare global {
 // stored score is older than the staleness window. Small enough to stay well under the function
 // timeout; over a few minutes it rotates through every stale wallet.
 const SELF_HEAL_BATCH = 8;
-const STALE_WINDOW_MS = 15 * 60 * 1000;
+// 6 hours, was 15 minutes. At 15 minutes every profile was rescored up to 96 times a day for as long
+// as the board was being opened, and one rescore is an Alchemy NFT lookup per collection per wallet
+// (six lookups, more with linked wallets). Alchemy usage for Nov 9-16 2026 put those lookups at about
+// a tenth of the whole account's bill. A collector's own score still refreshes the moment they load
+// their Hub, and the nightly cron still rebuilds everyone; this only slows the background catch-up.
+const STALE_WINDOW_MS = 6 * 60 * 60 * 1000;
 
 // Rescore + persist one wallet's score (union of primary + any linked wallets). Isolated so a single
 // failure can't abort a batch.
