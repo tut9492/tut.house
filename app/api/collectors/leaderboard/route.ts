@@ -35,6 +35,10 @@ async function selfHealStale(): Promise<void> {
 }
 
 // Recompute + persist every profile's score. Expensive (Alchemy per profile) — cron/seed only.
+// The cron is WEEKLY (vercel.json, Mondays 06:00 UTC), was nightly. Alchemy's hourly usage for
+// Nov 14-16 2026 showed this rebuild as the whole cost: about 1.36M compute units in the 06:00 UTC
+// hour every night, and nothing the rest of the day. Between rebuilds a collector's score still
+// refreshes when they load their Hub, and the board's self-heal refreshes stale profiles when opened.
 // Chunked so we don't fire hundreds of concurrent Alchemy calls (rate limits / function timeout).
 async function rebuildAll(): Promise<void> {
   const profiles = await getAllProfiles();
